@@ -122,3 +122,37 @@ git push
 git pull
 ./install.sh
 ```
+
+## セキュリティについて
+
+このdotfilesリポジトリは公開リポジトリとして安全に設計されています：
+
+### 🔒 機密情報の保護
+- **個人情報の分離**: メールアドレス、API キーなどは `.gitconfig.local`、`.env.local` で管理
+- **履歴の保護**: シェル履歴やツール設定ファイルは `.gitignore` で除外
+- **環境変数**: プロジェクト固有の機密情報は環境変数ファイルで管理
+
+### 📁 ローカル設定ファイル
+以下のファイルは **Gitで管理されません**（各マシンで個別作成）：
+
+```bash
+# Git ユーザー情報
+~/.gitconfig.local
+[user]
+    name = Your Name
+    email = your.email@example.com
+
+# 環境変数（機密情報）
+~/.env.local
+export DBT_PROJECT_ID=your-secret-project-id
+export API_KEY=your-secret-key
+
+# マシン固有のzsh設定
+~/.zshrc.local
+# マシン固有の設定をここに記述
+```
+
+### ⚠️ 注意事項
+- **機密情報は絶対にコミットしない**
+- **新しい設定ファイルを追加する際は機密情報をチェック**
+- **`.env.local`、`*.local` ファイルは `.gitignore` で除外済み**
