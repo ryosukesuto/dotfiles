@@ -6,31 +6,37 @@
 
 ```
 .
-├── zsh/                  # Zsh設定（モジュール化）
-│   ├── 00-base.zsh      # 基本設定・補完・オプション
-│   ├── 10-history.zsh   # 履歴設定（セキュリティ強化）
-│   ├── 20-path.zsh      # PATH・環境変数管理
-│   ├── 25-aliases.zsh   # エイリアス（モダンツール対応）
-│   ├── 30-functions.zsh # カスタム関数（fzf/peco対応）
-│   ├── 40-tools.zsh     # ツール設定（遅延初期化）
-│   ├── 50-prompt.zsh    # プロンプトカスタマイズ
-│   └── 90-project.zsh   # プロジェクト固有設定
-├── git/                  # Git設定
-│   └── gitconfig        # エイリアス・色設定強化
+├── aws/                  # AWS CLI設定（テンプレート）
+│   ├── config.template  # AWS設定テンプレート（SSO対応）
+│   └── credentials.template  # AWS認証情報テンプレート
 ├── config/              # 各種アプリケーション設定
-│   └── gh/              # GitHub CLI
-├── tmux/                # tmux設定
-│   └── tmux.conf        # 高機能なターミナルマルチプレクサ設定
-├── vim/                 # Vim設定
+│   └── gh/              # GitHub CLI設定
+│       ├── config.yml
+│       └── hosts.yml
+├── git/                 # Git設定
+│   └── gitconfig       # エイリアス・色設定強化
 ├── ssh/                 # SSH設定
-│   ├── config           # SSH接続設定（効率化・セキュリティ強化）
-│   └── ssh-utils.sh     # SSH管理ユーティリティスクリプト
-│   └── vimrc            # モダンなVim環境（プラグイン管理込み）
-├── .zshrc               # メインのZsh設定（モジュールを読み込み）
-├── .zprofile            # Zshプロファイル（XDG対応）
+│   ├── config          # SSH接続設定（効率化・セキュリティ強化）
+│   └── ssh-utils.sh    # SSH管理ユーティリティスクリプト
+├── tmux/                # tmux設定
+│   └── tmux.conf       # 高機能なターミナルマルチプレクサ設定
+├── vim/                 # Vim設定
+│   └── vimrc           # モダンなVim環境（プラグイン管理込み）
+├── zsh/                 # Zsh設定（モジュール化）
+│   ├── 00-base.zsh     # 基本設定・補完・オプション
+│   ├── 10-history.zsh  # 履歴設定（セキュリティ強化）
+│   ├── 20-path.zsh     # PATH・環境変数管理
+│   ├── 25-aliases.zsh  # エイリアス（モダンツール対応）
+│   ├── 30-functions.zsh # カスタム関数（fzf/peco対応）
+│   ├── 40-tools.zsh    # ツール設定（遅延初期化）
+│   ├── 50-prompt.zsh   # プロンプトカスタマイズ
+│   └── 90-project.zsh  # プロジェクト固有設定
+├── CLAUDE.md            # Claude Code用技術ガイド
 ├── install.sh           # インストールスクリプト（改良版）
-├── uninstall.sh         # アンインストールスクリプト
-└── Makefile             # 便利なコマンド集
+├── Makefile             # 便利なコマンド集
+├── ONBOARDING.md        # ツール・エイリアス使い方ガイド
+├── README.md            # このファイル
+└── uninstall.sh         # アンインストールスクリプト
 ```
 
 ## セットアップ
@@ -80,6 +86,7 @@ make clean         # バックアップファイルを削除
 ### 🔒 セキュリティ強化
 - **履歴ファイル保護**: 適切なパーミッション設定（600）
 - **機密情報分離**: `.env.local`、`.gitconfig.local`で個人情報管理
+- **AWS設定保護**: テンプレート方式で機密情報を除外
 - **XDG Base Directory**: 設定ファイルの標準化
 
 ### 🛠 モダンツール対応
@@ -155,6 +162,10 @@ git pull
 [user]
     name = Your Name
     email = your.email@example.com
+
+# AWS設定（テンプレートからコピー）
+~/.aws/config
+~/.aws/credentials
 
 # 環境変数（機密情報）
 ~/.env.local

@@ -71,6 +71,41 @@ done
 # dotfilesディレクトリのパスを取得
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ファイル存在チェック関数
+validate_files() {
+    local missing_files=()
+    
+    # 必須ファイルのチェック
+    local required_files=(
+        ".zshrc"
+        ".zprofile"
+        "git/gitconfig"
+        "config/gh/config.yml"
+        "config/gh/hosts.yml"
+        "tmux/tmux.conf"
+        "vim/vimrc"
+        "ssh/config"
+    )
+    
+    for file in "${required_files[@]}"; do
+        if [[ ! -f "$DOTFILES_DIR/$file" ]]; then
+            missing_files+=("$file")
+        fi
+    done
+    
+    if [[ ${#missing_files[@]} -gt 0 ]]; then
+        error "必須ファイルが見つかりません: ${missing_files[*]}"
+        echo "リポジトリが破損している可能性があります。"
+        return 1
+    fi
+    
+    info "ファイル存在チェック完了"
+    return 0
+}
+
+# ファイル存在チェックを実行
+validate_files
+
 # 確認プロンプト
 if [ "$FORCE" = false ]; then
     echo "以下のディレクトリからdotfilesをインストールします:"
@@ -135,6 +170,13 @@ create_symlink "$DOTFILES_DIR/vim/vimrc" "$HOME/.vimrc"
 
 # SSH設定
 create_symlink "$DOTFILES_DIR/ssh/config" "$HOME/.ssh/config"
+
+# SSH接続用ディレクトリを作成
+if [ ! -d "$HOME/.ssh/sockets" ]; then
+    mkdir -p "$HOME/.ssh/sockets"
+    chmod 700 "$HOME/.ssh/sockets"
+    info "SSH socket ディレクトリを作成: ~/.ssh/sockets"
+fi
 
 # AWS設定は手動でテンプレートからコピー
 # create_symlink "$DOTFILES_DIR/aws/config" "$HOME/.aws/config"

@@ -4,16 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a dotfiles repository for managing personal configuration files. Currently, the repository is empty and needs to be populated with configuration files from the home directory.
+This is a comprehensive dotfiles repository for managing personal configuration files. The repository contains well-organized configuration files for modern development tools including Zsh, Git, SSH, tmux, Vim, AWS CLI, and GitHub CLI.
 
-## Important Configuration Files to Manage
+## Repository Structure
 
-The following configuration files exist in the home directory and should be considered for inclusion:
+The repository is organized into logical directories:
 
-- `.zshrc` - Zsh shell configuration with PATH exports, custom functions, and tool initializations
-- `.zprofile` - Zsh profile that initializes Homebrew
-- `.gitconfig` - Git configuration with user settings and ghq root directory
-- `.config/` - Directory containing various application configurations
+- `zsh/` - Modular Zsh configuration files (numbered for load order)
+- `git/` - Git configuration with aliases and enhanced settings
+- `ssh/` - SSH configuration and management utilities
+- `tmux/` - Terminal multiplexer configuration
+- `vim/` - Vim editor configuration with plugin management
+- `aws/` - AWS CLI configuration templates (secure, no credentials)
+- `config/` - Application-specific configurations (GitHub CLI, etc.)
+- `.zshrc` - Main Zsh entry point that sources modular files
+- `.zprofile` - Zsh profile for environment setup
 
 ## Key Tools and Technologies
 
@@ -27,11 +32,13 @@ This setup uses the following tools that may need configuration:
 
 ## Common Tasks
 
-When setting up a dotfiles repository:
+When working with this dotfiles repository:
 
-1. **Initial Setup**: Copy configuration files from home directory to repository
-2. **Symlink Management**: Create symlinks from repository files to their expected locations
-3. **Installation Script**: Create a script to automate the setup process on new machines
+1. **Installation**: Use `./install.sh` to create symlinks from repository to home directory
+2. **Updates**: Modify files in repository and changes are reflected immediately via symlinks
+3. **New Machine Setup**: Clone repository and run install script for complete environment setup
+4. **Security**: Use template files for sensitive configurations (AWS, etc.)
+5. **Local Customization**: Use `.local` files for machine-specific settings not tracked in git
 
 ## Architecture Notes
 
