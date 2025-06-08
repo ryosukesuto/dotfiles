@@ -3,6 +3,16 @@
 # 色の定義
 autoload -U colors && colors
 
+# リポジトリ名を表示する関数
+repo_name() {
+  if git rev-parse --git-dir > /dev/null 2>&1; then
+    local repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [[ -n $repo_root ]]; then
+      echo $(basename "$repo_root")
+    fi
+  fi
+}
+
 # Git情報を表示する関数
 git_prompt_info() {
   if git rev-parse --git-dir > /dev/null 2>&1; then
@@ -17,6 +27,24 @@ git_prompt_info() {
     fi
     
     echo " %F{blue}($branch$git_status%F{blue})%f"
+  fi
+}
+
+# ディレクトリ表示の関数（リポジトリ内ではリポジトリ名のみ）
+smart_pwd() {
+  local repo_name_val=$(repo_name)
+  if [[ -n $repo_name_val ]]; then
+    # Gitリポジトリ内の場合はリポジトリ名のみ表示
+    echo "$repo_name_val"
+  else
+    # Gitリポジトリ外では最後の2階層のみ表示
+    local current_path="%~"
+    # ホームディレクトリより深い場合は最後の2階層のみ
+    if [[ $(pwd | grep -o '/' | wc -l) -gt 2 ]] && [[ $(pwd) != $HOME* ]]; then
+      echo "$(basename $(dirname $(pwd)))/$(basename $(pwd))"
+    else
+      echo "$current_path"
+    fi
   fi
 }
 
@@ -79,11 +107,11 @@ if [[ "$TERM" != "dumb" ]]; then
   # プロンプト展開を有効化
   setopt PROMPT_SUBST
   
-  # 2行プロンプト（色変数を直接展開）
-  PROMPT='%F{cyan}%n@%m%f %F{blue}%~%f$(git_prompt_info)$(python_env_info)$(node_env_info)
+  # 2行プロンプト（リポジトリ名のみ表示）
+  PROMPT='%F{cyan}%n%f %F{blue}$(smart_pwd)%f$(git_prompt_info)$(python_env_info)$(node_env_info)
 %F{magenta}❯%f '
   
-  # 右側プロンプト（時刻表示）
+  # 右側プロンプト（時刻とコマンド実行時間）
   RPROMPT='%F{8}%T%f'
 else
   # ダムターミナル用のシンプルプロンプト
@@ -92,20 +120,33 @@ fi
 
 # プロンプトテーマの切り替え関数
 prompt_minimal() {
-  PROMPT='%{$fg[blue]%}%~%{$reset_color%}$(git_prompt_info) %{$fg[magenta]%}❯%{$reset_color%} '
+  PROMPT='%{$fg[blue]%}$(smart_pwd)%{$reset_color%}$(git_prompt_info) %{$fg[magenta]%}❯%{$reset_color%} '
   RPROMPT=''
 }
 
 prompt_full() {
-  PROMPT='%{$fg[cyan]%}%n@%m%{$reset_color%} %{$fg[blue]%}%~%{$reset_color%}$(git_prompt_info)$(python_env_info)$(node_env_info)
+  PROMPT='%{$fg[cyan]%}%n%{$reset_color%} %{$fg[blue]%}$(smart_pwd)%{$reset_color%}$(git_prompt_info)$(python_env_info)$(node_env_info)
 %{$fg[magenta]%}❯%{$reset_color%} '
   RPROMPT='%{$fg[grey]%}%T%{$reset_color%}'
 }
 
-# Starshipプロンプトがインストールされている場合は優先使用
-# 一時的に無効化（設定ファイルが必要）
-# if command -v starship &> /dev/null; then
-#   eval "$(starship init zsh)"
-#   # Starship使用時はカスタムプロンプトを無効化
-#   unset PROMPT RPROMPT
-# fi
+# プロンプト設定を確実に適用
+if [[ "$TERM" != "dumb" ]]; then
+  # 色を確実に読み込み
+  autoload -U colors && colors
+  
+  # プロンプト展開を有効化
+  setopt PROMPT_SUBST
+  
+  # まずカスタムプロンプトを設定（フォールバック）
+  PROMPT='%F{cyan}%n%f %F{blue}$(smart_pwd)%f$(git_prompt_info)$(python_env_info)
+%F{magenta}❯%f '
+  RPROMPT='%F{8}%T%f'
+  
+  # Starshipが利用可能で設定ファイルが存在する場合のみ使用
+  if command -v starship &> /dev/null && [[ -f ~/.config/starship.toml ]]; then
+    eval "$(starship init zsh)"
+    # Starship使用時はRPROMPTのみ無効化（時刻表示を避ける）
+    unset RPROMPT
+  fi
+fi
