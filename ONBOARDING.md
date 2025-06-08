@@ -343,7 +343,7 @@ echo $DBT_AWS_ENV      # DBT環境設定
 #### コマンドが見つからない場合
 ```bash
 # ツールがインストールされているか確認
-which fzf eza bat rg fd starship
+which fzf eza bat rg fd
 
 # パスが正しく設定されているか確認
 echo $PATH

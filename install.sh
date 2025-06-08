@@ -228,4 +228,3 @@ mkdir -p "$HOME/.zsh/cache"
 
 info "推奨ツールのインストール案内:"
 echo "  brew install fzf eza bat ripgrep fd-find"
-echo "  brew install starship  # モダンなプロンプト"
