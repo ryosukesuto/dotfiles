@@ -1,0 +1,188 @@
+# SSH設定ファイル
+# 効率的で安全なSSH接続設定
+
+# ===== 基本設定 =====
+
+# 全ホスト共通設定
+Host *
+    # 接続タイムアウト設定
+    ConnectTimeout 30
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    
+    # セキュリティ設定
+    Protocol 2
+    Compression yes
+    
+    # 認証設定
+    PubkeyAuthentication yes
+    PasswordAuthentication no
+    ChallengeResponseAuthentication no
+    
+    # 接続の再利用（高速化）
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h-%p
+    ControlPersist 600
+    
+    # ホスト鍵の確認
+    StrictHostKeyChecking ask
+    UserKnownHostsFile ~/.ssh/known_hosts
+    
+    # フォワーディング設定
+    ForwardAgent no
+    ForwardX11 no
+    
+    # その他
+    AddKeysToAgent yes
+    UseKeychain yes
+
+# ===== GitHub設定 =====
+
+Host github.com
+    HostName github.com
+    User git
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    
+    # GitHub固有設定
+    StrictHostKeyChecking yes
+    UserKnownHostsFile ~/.ssh/known_hosts
+    
+    # 接続の最適化
+    TCPKeepAlive yes
+    ServerAliveInterval 60
+
+# GitHub Enterprise（もしあれば）
+Host github-enterprise
+    HostName github.yourdomain.com
+    User git
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+# ===== サーバー接続例 =====
+
+# 本番サーバー（例）
+Host production
+    HostName prod.example.com
+    User deploy
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    
+    # 本番環境用のセキュリティ強化
+    StrictHostKeyChecking yes
+    PasswordAuthentication no
+    PubkeyAuthentication yes
+
+# ステージングサーバー（例）
+Host staging
+    HostName staging.example.com
+    User deploy
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+# 開発サーバー（例）
+Host dev
+    HostName dev.example.com
+    User developer
+    Port 22
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+
+# ===== AWS EC2設定例 =====
+
+# EC2インスタンス（例）
+Host aws-web
+    HostName ec2-xxx-xxx-xxx-xxx.ap-northeast-1.compute.amazonaws.com
+    User ec2-user
+    Port 22
+    IdentityFile ~/.ssh/aws-key.pem
+    IdentitiesOnly yes
+    
+    # AWS固有設定
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# EC2 Session Manager経由（例）
+Host i-*
+    ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
+    User ec2-user
+    IdentityFile ~/.ssh/id_ed25519
+
+# ===== ローカル開発環境 =====
+
+# Docker コンテナ（例）
+Host docker-*
+    HostName localhost
+    User root
+    Port 2222
+    IdentityFile ~/.ssh/id_ed25519
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# Vagrant（例）
+Host vagrant
+    HostName 127.0.0.1
+    User vagrant
+    Port 2222
+    IdentityFile ~/.vagrant.d/insecure_private_key
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# ===== 踏み台サーバー設定例 =====
+
+# 踏み台サーバー
+Host bastion
+    HostName bastion.example.com
+    User admin
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    
+    # 踏み台サーバー用設定
+    ForwardAgent yes
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h-%p
+    ControlPersist 10m
+
+# 踏み台経由でのサーバー接続
+Host internal-*
+    ProxyJump bastion
+    User admin
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+# ===== 特殊用途設定 =====
+
+# ポートフォワーディング専用
+Host tunnel-db
+    HostName db.example.com
+    User tunnel
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    
+    # データベース接続用ポートフォワーディング
+    LocalForward 5432 localhost:5432
+    
+    # トンネル専用設定
+    ExitOnForwardFailure yes
+    RequestTTY no
+    RemoteCommand /bin/true
+
+# SOCKS プロキシ
+Host socks-proxy
+    HostName proxy.example.com
+    User proxy
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    
+    # SOCKSプロキシ設定
+    DynamicForward 1080
+    RequestTTY no
+    RemoteCommand /bin/true

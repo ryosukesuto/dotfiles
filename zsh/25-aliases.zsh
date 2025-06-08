@@ -94,3 +94,12 @@ if command -v vim &> /dev/null; then
     # Vimでプラグインインストール
     alias vimplug='vim +PlugInstall +qall'
 fi
+
+# SSH関連
+if [ -f ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh ]; then
+    alias ssh-utils='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh'
+    alias ssh-list='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh list-hosts'
+    alias ssh-test='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh test-connection'
+    alias ssh-keygen-ed25519='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh generate-key ed25519'
+    alias ssh-security='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh check-security'
+fi

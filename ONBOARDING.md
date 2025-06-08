@@ -10,8 +10,9 @@
 4. [便利な関数](#便利な関数)
 5. [キーバインド](#キーバインド)
 6. [プロンプト機能](#プロンプト機能)
-7. [開発ツール](#開発ツール)
-8. [トラブルシューティング](#トラブルシューティング)
+7. [SSH管理ツール](#ssh管理ツール)
+8. [開発ツール](#開発ツール)
+9. [トラブルシューティング](#トラブルシューティング)
 
 ---
 
@@ -222,6 +223,73 @@ username@hostname ~/current/directory (git-branch✓) (py:3.9.0) (node:18.0.0)
 prompt_minimal          # シンプルなプロンプトに変更
 prompt_full             # フル機能プロンプトに変更
 ```
+
+---
+
+## SSH管理ツール
+
+### SSH設定の特徴
+- **接続高速化**: ControlMaster で接続再利用
+- **セキュリティ強化**: 鍵認証のみ、パスワード認証無効
+- **便利な設定**: ホスト別設定、踏み台サーバー対応
+
+### SSH便利エイリアス
+```bash
+ssh-utils               # SSH管理ツールメニュー表示
+ssh-list               # 設定済みホスト一覧
+ssh-test hostname      # ホストへの接続テスト
+ssh-keygen-ed25519     # ED25519鍵の生成
+ssh-security           # セキュリティチェック
+```
+
+### SSH管理ツールの詳細機能
+```bash
+# ホスト一覧表示
+ssh-utils list-hosts
+
+# 接続テスト
+ssh-utils test-connection github.com
+ssh-utils test-connection production
+
+# SSH鍵生成（推奨: ED25519）
+ssh-utils generate-key ed25519 mykey
+ssh-utils generate-key rsa myoldkey
+
+# ホスト設定を追加
+ssh-utils add-host myserver server.example.com deploy ~/.ssh/id_ed25519
+
+# SSHキーをバックアップ
+ssh-utils backup-keys
+
+# セキュリティチェック
+ssh-utils check-security
+
+# 古い接続ソケットをクリーンアップ
+ssh-utils cleanup
+```
+
+### SSH設定例
+```bash
+# 既存のホストに接続
+ssh github.com          # Git操作
+ssh production          # 本番サーバー
+ssh staging             # ステージングサーバー
+
+# 踏み台サーバー経由の接続
+ssh internal-web        # 踏み台経由で内部サーバーへ
+
+# ポートフォワーディング
+ssh tunnel-db           # データベース接続用トンネル
+
+# SOCKS プロキシ
+ssh socks-proxy         # プロキシサーバー接続
+```
+
+### セキュリティのベストプラクティス
+- **ED25519鍵**: RSAより高速で安全な暗号化方式
+- **鍵のパスフレーズ**: 必ず設定する
+- **定期的な鍵ローテーション**: 古い鍵は無効化
+- **権限設定**: 秘密鍵は600、設定ファイルは644
 
 ---
 

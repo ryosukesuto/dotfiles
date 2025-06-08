@@ -133,6 +133,9 @@ create_symlink "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
 # Vim設定
 create_symlink "$DOTFILES_DIR/vim/vimrc" "$HOME/.vimrc"
 
+# SSH設定
+create_symlink "$DOTFILES_DIR/ssh/config" "$HOME/.ssh/config"
+
 echo ""
 info "dotfilesのインストールが完了しました！"
 echo ""
