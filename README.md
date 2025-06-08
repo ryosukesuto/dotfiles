@@ -2,38 +2,58 @@
 
 個人用の設定ファイル（dotfiles）を管理するリポジトリです。
 
-## 含まれる設定ファイル
+## 構造
 
-- `.zshrc` - Zshの設定ファイル
-- `.zprofile` - Zshのプロファイル設定
-- `.gitconfig` - Gitの設定
-- `.config/gh/` - GitHub CLIの設定
+```
+.
+├── zsh/                  # Zsh設定（モジュール化）
+│   ├── 00-base.zsh      # 基本設定
+│   ├── 10-history.zsh   # 履歴設定
+│   ├── 20-path.zsh      # PATH設定
+│   ├── 30-functions.zsh # カスタム関数
+│   ├── 40-tools.zsh     # ツール設定
+│   └── 90-project.zsh   # プロジェクト固有設定
+├── git/                  # Git設定
+│   └── gitconfig
+├── config/              # 各種アプリケーション設定
+│   └── gh/              # GitHub CLI
+├── .zshrc               # メインのZsh設定（モジュールを読み込み）
+├── .zprofile            # Zshプロファイル
+├── install.sh           # インストールスクリプト
+├── uninstall.sh         # アンインストールスクリプト
+└── Makefile             # 便利なコマンド集
+```
 
 ## セットアップ
 
-### 1. リポジトリのクローン
+### クイックスタート
 
 ```bash
 git clone https://github.com/ryosukesuto/dotfiles.git ~/src/github.com/ryosukesuto/dotfiles
 cd ~/src/github.com/ryosukesuto/dotfiles
+make install
 ```
 
-### 2. インストールスクリプトの実行
+### 手動インストール
 
 ```bash
 ./install.sh
 ```
 
-このスクリプトは以下を実行します：
-- 既存の設定ファイルをバックアップ（`.backup`拡張子を付けて保存）
-- dotfilesリポジトリから各設定ファイルへのシンボリックリンクを作成
+オプション：
+- `-h, --help` - ヘルプを表示
+- `-f, --force` - 確認なしでインストール
+- `-n, --no-backup` - バックアップを作成しない
 
-### 3. 設定の反映
-
-新しいターミナルを開くか、以下のコマンドを実行して設定を反映します：
+### Makefileを使った操作
 
 ```bash
-source ~/.zshrc
+make help          # 使用可能なコマンドを表示
+make install       # dotfilesをインストール
+make uninstall     # dotfilesをアンインストール
+make update        # リポジトリを更新して再インストール
+make backup        # 現在の設定をバックアップ
+make clean         # バックアップファイルを削除
 ```
 
 ## 設定の詳細

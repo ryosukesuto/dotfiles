@@ -60,3 +60,10 @@ Temporary Items
 .local/
 .npm/
 .pyenv/
+
+# ローカル設定
+*.local
+.zshrc.local
+
+# Makefileで作成されるバックアップ
+backups/
