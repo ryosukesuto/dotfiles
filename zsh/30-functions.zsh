@@ -87,8 +87,11 @@ if command -v fzf &> /dev/null; then
     export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!.git/*"'
   fi
   
-  # Ctrl+R で履歴検索
-  if ! zle -l fzf-history-widget &> /dev/null; then
-    source <(fzf --zsh)
+  # fzfのキーバインドを安全に設定
+  if [[ -f ~/.fzf.zsh ]]; then
+    source ~/.fzf.zsh
+  elif [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
+    source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+    source /opt/homebrew/opt/fzf/shell/completion.zsh
   fi
 fi

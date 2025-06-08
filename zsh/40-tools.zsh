@@ -4,64 +4,22 @@ if command -v terraform &> /dev/null; then
   complete -o nospace -C $(which terraform) terraform
 fi
 
-# pyenv遅延初期化（パフォーマンス向上）
+# pyenv設定（シンプル版）
 if command -v pyenv &> /dev/null; then
   export PATH="$PYENV_ROOT/bin:$PATH"
-  
-  # pyenvコマンドが初回実行時に初期化
-  pyenv() {
-    unfunction pyenv
-    eval "$(command pyenv init --path)"
-    eval "$(command pyenv init -)"
-    pyenv "$@"
-  }
-  
-  # python, pip, python3コマンドでも初期化
-  python() {
-    unfunction python python3 pip pip3 2>/dev/null
-    eval "$(command pyenv init --path)"
-    eval "$(command pyenv init -)"
-    python "$@"
-  }
-  
-  python3() {
-    unfunction python python3 pip pip3 2>/dev/null
-    eval "$(command pyenv init --path)"
-    eval "$(command pyenv init -)"
-    python3 "$@"
-  }
-  
-  pip() {
-    unfunction python python3 pip pip3 2>/dev/null
-    eval "$(command pyenv init --path)"
-    eval "$(command pyenv init -)"
-    pip "$@"
-  }
-  
-  pip3() {
-    unfunction python python3 pip pip3 2>/dev/null
-    eval "$(command pyenv init --path)"
-    eval "$(command pyenv init -)"
-    pip3 "$@"
-  }
+  # 起動時に初期化（安全性重視）
+  eval "$(pyenv init --path)"
+  eval "$(pyenv init -)"
 fi
 
 # rbenv（Rubyがある場合）
 if command -v rbenv &> /dev/null; then
-  rbenv() {
-    unfunction rbenv
-    eval "$(command rbenv init -)"
-    rbenv "$@"
-  }
+  eval "$(rbenv init -)"
 fi
 
 # nodenv（Node.jsがある場合）
 if command -v nodenv &> /dev/null; then
-  nodenv() {
-    unfunction nodenv
-    eval "$(command nodenv init -)"
-    nodenv "$@"
-  }
+  eval "$(nodenv init -)"
 fi
 
 # direnv（ディレクトリ固有の環境変数）
@@ -69,9 +27,12 @@ if command -v direnv &> /dev/null; then
   eval "$(direnv hook zsh)"
 fi
 
-# GitHub CLI補完
+# GitHub CLI補完（タイムアウト付き）
 if command -v gh &> /dev/null; then
-  eval "$(gh completion -s zsh)"
+  # 5秒でタイムアウト
+  if timeout 5s gh completion -s zsh 2>/dev/null; then
+    eval "$(gh completion -s zsh)"
+  fi
 fi
 
 # Docker補完（Docker Desktopがインストールされている場合）
