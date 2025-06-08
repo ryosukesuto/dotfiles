@@ -7,19 +7,21 @@
 ```
 .
 ├── zsh/                  # Zsh設定（モジュール化）
-│   ├── 00-base.zsh      # 基本設定
-│   ├── 10-history.zsh   # 履歴設定
-│   ├── 20-path.zsh      # PATH設定
-│   ├── 30-functions.zsh # カスタム関数
-│   ├── 40-tools.zsh     # ツール設定
+│   ├── 00-base.zsh      # 基本設定・補完・オプション
+│   ├── 10-history.zsh   # 履歴設定（セキュリティ強化）
+│   ├── 20-path.zsh      # PATH・環境変数管理
+│   ├── 25-aliases.zsh   # エイリアス（モダンツール対応）
+│   ├── 30-functions.zsh # カスタム関数（fzf/peco対応）
+│   ├── 40-tools.zsh     # ツール設定（遅延初期化）
+│   ├── 50-prompt.zsh    # プロンプトカスタマイズ
 │   └── 90-project.zsh   # プロジェクト固有設定
 ├── git/                  # Git設定
-│   └── gitconfig
+│   └── gitconfig        # エイリアス・色設定強化
 ├── config/              # 各種アプリケーション設定
 │   └── gh/              # GitHub CLI
 ├── .zshrc               # メインのZsh設定（モジュールを読み込み）
-├── .zprofile            # Zshプロファイル
-├── install.sh           # インストールスクリプト
+├── .zprofile            # Zshプロファイル（XDG対応）
+├── install.sh           # インストールスクリプト（改良版）
 ├── uninstall.sh         # アンインストールスクリプト
 └── Makefile             # 便利なコマンド集
 ```
@@ -56,20 +58,43 @@ make backup        # 現在の設定をバックアップ
 make clean         # バックアップファイルを削除
 ```
 
+## 主な機能・改善点
+
+### 🚀 パフォーマンス最適化
+- **補完システムの最適化**: 24時間キャッシュで起動高速化
+- **遅延初期化**: pyenv、rbenv、nodenvの初回実行時初期化
+- **効率的なPATH管理**: 重複チェック付きPATH追加関数
+
+### 🔒 セキュリティ強化
+- **履歴ファイル保護**: 適切なパーミッション設定（600）
+- **機密情報分離**: `.env.local`、`.gitconfig.local`で個人情報管理
+- **XDG Base Directory**: 設定ファイルの標準化
+
+### 🛠 モダンツール対応
+- **fzf統合**: 履歴検索・ファイル検索・ディレクトリ移動
+- **モダンコマンド**: eza (ls)、bat (cat)、rg (grep)、fd (find)
+- **Git強化**: 豊富なエイリアス・色設定・便利な設定
+
+### 🎨 UX改善
+- **カスタムプロンプト**: Git状態・Python/Node環境表示
+- **便利なエイリアス**: Git、Docker、Kubernetes対応
+- **実行時間測定**: 長時間コマンドの実行時間表示
+
 ## 設定の詳細
 
-### Zsh設定 (.zshrc)
+### Zsh設定の特徴
 
-- **パス設定**: tfenv、Go binaries
-- **履歴設定**: 50,000行の履歴を保持、重複を除外
-- **キーバインド**: Emacsモード
-- **カスタム関数**: `peco-src` - ghqとpecoを使った高速ディレクトリ移動（Ctrl+]）
-- **ツール設定**: pyenv、Terraform補完、DBT環境変数
+- **モジュール化**: 機能別ファイル分割で保守性向上
+- **履歴管理**: 50,000行、重複除去、実行時間記録
+- **補完強化**: 大文字小文字無視、メニュー選択、色付け
+- **関数群**: mkcd、extract、gacp、portなど便利関数
 
-### Git設定 (.gitconfig)
+### Git設定の特徴
 
-- ghqのルートディレクトリ設定（~/src）
-- ユーザー情報は`.gitconfig.local`で管理（Gitに含まれない）
+- **pull.rebase**: マージコミットを作らないpull
+- **push.autoSetupRemote**: 初回pushで自動的にupstream設定
+- **diff.colorMoved**: 移動したコードの可視化
+- **豊富なエイリアス**: 日常的なGit操作を短縮
 
 ## バックアップとリストア
 

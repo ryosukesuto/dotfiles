@@ -64,6 +64,17 @@ Temporary Items
 # ローカル設定
 *.local
 .zshrc.local
+.env.local
+.gitconfig.local
+
+# zshキャッシュとコンパイル済みファイル
+.zsh/
+.zcompdump*
+*.zwc
 
 # Makefileで作成されるバックアップ
 backups/
+
+# モダンツールの設定
+.cargo/
+.rustup/

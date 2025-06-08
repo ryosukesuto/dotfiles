@@ -1,3 +1,66 @@
+[core]
+	editor = vim
+	pager = less -FRX
+	autocrlf = input
+	quotepath = false
+	precomposeunicode = true
+
+[color]
+	ui = auto
+	diff = auto
+	status = auto
+	branch = auto
+
+[color "diff"]
+	meta = yellow bold
+	frag = magenta bold
+	old = red bold
+	new = green bold
+
+[color "status"]
+	added = green
+	changed = yellow
+	untracked = red
+
+[pull]
+	rebase = true
+
+[push]
+	default = simple
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[rebase]
+	autoStash = true
+
+[diff]
+	colorMoved = default
+	algorithm = histogram
+
+[merge]
+	conflictstyle = diff3
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	ci = commit
+	cm = commit -m
+	ca = commit --amend
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	lg = log --oneline --graph --decorate
+	lga = log --oneline --graph --decorate --all
+	show-graph = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+	undo = reset --soft HEAD^
+	amend = commit --amend --no-edit
+	fixup = commit --fixup
+	squash = commit --squash
+	praise = blame
+	visual = !gitk
+
 [ghq]
 	root = ~/src
 

@@ -147,3 +147,17 @@ if [ ! -f "$HOME/.gitconfig.local" ]; then
     echo "      name = Your Name"
     echo "      email = your.email@example.com"
 fi
+
+if [ ! -f "$HOME/.env.local" ]; then
+    info "ヒント: プロジェクト固有の環境変数は ~/.env.local に記述できます"
+    echo "例:"
+    echo "  export DBT_PROJECT_ID=your-project-id"
+    echo "  export DBT_DATA_POLICY_TAG_ID=your-tag-id"
+fi
+
+# 補完用ディレクトリの作成
+mkdir -p "$HOME/.zsh/cache"
+
+info "推奨ツールのインストール案内:"
+echo "  brew install fzf eza bat ripgrep fd-find"
+echo "  brew install starship  # モダンなプロンプト"
