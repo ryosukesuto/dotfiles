@@ -136,6 +136,9 @@ create_symlink "$DOTFILES_DIR/vim/vimrc" "$HOME/.vimrc"
 # SSH設定
 create_symlink "$DOTFILES_DIR/ssh/config" "$HOME/.ssh/config"
 
+# AWS設定は手動でテンプレートからコピー
+# create_symlink "$DOTFILES_DIR/aws/config" "$HOME/.aws/config"
+
 echo ""
 info "dotfilesのインストールが完了しました！"
 echo ""
@@ -162,6 +165,20 @@ if [ ! -f "$HOME/.env.local" ]; then
     echo "例:"
     echo "  export DBT_PROJECT_ID=your-project-id"
     echo "  export DBT_DATA_POLICY_TAG_ID=your-tag-id"
+fi
+
+if [ ! -f "$HOME/.aws/config" ]; then
+    warn "重要: AWS設定ファイルを ~/.aws/config に作成してください"
+    echo "テンプレートファイルを参考にしてください:"
+    echo "  cp $DOTFILES_DIR/aws/config.template ~/.aws/config"
+    echo "  # その後、実際の値を入力してください"
+fi
+
+if [ ! -f "$HOME/.aws/credentials" ]; then
+    warn "重要: AWS認証情報を ~/.aws/credentials に設定してください"
+    echo "テンプレートファイルを参考にしてください:"
+    echo "  cp $DOTFILES_DIR/aws/credentials.template ~/.aws/credentials"
+    echo "  # その後、実際の認証情報を入力してください"
 fi
 
 # 補完用ディレクトリの作成

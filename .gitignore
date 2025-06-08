@@ -45,6 +45,14 @@ Temporary Items
 .zcompdump
 .claude.json
 
+# AWS機密情報
+aws/credentials
+aws/config
+*.key
+*.pem
+*.p12
+*.pfx
+
 # Backup files
 *.backup
 *.bak
