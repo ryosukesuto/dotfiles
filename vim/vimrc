@@ -29,7 +29,7 @@ set number
 set cursorline
 
 " カラムガイド（80文字）
-set colorcolumn=80
+" set colorcolumn=80
 
 " ステータスラインを常に表示
 set laststatus=2
