@@ -86,3 +86,11 @@ if command -v tmux &> /dev/null; then
     alias tn='tmux new-session'
     alias tk='tmux kill-session'
 fi
+
+# Vim
+if command -v vim &> /dev/null; then
+    alias v='vim'
+    alias vi='vim'
+    # Vimでプラグインインストール
+    alias vimplug='vim +PlugInstall +qall'
+fi

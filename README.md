@@ -21,6 +21,8 @@
 │   └── gh/              # GitHub CLI
 ├── tmux/                # tmux設定
 │   └── tmux.conf        # 高機能なターミナルマルチプレクサ設定
+├── vim/                 # Vim設定
+│   └── vimrc            # モダンなVim環境（プラグイン管理込み）
 ├── .zshrc               # メインのZsh設定（モジュールを読み込み）
 ├── .zprofile            # Zshプロファイル（XDG対応）
 ├── install.sh           # インストールスクリプト（改良版）

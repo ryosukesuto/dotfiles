@@ -1,0 +1,267 @@
+" Vim設定ファイル
+" モダンで実用的なVim環境
+
+" ===== 基本設定 =====
+
+" Vi互換モードを無効化
+set nocompatible
+
+" エンコーディング設定
+set encoding=utf-8
+set fileencoding=utf-8
+set fileencodings=utf-8,iso-2022-jp,euc-jp,sjis
+
+" ファイル形式の自動判別
+filetype on
+filetype indent on
+filetype plugin on
+
+" ===== 表示設定 =====
+
+" シンタックスハイライト
+syntax enable
+
+" 行番号を表示
+set number
+set relativenumber
+
+" カーソル行をハイライト
+set cursorline
+
+" カラムガイド（80文字）
+set colorcolumn=80
+
+" ステータスラインを常に表示
+set laststatus=2
+
+" コマンドラインの高さ
+set cmdheight=2
+
+" 括弧の対応をハイライト
+set showmatch
+
+" 不可視文字を表示
+set list
+set listchars=tab:▸\ ,eol:¬,trail:·,space:·
+
+" カラースキーム（ダークテーマ）
+set background=dark
+try
+    colorscheme desert
+catch
+    " フォールバック
+endtry
+
+" ===== 編集設定 =====
+
+" タブ設定
+set tabstop=4        " タブ文字の幅
+set shiftwidth=4     " インデント幅
+set softtabstop=4    " タブキー押下時の挿入文字数
+set expandtab        " タブをスペースに展開
+set smarttab         " 行頭でのTab文字の挿入をshiftwidthに依存
+
+" インデント設定
+set autoindent       " 自動インデント
+set smartindent      " スマートインデント
+
+" 改行コード設定
+set fileformat=unix
+
+" バックスペースの動作
+set backspace=indent,eol,start
+
+" 検索設定
+set hlsearch         " 検索結果をハイライト
+set incsearch        " インクリメンタル検索
+set ignorecase       " 大文字小文字を無視
+set smartcase        " 大文字が含まれている場合は区別
+
+" 補完設定
+set wildmenu         " コマンドライン補完
+set wildmode=longest,list,full
+
+" ===== ファイル管理 =====
+
+" バックアップとスワップファイル
+set backup
+set backupdir=~/.vim/backup//
+set swapfile
+set directory=~/.vim/swap//
+set undofile
+set undodir=~/.vim/undo//
+
+" 必要なディレクトリを作成
+if !isdirectory($HOME."/.vim/backup")
+    call mkdir($HOME."/.vim/backup", "p", 0700)
+endif
+if !isdirectory($HOME."/.vim/swap")
+    call mkdir($HOME."/.vim/swap", "p", 0700)
+endif
+if !isdirectory($HOME."/.vim/undo")
+    call mkdir($HOME."/.vim/undo", "p", 0700)
+endif
+
+" ===== キーマッピング =====
+
+" リーダーキーをスペースに設定
+let mapleader = " "
+
+" ESCの代替
+inoremap jj <Esc>
+
+" 保存・終了
+nnoremap <Leader>w :w<CR>
+nnoremap <Leader>wq :wq<CR>
+nnoremap <Leader>q :q<CR>
+
+" 検索ハイライトを消去
+nnoremap <Leader>/ :nohlsearch<CR>
+
+" ウィンドウ分割
+nnoremap <Leader>v :vsplit<CR>
+nnoremap <Leader>h :split<CR>
+
+" ウィンドウ間移動（tmuxと一貫性）
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" バッファ操作
+nnoremap <Leader>n :bnext<CR>
+nnoremap <Leader>p :bprev<CR>
+nnoremap <Leader>d :bdelete<CR>
+
+" 行移動（表示行単位）
+nnoremap j gj
+nnoremap k gk
+
+" ===== プラグイン管理 =====
+
+" vim-plugが存在しない場合は自動インストール
+if empty(glob('~/.vim/autoload/plug.vim'))
+  silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
+" プラグイン設定
+call plug#begin('~/.vim/plugged')
+
+" ファイルエクスプローラー
+Plug 'preservim/nerdtree'
+
+" ファジーファインダー
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+
+" Git統合
+Plug 'tpope/vim-fugitive'
+
+" ステータスライン
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+
+" シンタックスハイライト強化
+Plug 'sheerun/vim-polyglot'
+
+" 自動補完
+Plug 'dense-analysis/ale'
+
+" カラースキーム
+Plug 'morhetz/gruvbox'
+Plug 'joshdick/onedark.vim'
+
+call plug#end()
+
+" ===== プラグイン設定 =====
+
+" NERDTree設定
+nnoremap <Leader>e :NERDTreeToggle<CR>
+nnoremap <Leader>f :NERDTreeFind<CR>
+
+" FZF設定
+nnoremap <Leader>o :Files<CR>
+nnoremap <Leader>b :Buffers<CR>
+nnoremap <Leader>s :Rg<CR>
+
+" Airline設定
+let g:airline#extensions#tabline#enabled = 1
+let g:airline_theme='onedark'
+
+" ALE設定（Linter）
+let g:ale_linters = {
+\   'python': ['flake8', 'pylint'],
+\   'javascript': ['eslint'],
+\   'typescript': ['eslint', 'tslint'],
+\}
+let g:ale_fixers = {
+\   '*': ['remove_trailing_lines', 'trim_whitespace'],
+\   'python': ['black', 'isort'],
+\   'javascript': ['prettier'],
+\   'typescript': ['prettier'],
+\}
+
+" カラースキーム適用
+try
+    colorscheme gruvbox
+catch
+    try
+        colorscheme onedark
+    catch
+        colorscheme desert
+    endtry
+endtry
+
+" ===== オートコマンド =====
+
+augroup MyAutoCmd
+    autocmd!
+    
+    " ファイルタイプ別設定
+    autocmd FileType python setlocal tabstop=4 shiftwidth=4 softtabstop=4
+    autocmd FileType javascript,typescript,json setlocal tabstop=2 shiftwidth=2 softtabstop=2
+    autocmd FileType html,css,scss setlocal tabstop=2 shiftwidth=2 softtabstop=2
+    autocmd FileType yaml setlocal tabstop=2 shiftwidth=2 softtabstop=2
+    
+    " 最後のカーソル位置を復元
+    autocmd BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
+    
+    " 保存時に自動的に末尾の空白を削除
+    autocmd BufWritePre * :%s/\s\+$//e
+    
+augroup END
+
+" ===== その他の設定 =====
+
+" マウスを有効化
+set mouse=a
+
+" クリップボード統合（macOS）
+if has('macunix')
+    set clipboard=unnamed
+endif
+
+" 分割時のデフォルト位置
+set splitbelow
+set splitright
+
+" ページスクロール時の余白
+set scrolloff=5
+
+" 長い行の表示
+set wrap
+set linebreak
+
+" タイムアウト設定
+set timeoutlen=500
+
+" コマンドを画面下部に表示
+set showcmd
+
+" ===== ステータスライン（プラグインがない場合） =====
+
+if !exists('g:loaded_airline')
+    set statusline=%F%m%r%h%w\ [FORMAT=%{&ff}]\ [TYPE=%Y]\ [POS=%l,%v][%p%%]\ %{strftime(\"%Y/%m/%d\ %H:%M\")}
+endif
