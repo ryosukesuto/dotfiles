@@ -158,6 +158,16 @@ paste                   # pbpaste (クリップボードから貼り付け)
 ### カスタムキーバインド
 - **Ctrl+]**: ghqリポジトリをファジー検索して移動
 
+### tmux操作（Ctrl+a がプレフィックス）
+- **Ctrl+a |**: 縦分割（パイプ記号）
+- **Ctrl+a -**: 横分割（ハイフン）
+- **Ctrl+a h**: 横分割（覚えやすい）
+- **Ctrl+a v**: 縦分割（覚えやすい）
+- **Ctrl+a ↑↓←→**: ペイン間移動（矢印キー）
+- **Ctrl+a r**: 設定再読み込み
+- **Ctrl+a d**: セッションからデタッチ
+- **Ctrl+a c**: 新しいウィンドウ作成
+
 ### 使用例
 ```bash
 # Ctrl+R を押すと履歴検索画面が開く
@@ -168,6 +178,23 @@ paste                   # pbpaste (クリップボードから貼り付け)
 
 # Ctrl+] を押すとghqで管理されているリポジトリ一覧が表示される
 # リポジトリを選択すると、そのディレクトリに移動
+
+# tmux操作例
+# 1. 新しいセッションを開始
+tmux
+
+# 2. ペイン分割
+# Ctrl+a h で横分割 → 左右にペイン
+# Ctrl+a v で縦分割 → 上下にペイン
+
+# 3. ペイン間移動
+# Ctrl+a ↑↓←→ で目的のペインに移動
+
+# 4. セッションからデタッチ（セッションは維持される）
+# Ctrl+a d
+
+# 5. セッションに再アタッチ
+ta
 ```
 
 ---
@@ -216,6 +243,15 @@ k           # kubectl
 kgp         # kubectl get pods
 kgs         # kubectl get services
 kgd         # kubectl get deployments
+```
+
+### tmux（ターミナルマルチプレクサ）
+```bash
+t           # tmux (新しいセッション開始)
+ta          # tmux attach (セッションにアタッチ)
+tl          # tmux list-sessions (セッション一覧)
+tn          # tmux new-session (新しいセッション作成)
+tk          # tmux kill-session (セッション削除)
 ```
 
 ### Python環境
@@ -283,6 +319,22 @@ zsh -xvs 2>&1 | head -20
 
 # 補完キャッシュをクリア
 rm ~/.zcompdump*
+```
+
+#### tmuxの問題
+```bash
+# tmuxサーバーがハングした場合
+tmux kill-server
+
+# セッション一覧が表示されない場合
+tmux list-sessions
+
+# キーバインドが効かない場合
+tmux show-options -g | grep prefix
+tmux list-keys | grep split
+
+# 設定を再読み込み
+# tmux内で: Ctrl+a r
 ```
 
 ### カスタマイズ
