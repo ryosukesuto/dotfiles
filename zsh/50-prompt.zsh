@@ -38,15 +38,28 @@ node_env_info() {
 
 # 実行時間を測定する関数
 preexec() {
-  timer=$(($(date +%s%0N)/1000000))
+  # macOSのdateコマンド対応（ナノ秒はサポートされていない）
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOSではミリ秒精度で測定
+    timer=$(python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || date +%s)
+  else
+    # Linuxではナノ秒対応
+    timer=$(($(date +%s%N)/1000000))
+  fi
 }
 
 precmd() {
-  if [ $timer ]; then
-    now=$(($(date +%s%0N)/1000000))
-    elapsed=$(($now-$timer))
+  if [[ -n $timer ]]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      now=$(python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || date +%s)
+      elapsed=$((now - timer))
+    else
+      now=$(($(date +%s%N)/1000000))
+      elapsed=$((now - timer))
+    fi
     
-    if [ $elapsed -gt 5000 ]; then
+    # 5秒以上（5000ms）の場合のみ表示
+    if [[ $elapsed -gt 5000 ]]; then
       echo "%{$fg[yellow]%}⏱ ${elapsed}ms%{$reset_color%}"
     fi
     
