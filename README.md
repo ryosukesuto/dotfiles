@@ -58,6 +58,11 @@ make backup        # 現在の設定をバックアップ
 make clean         # バックアップファイルを削除
 ```
 
+## 📚 ドキュメント
+
+- **[ONBOARDING.md](ONBOARDING.md)** - 便利なツールやエイリアスの使い方ガイド
+- **[CLAUDE.md](CLAUDE.md)** - Claude Code用の技術ガイド
+
 ## 主な機能・改善点
 
 ### 🚀 パフォーマンス最適化
