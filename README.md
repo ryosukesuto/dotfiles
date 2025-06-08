@@ -68,8 +68,8 @@ make clean         # バックアップファイルを削除
 
 ### Git設定 (.gitconfig)
 
-- ユーザー情報の設定
 - ghqのルートディレクトリ設定（~/src）
+- ユーザー情報は`.gitconfig.local`で管理（Gitに含まれない）
 
 ## バックアップとリストア
 

@@ -139,3 +139,11 @@ echo ""
 if [ ! -f "$HOME/.zshrc.local" ]; then
     info "ヒント: マシン固有の設定は ~/.zshrc.local に記述できます"
 fi
+
+if [ ! -f "$HOME/.gitconfig.local" ]; then
+    warn "重要: Git ユーザー情報を ~/.gitconfig.local に設定してください"
+    echo "例:"
+    echo "  [user]"
+    echo "      name = Your Name"
+    echo "      email = your.email@example.com"
+fi
