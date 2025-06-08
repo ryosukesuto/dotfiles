@@ -77,3 +77,12 @@ if command -v kubectl &> /dev/null; then
     alias kgs='kubectl get services'
     alias kgd='kubectl get deployments'
 fi
+
+# tmux（あれば）
+if command -v tmux &> /dev/null; then
+    alias t='tmux'
+    alias ta='tmux attach'
+    alias tl='tmux list-sessions'
+    alias tn='tmux new-session'
+    alias tk='tmux kill-session'
+fi

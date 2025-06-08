@@ -19,6 +19,8 @@
 │   └── gitconfig        # エイリアス・色設定強化
 ├── config/              # 各種アプリケーション設定
 │   └── gh/              # GitHub CLI
+├── tmux/                # tmux設定
+│   └── tmux.conf        # 高機能なターミナルマルチプレクサ設定
 ├── .zshrc               # メインのZsh設定（モジュールを読み込み）
 ├── .zprofile            # Zshプロファイル（XDG対応）
 ├── install.sh           # インストールスクリプト（改良版）
