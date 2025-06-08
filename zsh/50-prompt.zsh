@@ -3,31 +3,89 @@
 # 色の定義
 autoload -U colors && colors
 
-# リポジトリ名を表示する関数
-repo_name() {
-  if git rev-parse --git-dir > /dev/null 2>&1; then
-    local repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
-    if [[ -n $repo_root ]]; then
-      echo $(basename "$repo_root")
-    fi
-  fi
+# キャッシュ変数の初期化
+typeset -g _prompt_cache_dir=""
+typeset -g _prompt_cache_git_branch=""
+typeset -g _prompt_cache_git_status=""
+typeset -g _prompt_cache_repo_name=""
+typeset -g _prompt_cache_python_env=""
+typeset -g _prompt_cache_node_env=""
+typeset -g _prompt_cache_go_env=""
+typeset -g _prompt_cache_aws_env=""
+typeset -g _prompt_cache_terraform_env=""
+typeset -g _prompt_cache_k8s_env=""
+typeset -g _prompt_cache_docker_env=""
+typeset -g _prompt_cache_timestamp=0
+
+# キャッシュの有効期限（秒）
+typeset -g _prompt_cache_ttl=30
+
+# キャッシュをクリアする関数
+_prompt_clear_cache() {
+  _prompt_cache_dir=""
+  _prompt_cache_git_branch=""
+  _prompt_cache_git_status=""
+  _prompt_cache_repo_name=""
+  _prompt_cache_python_env=""
+  _prompt_cache_node_env=""
+  _prompt_cache_go_env=""
+  _prompt_cache_aws_env=""
+  _prompt_cache_terraform_env=""
+  _prompt_cache_k8s_env=""
+  _prompt_cache_docker_env=""
+  _prompt_cache_timestamp=0
 }
 
-# Git情報を表示する関数
-git_prompt_info() {
-  if git rev-parse --git-dir > /dev/null 2>&1; then
-    local branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD)
-    local git_status=""
-    
-    # 作業ディレクトリの状態をチェック
-    if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
-      git_status=" %F{red}✗%f"
-    else
-      git_status=" %F{green}✓%f"
-    fi
-    
-    echo " %F{magenta}$branch%f$git_status"
+# キャッシュが有効かチェックする関数
+_prompt_cache_valid() {
+  local current_time=$(date +%s)
+  local current_dir="$PWD"
+  
+  # ディレクトリが変わった場合やキャッシュが期限切れの場合は無効
+  if [[ "$current_dir" != "$_prompt_cache_dir" ]] || 
+     [[ $((current_time - _prompt_cache_timestamp)) -gt $_prompt_cache_ttl ]]; then
+    return 1
   fi
+  return 0
+}
+
+# リポジトリ名を表示する関数（キャッシュ対応）
+repo_name() {
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_repo_name" ]]; then
+    if git rev-parse --git-dir &> /dev/null; then
+      local repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+      if [[ -n $repo_root ]]; then
+        _prompt_cache_repo_name=$(basename "$repo_root")
+      else
+        _prompt_cache_repo_name=""
+      fi
+    else
+      _prompt_cache_repo_name=""
+    fi
+  fi
+  echo "$_prompt_cache_repo_name"
+}
+
+# Git情報を表示する関数（キャッシュ対応）
+git_prompt_info() {
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_git_branch" ]]; then
+    if git rev-parse --git-dir &> /dev/null; then
+      local branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD)
+      local git_status=""
+      
+      # 作業ディレクトリの状態をチェック
+      if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
+        git_status=" %F{red}✗%f"
+      else
+        git_status=" %F{green}✓%f"
+      fi
+      
+      _prompt_cache_git_branch=" %F{magenta}$branch%f$git_status"
+    else
+      _prompt_cache_git_branch=""
+    fi
+  fi
+  echo "$_prompt_cache_git_branch"
 }
 
 # ディレクトリ表示の関数（リポジトリ内ではリポジトリ名のみ）
@@ -48,64 +106,105 @@ smart_pwd() {
   fi
 }
 
-# Python仮想環境を表示する関数
+# Python仮想環境を表示する関数（キャッシュ対応）
 python_env_info() {
-  if [[ -n "$VIRTUAL_ENV" ]]; then
-    echo " %F{yellow}(🐍$(basename $VIRTUAL_ENV))%f"
-  elif command -v pyenv &> /dev/null; then
-    local pyenv_version=$(pyenv version-name 2>/dev/null)
-    if [[ -n "$pyenv_version" && "$pyenv_version" != "system" ]]; then
-      echo " %F{yellow}(🐍py:$pyenv_version)%f"
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_python_env" ]]; then
+    if [[ -n "$VIRTUAL_ENV" ]]; then
+      _prompt_cache_python_env=" %F{yellow}(🐍$(basename $VIRTUAL_ENV))%f"
+    elif command -v pyenv &> /dev/null; then
+      local pyenv_version=$(pyenv version-name 2>/dev/null)
+      if [[ -n "$pyenv_version" && "$pyenv_version" != "system" ]]; then
+        _prompt_cache_python_env=" %F{yellow}(🐍py:$pyenv_version)%f"
+      else
+        _prompt_cache_python_env=""
+      fi
+    else
+      _prompt_cache_python_env=""
     fi
   fi
+  echo "$_prompt_cache_python_env"
 }
 
-# Node.js環境を表示する関数
+# Node.js環境を表示する関数（キャッシュ対応）
 node_env_info() {
-  if [[ -f package.json ]] && command -v node &> /dev/null; then
-    echo " %F{green}(⬢ node:$(node --version | sed 's/v//'))%f"
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_node_env" ]]; then
+    if [[ -f package.json ]] && command -v node &> /dev/null; then
+      _prompt_cache_node_env=" %F{green}(⬢ node:$(node --version | sed 's/v//'))%f"
+    else
+      _prompt_cache_node_env=""
+    fi
   fi
+  echo "$_prompt_cache_node_env"
 }
 
-# Go環境を表示する関数
+# Go環境を表示する関数（キャッシュ対応）
 go_env_info() {
-  if [[ -f go.mod ]] && command -v go &> /dev/null; then
-    echo " %F{cyan}(🐹go:$(go version | awk '{print $3}' | sed 's/go//'))%f"
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_go_env" ]]; then
+    if [[ -f go.mod ]] && command -v go &> /dev/null; then
+      _prompt_cache_go_env=" %F{cyan}(🐹go:$(go version | awk '{print $3}' | sed 's/go//'))%f"
+    else
+      _prompt_cache_go_env=""
+    fi
   fi
+  echo "$_prompt_cache_go_env"
 }
 
-# AWS環境を表示する関数
+# AWS環境を表示する関数（キャッシュ対応）
 aws_env_info() {
-  if [[ -n "$AWS_PROFILE" ]]; then
-    echo " %F{208}(☁️ aws:$AWS_PROFILE)%f"
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_aws_env" ]]; then
+    if [[ -n "$AWS_PROFILE" ]]; then
+      _prompt_cache_aws_env=" %F{208}(☁️ aws:$AWS_PROFILE)%f"
+    else
+      _prompt_cache_aws_env=""
+    fi
   fi
+  echo "$_prompt_cache_aws_env"
 }
 
-# Terraform環境を表示する関数
+# Terraform環境を表示する関数（キャッシュ対応）
 terraform_env_info() {
-  if [[ -f *.tf ]] && command -v terraform &> /dev/null; then
-    local workspace=$(terraform workspace show 2>/dev/null)
-    if [[ -n "$workspace" && "$workspace" != "default" ]]; then
-      echo " %F{magenta}(💠tf:$workspace)%f"
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_terraform_env" ]]; then
+    if [[ -f *.tf(#qN) ]] && command -v terraform &> /dev/null; then
+      local workspace=$(terraform workspace show 2>/dev/null)
+      if [[ -n "$workspace" && "$workspace" != "default" ]]; then
+        _prompt_cache_terraform_env=" %F{magenta}(💠tf:$workspace)%f"
+      else
+        _prompt_cache_terraform_env=""
+      fi
+    else
+      _prompt_cache_terraform_env=""
     fi
   fi
+  echo "$_prompt_cache_terraform_env"
 }
 
-# Kubernetes環境を表示する関数
+# Kubernetes環境を表示する関数（キャッシュ対応）
 k8s_env_info() {
-  if command -v kubectl &> /dev/null; then
-    local context=$(kubectl config current-context 2>/dev/null)
-    if [[ -n "$context" ]]; then
-      echo " %F{cyan}(⎈ k8s:$(echo $context | cut -d'/' -f1))%f"
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_k8s_env" ]]; then
+    if command -v kubectl &> /dev/null; then
+      local context=$(kubectl config current-context 2>/dev/null)
+      if [[ -n "$context" ]]; then
+        _prompt_cache_k8s_env=" %F{cyan}(⎈ k8s:$(echo $context | cut -d'/' -f1))%f"
+      else
+        _prompt_cache_k8s_env=""
+      fi
+    else
+      _prompt_cache_k8s_env=""
     fi
   fi
+  echo "$_prompt_cache_k8s_env"
 }
 
-# Docker環境を表示する関数
+# Docker環境を表示する関数（キャッシュ対応）
 docker_env_info() {
-  if [[ -n "$DOCKER_CONTEXT" && "$DOCKER_CONTEXT" != "default" ]]; then
-    echo " %F{blue}(🐳docker:$DOCKER_CONTEXT)%f"
+  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_docker_env" ]]; then
+    if [[ -n "$DOCKER_CONTEXT" && "$DOCKER_CONTEXT" != "default" ]]; then
+      _prompt_cache_docker_env=" %F{blue}(🐳docker:$DOCKER_CONTEXT)%f"
+    else
+      _prompt_cache_docker_env=""
+    fi
   fi
+  echo "$_prompt_cache_docker_env"
 }
 
 # 実行時間を測定する関数
@@ -121,6 +220,13 @@ preexec() {
 }
 
 precmd() {
+  # キャッシュの更新処理
+  if ! _prompt_cache_valid; then
+    _prompt_cache_dir="$PWD"
+    _prompt_cache_timestamp=$(date +%s)
+  fi
+  
+  # 実行時間の表示処理
   if [[ -n $timer ]]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
       now=$(python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || date +%s)

@@ -77,6 +77,184 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   alias paste='pbpaste'
 fi
 
+# システム診断機能
+dotfiles-diag() {
+  echo "🔍 Dotfiles環境診断"
+  echo "===================="
+  
+  # シェル環境
+  echo -n "Zsh: "
+  if [[ -n "$ZSH_VERSION" ]]; then
+    echo "✅ $ZSH_VERSION"
+  else
+    echo "❌ Zsh が実行されていません"
+  fi
+  
+  # パッケージマネージャー
+  echo -n "Homebrew: "
+  if command -v brew &> /dev/null; then
+    echo "✅ $(brew --version | head -n1)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  # バージョン管理
+  echo -n "pyenv: "
+  if command -v pyenv &> /dev/null; then
+    echo "✅ $(pyenv --version)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "rbenv: "
+  if command -v rbenv &> /dev/null; then
+    echo "✅ $(rbenv --version)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "nodenv: "
+  if command -v nodenv &> /dev/null; then
+    echo "✅ $(nodenv --version)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  # 開発ツール
+  echo -n "Git: "
+  if command -v git &> /dev/null; then
+    echo "✅ $(git --version)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "ghq: "
+  if command -v ghq &> /dev/null; then
+    echo "✅ $(ghq --version)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "fzf: "
+  if command -v fzf &> /dev/null; then
+    echo "✅ $(fzf --version)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "tmux: "
+  if command -v tmux &> /dev/null; then
+    echo "✅ $(tmux -V)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  # モダンなCLIツール
+  echo -n "eza (ls alternative): "
+  if command -v eza &> /dev/null; then
+    echo "✅ $(eza --version | head -n1)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "bat (cat alternative): "
+  if command -v bat &> /dev/null; then
+    echo "✅ $(bat --version | head -n1)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "ripgrep (grep alternative): "
+  if command -v rg &> /dev/null; then
+    echo "✅ $(rg --version | head -n1)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "fd (find alternative): "
+  if command -v fd &> /dev/null; then
+    echo "✅ $(fd --version)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  # クラウドツール
+  echo -n "AWS CLI: "
+  if command -v aws &> /dev/null; then
+    echo "✅ $(aws --version 2>&1 | head -n1)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "Terraform: "
+  if command -v terraform &> /dev/null; then
+    echo "✅ $(terraform version | head -n1)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "kubectl: "
+  if command -v kubectl &> /dev/null; then
+    echo "✅ $(kubectl version --client --short 2>/dev/null || echo "Client installed")"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "Docker: "
+  if command -v docker &> /dev/null; then
+    echo "✅ $(docker --version)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  echo -n "GitHub CLI: "
+  if command -v gh &> /dev/null; then
+    echo "✅ $(gh --version | head -n1)"
+  else
+    echo "❌ インストールされていません"
+  fi
+  
+  # 設定ファイル確認
+  echo ""
+  echo "📁 設定ファイル状況"
+  echo "=================="
+  
+  local dotfiles_dir
+  if [[ -L ~/.zshrc ]]; then
+    dotfiles_dir="$(dirname "$(readlink ~/.zshrc)")"
+    echo "✅ dotfilesは $dotfiles_dir にリンクされています"
+  else
+    echo "❌ .zshrcがシンボリックリンクではありません"
+  fi
+  
+  echo -n "Git設定: "
+  if [[ -f ~/.gitconfig ]]; then
+    echo "✅ ~/.gitconfig が存在します"
+  else
+    echo "❌ ~/.gitconfig が見つかりません"
+  fi
+  
+  echo -n "SSH設定: "
+  if [[ -f ~/.ssh/config ]]; then
+    echo "✅ ~/.ssh/config が存在します"
+  else
+    echo "❌ ~/.ssh/config が見つかりません"
+  fi
+  
+  echo -n "tmux設定: "
+  if [[ -f ~/.tmux.conf ]]; then
+    echo "✅ ~/.tmux.conf が存在します"
+  else
+    echo "❌ ~/.tmux.conf が見つかりません"
+  fi
+  
+  echo ""
+  echo "⚡ パフォーマンス情報"
+  echo "=================="
+  echo "プロンプトキャッシュ: $_prompt_cache_ttl 秒"
+  echo "ツール遅延読み込み: $([ $_tools_init_done -eq 1 ] && echo "初期化済み" || echo "未初期化")"
+}
+
 # fzfの設定と関数
 if command -v fzf &> /dev/null; then
   # fzfのデフォルト設定

@@ -35,6 +35,38 @@ else
     alias la='ls -la'
 fi
 
+# 補完設定（初回のみ実行）
+_setup_ls_completions() {
+    # 一度だけ実行
+    typeset -g _ls_completions_setup
+    [[ -n "$_ls_completions_setup" ]] && return
+    _ls_completions_setup=1
+    
+    if command -v eza &> /dev/null; then
+        # ezaの補完関数を使用してエイリアスに適用
+        if (( ${+_comps[eza]} )); then
+            compdef _eza ls
+            compdef _eza ll
+            compdef _eza la
+            compdef _eza tree
+            compdef _eza lt
+        fi
+    else
+        # 通常のlsの補完を使用
+        if (( ${+_comps[ls]} )); then
+            compdef _ls ll
+            compdef _ls la
+        fi
+    fi
+    
+    # フックから自分自身を削除
+    add-zsh-hook -d precmd _setup_ls_completions
+}
+
+# 補完設定をprecmdフックに追加（初回のみ実行）
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _setup_ls_completions
+
 # cat代替（batがある場合）
 if command -v bat &> /dev/null; then
     alias cat='bat'
@@ -95,11 +127,20 @@ if command -v vim &> /dev/null; then
     alias vimplug='vim +PlugInstall +qall'
 fi
 
-# SSH関連
-if [ -f ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh ]; then
-    alias ssh-utils='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh'
-    alias ssh-list='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh list-hosts'
-    alias ssh-test='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh test-connection'
-    alias ssh-keygen-ed25519='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh generate-key ed25519'
-    alias ssh-security='bash ~/src/github.com/ryosukesuto/dotfiles/ssh/ssh-utils.sh check-security'
+# SSH関連 - DOTFILES_DIRの動的取得
+if [[ -z "$DOTFILES_DIR" ]]; then
+    # Get the directory where dotfiles are located
+    if [[ -L ~/.zshrc ]]; then
+        DOTFILES_DIR="$(dirname "$(readlink ~/.zshrc)")"
+    else
+        DOTFILES_DIR="${HOME}/src/github.com/ryosukesuto/dotfiles"
+    fi
+fi
+
+if [[ -f "${DOTFILES_DIR}/ssh/ssh-utils.sh" ]]; then
+    alias ssh-utils="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh'"
+    alias ssh-list="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh' list-hosts"
+    alias ssh-test="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh' test-connection"
+    alias ssh-keygen-ed25519="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh' generate-key ed25519"
+    alias ssh-security="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh' check-security"
 fi
