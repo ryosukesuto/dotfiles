@@ -9,6 +9,8 @@
 ├── aws/                  # AWS CLI設定（テンプレート）
 │   ├── config.template  # AWS設定テンプレート（SSO対応）
 │   └── credentials.template  # AWS認証情報テンプレート
+├── claude/              # Claude Desktop設定
+│   └── CLAUDE.md       # 個人開発環境・プロジェクト情報
 ├── config/              # 各種アプリケーション設定
 │   └── gh/              # GitHub CLI設定
 │       ├── config.yml
@@ -75,6 +77,7 @@ make clean         # バックアップファイルを削除
 
 - **[ONBOARDING.md](ONBOARDING.md)** - 便利なツールやエイリアスの使い方ガイド
 - **[CLAUDE.md](CLAUDE.md)** - Claude Code用の技術ガイド
+- **[claude/CLAUDE.md](claude/CLAUDE.md)** - Claude Desktop用の個人設定（~/.claude/CLAUDE.md にリンク）
 
 ## 主な機能・改善点
 
@@ -94,6 +97,7 @@ make clean         # バックアップファイルを削除
 - **SSH設定強化**: 接続の高速化・再利用・セキュリティ強化
 - **SSH管理ツール**: 鍵生成・接続テスト・セキュリティチェック
 - **AWS SSM統合**: 踏み台サーバーへの簡単接続（`bastion`コマンド）
+- **Claude Desktop統合**: 個人開発環境情報を ~/.claude/CLAUDE.md で管理
 - **fzf統合**: 履歴検索・ファイル検索・ディレクトリ移動
 - **モダンコマンド**: eza (ls)、bat (cat)、rg (grep)、fd (find)
 - **Git強化**: 豊富なエイリアス・色設定・便利な設定

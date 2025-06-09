@@ -124,6 +124,18 @@ create_symlink() {
     local src="$1"
     local dest="$2"
     
+    # ソースファイルが存在するかチェック
+    if [ ! -e "$src" ]; then
+        error "ソースファイルが存在しません: $src"
+        return 1
+    fi
+    
+    # バックアップファイルは対象外
+    if [[ "$src" == *.backup.* ]]; then
+        warn "バックアップファイルはスキップ: $src"
+        return 0
+    fi
+    
     # 既存のファイルやリンクがある場合の処理
     if [ -e "$dest" ] || [ -L "$dest" ]; then
         if [ "$BACKUP" = true ]; then
@@ -178,6 +190,13 @@ if [ ! -d "$HOME/.ssh/sockets" ]; then
     info "SSH socket ディレクトリを作成: ~/.ssh/sockets"
 fi
 
+# Claude Desktop設定
+if [ ! -d "$HOME/.claude" ]; then
+    mkdir -p "$HOME/.claude"
+    info "Claude ディレクトリを作成: ~/.claude"
+fi
+create_symlink "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+
 # AWS設定は手動でテンプレートからコピー
 # create_symlink "$DOTFILES_DIR/aws/config" "$HOME/.aws/config"
 
@@ -225,6 +244,17 @@ fi
 
 # 補完用ディレクトリの作成
 mkdir -p "$HOME/.zsh/cache"
+
+# バックアップファイルの削除案内
+backup_files=$(/usr/bin/find "$HOME" -maxdepth 3 -name "*backup*" -type l 2>/dev/null | head -10)
+if [ -n "$backup_files" ]; then
+    echo ""
+    warn "バックアップシンボリックリンクが見つかりました:"
+    echo "$backup_files"
+    echo ""
+    echo "不要な場合は以下のコマンドで削除できます:"
+    echo "  /usr/bin/find \$HOME -maxdepth 3 -name '*backup*' -type l -delete 2>/dev/null"
+fi
 
 info "推奨ツールのインストール案内:"
 echo "  brew install fzf eza bat ripgrep fd-find"
