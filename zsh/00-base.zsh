@@ -1,4 +1,4 @@
-# 基本設定
+c# 基本設定
 export CLICOLOR=1
 
 # Emacsキーバインド

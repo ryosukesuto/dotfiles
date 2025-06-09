@@ -77,6 +77,59 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   alias paste='pbpaste'
 fi
 
+# AWS SSM 踏み台サーバー接続
+aws-bastion() {
+  local profile="${1:-prod}"
+  local instance_id="${2:-i-0e64e6cac72e4d659}"
+  local region="${3:-ap-northeast-1}"
+  
+  echo "🔐 AWS SSO ログイン中..."
+  aws sso login --profile "$profile"
+  
+  echo "🚀 踏み台サーバーへのSSMセッションを開始中..."
+  aws ssm start-session --target "$instance_id" --profile "$profile" --region "$region"
+}
+
+# AWS SSM 踏み台サーバー選択接続
+aws-bastion-select() {
+  local profile="${1:-prod}"
+  local region="${2:-ap-northeast-1}"
+  
+  echo "🔐 AWS SSO ログイン中..."
+  aws sso login --profile "$profile"
+  
+  echo "🔍 利用可能な踏み台サーバーを取得中..."
+  local instances=$(aws ec2 describe-instances \
+    --profile "$profile" \
+    --region "$region" \
+    --filters "Name=instance-state-name,Values=running" \
+    --query "Reservations[*].Instances[*].[InstanceId,Tags[?Key=='Name'].Value | [0]]" \
+    --output text | grep -i bastion | sort -k2)
+  
+  if [[ -z "$instances" ]]; then
+    echo "⚠️  踏み台サーバーが見つかりません。全インスタンスを表示します..."
+    instances=$(aws ec2 describe-instances \
+      --profile "$profile" \
+      --region "$region" \
+      --filters "Name=instance-state-name,Values=running" \
+      --query "Reservations[*].Instances[*].[InstanceId,Tags[?Key=='Name'].Value | [0]]" \
+      --output text | sort -k2)
+  fi
+  
+  if [[ -z "$instances" ]]; then
+    echo "❌ 実行中のインスタンスが見つかりません"
+    return 1
+  fi
+  
+  local selected=$(echo "$instances" | fzf --prompt="踏み台サーバーを選択: " --height=40% --reverse)
+  
+  if [[ -n "$selected" ]]; then
+    local instance_id=$(echo "$selected" | awk '{print $1}')
+    echo "🚀 踏み台サーバーへのSSMセッションを開始中: $instance_id"
+    aws ssm start-session --target "$instance_id" --profile "$profile" --region "$region"
+  fi
+}
+
 # システム診断機能
 dotfiles-diag() {
   echo "🔍 Dotfiles環境診断"

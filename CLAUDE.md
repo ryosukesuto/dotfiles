@@ -29,6 +29,7 @@ This setup uses the following tools that may need configuration:
 - **Development Tools**: Go, Terraform, DBT (data build tool)
 - **Repository Management**: ghq (organizes Git repos under ~/src)
 - **Package Manager**: Homebrew (macOS)
+- **Cloud Access**: AWS SSM Session Manager for bastion server connections
 
 ## Common Tasks
 
@@ -45,3 +46,4 @@ When working with this dotfiles repository:
 - The user's development setup is focused on cloud development (GCP), data engineering (DBT), and infrastructure (Terraform)
 - Git repositories are organized under `~/src` using ghq
 - The peco-src function in .zshrc provides quick navigation between projects
+- AWS SSM functions (`aws-bastion`, `aws-bastion-select`) simplify access to bastion servers for RDS connections

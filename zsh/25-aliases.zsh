@@ -119,6 +119,15 @@ if command -v tmux &> /dev/null; then
     alias tk='tmux kill-session'
 fi
 
+# AWS SSM便利エイリアス
+if command -v aws &> /dev/null; then
+    alias bastion='aws-bastion'
+    alias bastion-select='aws-bastion-select'
+    alias bastion-prod='aws-bastion prod'
+    alias bastion-dev='aws-bastion dev'
+    alias bastion-staging='aws-bastion staging'
+fi
+
 # Vim
 if command -v vim &> /dev/null; then
     alias v='vim'
