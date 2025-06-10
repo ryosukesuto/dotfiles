@@ -12,6 +12,9 @@ alias gpl='git pull'
 alias gco='git checkout'
 alias gb='git branch'
 
+# リポジトリの定期的な更新
+alias update-repo='git fetch origin && git pull origin master && echo "✅ リポジトリが更新されました！"'
+
 # ディレクトリ移動
 alias ..='cd ..'
 alias ...='cd ../..'
