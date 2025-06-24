@@ -81,9 +81,10 @@ _init_terraform_completion() {
 
 # terraform コマンドが初回実行される時に補完を初期化
 terraform() {
-  unfunction terraform
   _init_terraform_completion
-  terraform "$@"
+  unfunction terraform
+  unfunction _init_terraform_completion 2>/dev/null  # 補完初期化関数も削除
+  command terraform "$@"
 }
 
 # GitHub CLI補完（遅延読み込み）
@@ -101,6 +102,7 @@ gh() {
   # 関数を削除する前に補完を初期化
   _init_gh_completion
   unfunction gh
+  unfunction _init_gh_completion 2>/dev/null  # 補完初期化関数も削除
   command gh "$@"
 }
 
