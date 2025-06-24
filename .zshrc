@@ -21,3 +21,4 @@ fi
 
 # Source environment variables
 [ -r ~/.env.local ] && source ~/.env.local
+[ -r "$HOME/.local/bin/env" ] && source "$HOME/.local/bin/env"

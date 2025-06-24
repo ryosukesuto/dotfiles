@@ -1,4 +1,65 @@
-# Git関連エイリアス
+#!/usr/bin/env zsh
+# ============================================================================
+# 25-aliases.zsh - Zsh エイリアス定義
+# ============================================================================
+# このファイルは各種コマンドのエイリアスを定義します。
+# モダンなCLIツールが利用可能な場合は、それらを優先的に使用します。
+
+# ============================================================================
+# 基本的なコマンドの安全性向上
+# ============================================================================
+# ファイル操作時の誤操作を防ぐため、確認プロンプトを表示
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+# ============================================================================
+# ディレクトリ移動
+# ============================================================================
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
+# ============================================================================
+# ls コマンドの拡張（ezaまたは標準ls）
+# ============================================================================
+if command -v eza &> /dev/null; then
+    # ezaが利用可能な場合
+    alias ls='eza --icons'
+    alias ll='eza -l --icons'
+    alias la='eza -la --icons'
+    alias tree='eza --tree --icons'
+    alias lt='eza --tree --level=2 --icons'
+else
+    # 標準のlsを使用
+    alias ll='ls -l'
+    alias la='ls -la'
+fi
+
+# ============================================================================
+# モダンなCLIツールへの置き換え
+# ============================================================================
+# bat（catの代替）
+if command -v bat &> /dev/null; then
+    alias cat='bat'
+    alias less='bat'
+    export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+fi
+
+# ripgrep（grepの代替）
+if command -v rg &> /dev/null; then
+    alias grep='rg'
+fi
+
+# fd（findの代替）
+if command -v fd &> /dev/null; then
+    alias find='fd'
+fi
+
+# ============================================================================
+# Git エイリアス
+# ============================================================================
 alias g='git'
 alias gs='git status'
 alias ga='git add'
@@ -15,89 +76,9 @@ alias gb='git branch'
 # リポジトリの定期的な更新
 alias update-repo='git fetch origin && git pull origin master && echo "✅ リポジトリが更新されました！"'
 
-# ディレクトリ移動
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-alias .....='cd ../../../..'
-
-# 安全なコマンド
-alias rm='rm -i'
-alias cp='cp -i'
-alias mv='mv -i'
-
-# ls関連（モダンなツールがある場合は置き換え）
-if command -v eza &> /dev/null; then
-    alias ls='eza --icons'
-    alias ll='eza -l --icons'
-    alias la='eza -la --icons'
-    alias tree='eza --tree --icons'
-    alias lt='eza --tree --level=2 --icons'
-else
-    alias ll='ls -l'
-    alias la='ls -la'
-fi
-
-# 補完設定（初回のみ実行）
-_setup_ls_completions() {
-    # 一度だけ実行
-    typeset -g _ls_completions_setup
-    [[ -n "$_ls_completions_setup" ]] && return
-    _ls_completions_setup=1
-    
-    if command -v eza &> /dev/null; then
-        # ezaの補完関数を使用してエイリアスに適用
-        if (( ${+_comps[eza]} )); then
-            compdef _eza ls
-            compdef _eza ll
-            compdef _eza la
-            compdef _eza tree
-            compdef _eza lt
-        fi
-    else
-        # 通常のlsの補完を使用
-        if (( ${+_comps[ls]} )); then
-            compdef _ls ll
-            compdef _ls la
-        fi
-    fi
-    
-    # フックから自分自身を削除
-    add-zsh-hook -d precmd _setup_ls_completions
-}
-
-# 補完設定をprecmdフックに追加（初回のみ実行）
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd _setup_ls_completions
-
-# cat代替（batがある場合）
-if command -v bat &> /dev/null; then
-    alias cat='bat'
-    alias less='bat'
-    export MANPAGER="sh -c 'col -bx | bat -l man -p'"
-fi
-
-# grep代替（ripgrepがある場合）
-if command -v rg &> /dev/null; then
-    alias grep='rg'
-fi
-
-# find代替（fdがある場合）
-if command -v fd &> /dev/null; then
-    alias find='fd'
-fi
-
-# その他便利なエイリアス
-alias h='history'
-alias j='jobs -l'
-alias reload='source ~/.zshrc'
-alias path='echo -e ${PATH//:/\\n}'
-
-# ネットワーク
-alias ping='ping -c 5'
-alias ports='netstat -tuln'
-
-# Docker（あれば）
+# ============================================================================
+# コンテナ関連（Docker/Kubernetes）
+# ============================================================================
 if command -v docker &> /dev/null; then
     alias d='docker'
     alias dc='docker-compose'
@@ -105,15 +86,9 @@ if command -v docker &> /dev/null; then
     alias dimg='docker images'
 fi
 
-# Kubernetes（あれば）
-if command -v kubectl &> /dev/null; then
-    alias k='kubectl'
-    alias kgp='kubectl get pods'
-    alias kgs='kubectl get services'
-    alias kgd='kubectl get deployments'
-fi
-
-# tmux（あれば）
+# ============================================================================
+# セッション管理（tmux）
+# ============================================================================
 if command -v tmux &> /dev/null; then
     alias t='tmux'
     alias ta='tmux attach'
@@ -122,7 +97,9 @@ if command -v tmux &> /dev/null; then
     alias tk='tmux kill-session'
 fi
 
-# AWS SSM便利エイリアス
+# ============================================================================
+# AWS関連
+# ============================================================================
 if command -v aws &> /dev/null; then
     alias bastion='aws-bastion'
     alias bastion-select='aws-bastion-select'
@@ -131,7 +108,9 @@ if command -v aws &> /dev/null; then
     alias bastion-staging='aws-bastion staging'
 fi
 
-# Vim
+# ============================================================================
+# エディタ関連
+# ============================================================================
 if command -v vim &> /dev/null; then
     alias v='vim'
     alias vi='vim'
@@ -139,20 +118,89 @@ if command -v vim &> /dev/null; then
     alias vimplug='vim +PlugInstall +qall'
 fi
 
-# SSH関連 - DOTFILES_DIRの動的取得
-if [[ -z "$DOTFILES_DIR" ]]; then
-    # Get the directory where dotfiles are located
-    if [[ -L ~/.zshrc ]]; then
-        DOTFILES_DIR="$(dirname "$(readlink ~/.zshrc)")"
-    else
-        DOTFILES_DIR="${HOME}/src/github.com/ryosukesuto/dotfiles"
-    fi
+# ============================================================================
+# システムユーティリティ
+# ============================================================================
+alias h='history'
+alias j='jobs -l'
+alias reload='source ~/.zshrc'
+alias path='echo -e ${PATH//:/\\n}'
+
+# ============================================================================
+# ネットワーク関連
+# ============================================================================
+alias ping='ping -c 5'
+alias ports='netstat -tuln'
+
+# ============================================================================
+# OS固有のエイリアス
+# ============================================================================
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS専用
+    alias copy='pbcopy'
+    alias paste='pbpaste'
 fi
 
-if [[ -f "${DOTFILES_DIR}/ssh/ssh-utils.sh" ]]; then
-    alias ssh-utils="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh'"
-    alias ssh-list="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh' list-hosts"
-    alias ssh-test="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh' test-connection"
-    alias ssh-keygen-ed25519="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh' generate-key ed25519"
-    alias ssh-security="bash '${DOTFILES_DIR}/ssh/ssh-utils.sh' check-security"
-fi
+# ============================================================================
+# 補完設定の初期化
+# ============================================================================
+# エイリアスに対する補完を設定する関数
+_setup_alias_completions() {
+    # ezaの補完設定
+    if command -v eza &> /dev/null && (( ${+_comps[eza]} )); then
+        compdef _eza ls ll la tree lt
+    elif (( ${+_comps[ls]} )); then
+        # 標準lsの補完設定
+        compdef _ls ll la
+    fi
+    
+    # Gitエイリアスの補完設定
+    if (( ${+_comps[git]} )); then
+        compdef _git g
+        compdef _git-status gs
+        compdef _git-add ga
+        compdef _git-commit gc
+        compdef _git-diff gd gdc
+        compdef _git-log gl gla
+        compdef _git-push gp
+        compdef _git-pull gpl
+        compdef _git-checkout gco
+        compdef _git-branch gb
+    fi
+    
+    # Dockerエイリアスの補完設定
+    if command -v docker &> /dev/null && (( ${+_comps[docker]} )); then
+        compdef _docker d
+        compdef _docker-compose dc
+    fi
+    
+    # tmuxエイリアスの補完設定
+    if command -v tmux &> /dev/null && (( ${+_comps[tmux]} )); then
+        compdef _tmux t ta tl tn tk
+    fi
+    
+    # Vimエイリアスの補完設定
+    if command -v vim &> /dev/null && (( ${+_comps[vim]} )); then
+        compdef _vim v vi
+    fi
+}
+
+# 補完システムが初期化された後に補完設定を行う
+# add-zsh-hookを使用して、補完が利用可能になった時点で設定
+autoload -Uz add-zsh-hook
+() {
+    local setup_done=0
+    _try_setup_completions() {
+        # 既に設定済みの場合はスキップ
+        [[ $setup_done -eq 1 ]] && return
+        
+        # 補完システムが初期化されているか確認
+        if (( ${+_comps} )); then
+            _setup_alias_completions
+            setup_done=1
+            # フックを削除
+            add-zsh-hook -d precmd _try_setup_completions
+        fi
+    }
+    add-zsh-hook precmd _try_setup_completions
+}

@@ -56,10 +56,20 @@ autoload -Uz add-zsh-hook
 add-zsh-hook preexec _tool_preexec
 
 # 即座に必要なツール
-# direnv（ディレクトリ固有の環境変数）- 即座に初期化が必要
-if command -v direnv &> /dev/null; then
-  eval "$(direnv hook zsh)"
-fi
+# direnv（ディレクトリ固有の環境変数）- 遅延初期化
+_init_direnv() {
+  if command -v direnv &> /dev/null; then
+    eval "$(direnv hook zsh)"
+  fi
+}
+
+# 初回のcd時にdirenvを初期化
+chpwd_functions=(${chpwd_functions[@]} "_init_direnv_once")
+_init_direnv_once() {
+  _init_direnv
+  # 初期化後は関数を削除
+  chpwd_functions=(${chpwd_functions[@]:#_init_direnv_once})
+}
 
 # Terraform補完（遅延読み込み）
 _init_terraform_completion() {
@@ -88,9 +98,10 @@ _init_gh_completion() {
 
 # gh コマンドが初回実行される時に補完を初期化
 gh() {
-  unfunction gh
+  # 関数を削除する前に補完を初期化
   _init_gh_completion
-  gh "$@"
+  unfunction gh
+  command gh "$@"
 }
 
 # Docker補完（即座に読み込み - ファイルベースなので高速）

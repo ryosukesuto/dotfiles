@@ -10,8 +10,7 @@
 4. [便利な関数](#便利な関数)
 5. [キーバインド](#キーバインド)
 6. [プロンプト機能](#プロンプト機能)
-7. [SSH管理ツール](#ssh管理ツール)
-8. [開発ツール](#開発ツール)
+7. [開発ツール](#開発ツール)
 9. [トラブルシューティング](#トラブルシューティング)
 
 ---
@@ -120,18 +119,39 @@ gacp "commit message"   # add . && commit && push を一度に実行
 ### ディレクトリ操作
 ```bash
 mkcd dirname            # ディレクトリ作成と移動を同時実行
+up                      # 一つ上のディレクトリに移動してls
+cdgr                    # Gitリポジトリのルートに移動
+recent                  # 最近変更されたファイルを表示
+recent 20               # 最近変更された20ファイルを表示
 ```
 
-### ファイル展開
+### ファイル展開（遅延読み込み）
 ```bash
 extract file.zip        # 自動的に適切な展開コマンドを選択
 extract file.tar.gz     # .zip, .tar.gz, .rar, .7z など対応
+compress tar.gz mydir   # ディレクトリを圧縮
+compress zip myfile output.zip  # カスタム名で圧縮
 ```
 
 ### サイズ確認
 ```bash
 sizeof file             # ファイル/ディレクトリサイズを表示
-sizeof .                # dustがあれば使用、なければdu -sh
+sizeof .                # du -sh を使用
+```
+
+### システム診断（遅延読み込み）
+```bash
+dotfiles-diag           # 環境とツールの詳細診断
+env-info                # 基本的な環境情報の表示
+path_info               # PATH設定の詳細確認
+```
+
+### AWS SSM接続（遅延読み込み）
+```bash
+aws-bastion i-1234567   # 特定のインスタンスに接続
+aws-bastion-select      # インタラクティブにインスタンスを選択
+bastion                 # aws-bastionのエイリアス
+bastion-select          # aws-bastion-selectのエイリアス
 ```
 
 ### ネットワーク
@@ -218,79 +238,6 @@ username@hostname ~/current/directory (git-branch✓) (py:3.9.0) (node:18.0.0)
 - **Node.js環境**: `(node:バージョン)` (package.jsonがある場合)
 - **実行時間**: 5秒以上のコマンドは実行時間を表示
 
-### プロンプトの切り替え
-```bash
-prompt_minimal          # シンプルなプロンプトに変更
-prompt_full             # フル機能プロンプトに変更
-```
-
----
-
-## SSH管理ツール
-
-### SSH設定の特徴
-- **接続高速化**: ControlMaster で接続再利用
-- **セキュリティ強化**: 鍵認証のみ、パスワード認証無効
-- **便利な設定**: ホスト別設定、踏み台サーバー対応
-
-### SSH便利エイリアス
-```bash
-ssh-utils               # SSH管理ツールメニュー表示
-ssh-list               # 設定済みホスト一覧
-ssh-test hostname      # ホストへの接続テスト
-ssh-keygen-ed25519     # ED25519鍵の生成
-ssh-security           # セキュリティチェック
-```
-
-### SSH管理ツールの詳細機能
-```bash
-# ホスト一覧表示
-ssh-utils list-hosts
-
-# 接続テスト
-ssh-utils test-connection github.com
-ssh-utils test-connection production
-
-# SSH鍵生成（推奨: ED25519）
-ssh-utils generate-key ed25519 mykey
-ssh-utils generate-key rsa myoldkey
-
-# ホスト設定を追加
-ssh-utils add-host myserver server.example.com deploy ~/.ssh/id_ed25519
-
-# SSHキーをバックアップ
-ssh-utils backup-keys
-
-# セキュリティチェック
-ssh-utils check-security
-
-# 古い接続ソケットをクリーンアップ
-ssh-utils cleanup
-```
-
-### SSH設定例
-```bash
-# 既存のホストに接続
-ssh github.com          # Git操作
-ssh production          # 本番サーバー
-ssh staging             # ステージングサーバー
-
-# 踏み台サーバー経由の接続
-ssh internal-web        # 踏み台経由で内部サーバーへ
-
-# ポートフォワーディング
-ssh tunnel-db           # データベース接続用トンネル
-
-# SOCKS プロキシ
-ssh socks-proxy         # プロキシサーバー接続
-```
-
-### セキュリティのベストプラクティス
-- **ED25519鍵**: RSAより高速で安全な暗号化方式
-- **鍵のパスフレーズ**: 必ず設定する
-- **定期的な鍵ローテーション**: 古い鍵は無効化
-- **権限設定**: 秘密鍵は600、設定ファイルは644
-
 ---
 
 ## 開発ツール
@@ -301,14 +248,6 @@ d           # docker
 dc          # docker-compose
 dps         # docker ps
 dimg        # docker images
-```
-
-### Kubernetes
-```bash
-k           # kubectl
-kgp         # kubectl get pods
-kgs         # kubectl get services
-kgd         # kubectl get deployments
 ```
 
 ### tmux（ターミナルマルチプレクサ）
@@ -337,6 +276,16 @@ echo $DBT_AWS_ENV      # DBT環境設定
 ---
 
 ## トラブルシューティング
+
+### 遅延読み込みについて
+
+以下の機能は初回使用時にロードされます（パフォーマンス最適化のため）：
+- `extract` / `compress` - 圧縮ファイル操作
+- `aws-bastion` / `aws-bastion-select` - AWS SSM接続
+- `dotfiles-diag` - システム診断ツール
+- `terraform` / `gh` - 補完機能
+
+初回実行時は若干の遅延がありますが、2回目以降は高速に動作します。
 
 ### よくある問題と解決方法
 
@@ -379,6 +328,34 @@ chmod 600 ~/.zsh_history
 ### パフォーマンスの最適化
 
 #### 起動が遅い場合
+```bash
+# PATH情報を確認
+path_info
+
+# 環境診断を実行
+dotfiles-diag
+
+# 起動時間の測定（.zshrcに追加）
+# ファイルの最初に: zmodload zsh/zprof
+# ファイルの最後に: zprof
+```
+
+### 新しい最適化機能
+
+#### 補完システムの統合
+補完設定は`01-completion.zsh`に統合され、詳細な設定は遅延読み込みされます。
+
+#### PATH管理の最適化
+Zshネイティブのpath配列を使用し、重複が自動的に削除されます：
+```bash
+# PATHに追加（関数も利用可能）
+path_prepend ~/new/bin
+path_append ~/another/bin
+path_remove ~/old/bin
+```
+
+#### 関数の遅延読み込み
+大きな関数は`zsh/functions/`ディレクトリに分離され、必要時のみロードされます。
 ```bash
 # どの設定ファイルが重いか確認
 zsh -xvs 2>&1 | head -20

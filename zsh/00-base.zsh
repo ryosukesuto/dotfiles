@@ -1,71 +1,67 @@
-# 基本設定
+#!/usr/bin/env zsh
+# ============================================================================
+# 00-base.zsh - Zsh基本設定
+# ============================================================================
+# このファイルはZshの基本的な動作設定を行います。
+# 補完設定は01-completion.zshに移動しました。
+
+# ============================================================================
+# 基本的な環境設定
+# ============================================================================
+# カラー出力を有効化
 export CLICOLOR=1
 
-# Emacsキーバインド
+# ============================================================================
+# キーバインディング
+# ============================================================================
+# Emacsキーバインドを使用
 bindkey -e
 
+# ============================================================================
+# 基本的なシェルオプション
+# ============================================================================
 # ビープ音を無効化
 setopt no_beep
 
-# Homebrewの補完パスを先に設定
-if [[ -d /opt/homebrew/share/zsh/site-functions ]]; then
-  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
-fi
-
-# システムの補完ディレクトリも追加
-if [[ -d /usr/local/share/zsh/site-functions ]]; then
-  fpath=(/usr/local/share/zsh/site-functions $fpath)
-fi
-
-# 重複パスを削除
-typeset -U fpath
-
-# 補完設定（最適化版）
-autoload -Uz compinit
-# 24時間以内にcompdumpが更新されていない場合のみフルチェック
-for dump in ~/.zcompdump(N.mh+24); do
-  compinit
-  break
-done
-[[ $#dump -eq 0 ]] && compinit -C
-
-# 補完スタイル設定
-zstyle ':completion:*' menu select
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
-zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
-zstyle ':completion:*' use-cache on
-zstyle ':completion:*' cache-path ~/.zsh/cache
-
-# ファイル名・ディレクトリ名補完を有効化
-zstyle ':completion:*' completer _complete _ignored _files
-zstyle ':completion:*:*:*:*:*' menu yes select
-zstyle ':completion:*:matches' group 'yes'
-zstyle ':completion:*:options' description 'yes'
-zstyle ':completion:*:options' auto-description '%d'
-zstyle ':completion:*:corrections' format ' %F{green}-- %d (errors: %e) --%f'
-zstyle ':completion:*:descriptions' format ' %F{yellow}-- %d --%f'
-zstyle ':completion:*:messages' format ' %F{purple} -- %d --%f'
-zstyle ':completion:*:warnings' format ' %F{red}-- no matches found --%f'
-zstyle ':completion:*:default' list-prompt '%S%M matches%s'
-zstyle ':completion:*' format ' %F{yellow}-- %d --%f'
-zstyle ':completion:*' group-name ''
-zstyle ':completion:*' verbose yes
-
-# エイリアスの補完設定
-# setopt COMPLETE_ALIASES  # エイリアス自体を補完するため通常は無効
-
-# より便利なzshオプション
+# ディレクトリ操作の改善
 setopt auto_cd              # ディレクトリ名だけでcd
 setopt auto_pushd           # cdで自動的にpushd
 setopt pushd_ignore_dups    # pushdで重複を無視
+setopt pushd_silent         # pushdの出力を抑制
+
+# コマンドラインの改善
 setopt correct              # コマンドのスペルチェック
+setopt correct_all          # コマンドライン全体のスペルチェック
 setopt interactive_comments # コマンドラインでもコメント可能
+
+# グロブ機能の拡張
 setopt extended_glob        # 拡張グロブ機能
-setopt list_packed          # 補完候補をコンパクトに表示
-setopt auto_menu            # TAB で順に補完候補を切り替える
-setopt auto_param_slash     # ディレクトリ名の補完で末尾の / を自動的に付加
-setopt mark_dirs            # ファイル名の展開でディレクトリにマッチした場合末尾に / を付加
-setopt list_types           # 補完候補一覧でファイルの種別を識別マーク表示
-setopt always_to_end        # 補完後、カーソルを末尾へ移動
-setopt complete_in_word     # 語の途中でもカーソル位置で補完
-setopt glob_complete        # globを展開しないで候補の一覧から補完
+setopt null_glob           # マッチしないグロブを空文字列に展開
+setopt numeric_glob_sort   # 数値順でソート
+
+# ジョブ制御
+setopt long_list_jobs      # ジョブリストをロング形式で表示
+setopt notify              # バックグラウンドジョブの状態変化を即座に報告
+
+# その他の便利な設定
+setopt print_eight_bit     # 8ビット目を通すようになり、日本語のファイル名などを見れるようになる
+setopt no_flow_control     # Ctrl+S/Ctrl+Qによるフロー制御を無効化
+setopt ignore_eof          # Ctrl+Dでログアウトしない
+setopt no_hup              # ログアウト時にバックグラウンドジョブをkillしない
+setopt no_checkjobs        # exitする時にジョブを確認しない
+
+# ============================================================================
+# ディレクトリスタック設定
+# ============================================================================
+DIRSTACKSIZE=20             # ディレクトリスタックの最大サイズ
+setopt auto_pushd          # cd時に自動でpushd
+setopt pushd_ignore_dups   # 重複するディレクトリは記録しない
+setopt pushd_to_home       # 引数なしのpushdは$HOMEに移動
+
+# ============================================================================
+# コマンド履歴の共有設定
+# ============================================================================
+# 履歴ファイルの設定はhistory.zshで行うが、
+# 基本的な動作設定はここで行う
+setopt share_history       # 履歴をプロセス間で共有
+setopt append_history      # 履歴を追記（上書きしない）
