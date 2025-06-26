@@ -71,40 +71,16 @@ _init_direnv_once() {
   chpwd_functions=(${chpwd_functions[@]:#_init_direnv_once})
 }
 
-# Terraform補完（遅延読み込み）
-_init_terraform_completion() {
-  if command -v terraform &> /dev/null; then
-    autoload -U +X bashcompinit && bashcompinit
-    complete -o nospace -C $(which terraform) terraform
-  fi
-}
+# Terraform補完（シンプルな設定）
+if command -v terraform &> /dev/null; then
+  autoload -U +X bashcompinit && bashcompinit
+  complete -o nospace -C $(which terraform) terraform
+fi
 
-# terraform コマンドが初回実行される時に補完を初期化
-terraform() {
-  _init_terraform_completion
-  unfunction terraform
-  unfunction _init_terraform_completion 2>/dev/null  # 補完初期化関数も削除
-  command terraform "$@"
-}
-
-# GitHub CLI補完（遅延読み込み）
-_init_gh_completion() {
-  if command -v command &> /dev/null && command gh &> /dev/null; then
-    # 5秒でタイムアウト
-    if timeout 5s command gh completion -s zsh &> /dev/null; then
-      eval "$(command gh completion -s zsh)"
-    fi
-  fi
-}
-
-# gh コマンドが初回実行される時に補完を初期化
-gh() {
-  # 関数を削除する前に補完を初期化
-  _init_gh_completion
-  unfunction gh
-  unfunction _init_gh_completion 2>/dev/null  # 補完初期化関数も削除
-  command gh "$@"
-}
+# GitHub CLI補完（シンプルな設定）
+if command -v gh &> /dev/null; then
+  eval "$(gh completion -s zsh 2>/dev/null)"
+fi
 
 # Docker補完（即座に読み込み - ファイルベースなので高速）
 if [[ -f /Applications/Docker.app/Contents/Resources/etc/docker.zsh-completion ]]; then
