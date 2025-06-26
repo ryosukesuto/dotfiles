@@ -89,10 +89,10 @@ terraform() {
 
 # GitHub CLI補完（遅延読み込み）
 _init_gh_completion() {
-  if command -v gh &> /dev/null; then
+  if command -v command &> /dev/null && command gh &> /dev/null; then
     # 5秒でタイムアウト
-    if timeout 5s gh completion -s zsh &> /dev/null; then
-      eval "$(gh completion -s zsh)"
+    if timeout 5s command gh completion -s zsh &> /dev/null; then
+      eval "$(command gh completion -s zsh)"
     fi
   fi
 }
