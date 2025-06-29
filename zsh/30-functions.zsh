@@ -266,6 +266,21 @@ obs-search() {
 alias obs-s='obs-search search'
 alias obs-weekly='obs-search summary weekly'
 alias obs-todo='obs-search todo'
+alias obs-gcal='cd ~/src/github.com/ryosukesuto/obsidian-notes && python scripts/google_calendar_to_obsidian.py'
+
+# インタラクティブ週次レビュー
+obs-weekly-review() {
+    local vault_path="$HOME/src/github.com/ryosukesuto/obsidian-notes"
+    if [[ -f "$vault_path/scripts/interactive-weekly-review.sh" ]]; then
+        "$vault_path/scripts/interactive-weekly-review.sh"
+    else
+        echo "interactive-weekly-review.sh が見つかりません"
+        return 1
+    fi
+}
+
+# エイリアス
+alias obs-wr='obs-weekly-review'
 
 # 10秒アクション追加（10 second action）
 tsa() {
