@@ -156,12 +156,23 @@ _lazy_init_completion() {
         _init_detailed_completion_styles
         _zsh_completion_initialized=1
     fi
+    # オリジナルの補完関数を呼び出す
+    return 0
 }
 
-# 補完前に実行されるフック
-autoload -Uz add-zsh-hook
-add-zsh-hook -D compctl _lazy_init_completion
-add-zsh-hook compctl _lazy_init_completion
+# compinitの後に補完ウィジェットをラップ
+zle -C _original_complete complete-word _main_complete
+zle -C complete-word complete-word _lazy_init_completion_wrapper
+
+_lazy_init_completion_wrapper() {
+    _lazy_init_completion
+    # 詳細設定を読み込んだら、元の補完関数を復元
+    if [[ $_zsh_completion_initialized -eq 1 ]]; then
+        zle -C complete-word complete-word _main_complete
+    fi
+    # 元の補完を実行
+    _main_complete
+}
 
 # ============================================================================
 # 補完オプション

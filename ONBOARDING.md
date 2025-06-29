@@ -11,6 +11,7 @@
 5. [キーバインド](#キーバインド)
 6. [プロンプト機能](#プロンプト機能)
 7. [開発ツール](#開発ツール)
+8. [Web検索機能](#web検索機能)
 9. [トラブルシューティング](#トラブルシューティング)
 
 ---
@@ -161,6 +162,33 @@ ping google.com         # 5回pingして終了
 ports                   # 開いているポートを表示
 ```
 
+### Web検索（Gemini CLI統合、遅延読み込み）
+
+⚠️ **初回実行時のみGemini CLIのセットアップが必要です**
+
+```bash
+# 基本検索
+gsearch React 19 新機能
+gs Next.js 14          # 短縮エイリアス
+
+# 技術検索（Stack Overflow、GitHub等に限定）
+gtech typescript generics
+gtech "Python async await"
+
+# ニュース検索（現在の年月を自動付与）
+gnews AI 最新動向
+gnews "Apple Vision Pro"
+
+# 検索履歴機能
+gsearch-with-history "Claude 3.5 使い方"  # 履歴に保存
+gsearch-history                           # 最近の検索履歴を表示
+
+# 使用例：最新の技術動向を調べる
+gsearch "TypeScript 5.0 新機能"           # 一般的な検索
+gtech "TypeScript 5.0 decorators"         # 技術記事に絞った検索
+gnews "TypeScript release"                 # 最新ニュースを検索
+```
+
 ### macOS専用
 ```bash
 copy                    # pbcopy (クリップボードにコピー)
@@ -240,6 +268,72 @@ username@hostname ~/current/directory (git-branch✓) (py:3.9.0) (node:18.0.0)
 
 ---
 
+## Web検索機能
+
+### Gemini CLIを使用したAI検索
+
+dotfilesには、Gemini CLIを活用した強力なWeb検索機能が統合されています。
+
+#### 初期セットアップ
+
+初回使用時にGemini CLIの認証が必要です：
+
+```bash
+# いずれかの検索コマンドを初めて実行すると自動的にセットアップが開始されます
+gsearch "test"
+
+# または手動でセットアップ
+gemini auth login
+```
+
+#### 検索コマンド一覧
+
+| コマンド | 説明 | 使用例 |
+|---------|------|--------|
+| `gsearch` / `gs` | 一般的なWeb検索 | `gs "React Server Components"` |
+| `gtech` | 技術記事に特化した検索 | `gtech "Python asyncio best practices"` |
+| `gnews` | 最新ニュースの検索（日付自動付与） | `gnews "AI regulation"` |
+| `gsearch-with-history` | 検索結果を履歴に保存 | `gsearch-with-history "Kubernetes security"` |
+| `gsearch-history` | 検索履歴の表示 | `gsearch-history` |
+
+#### 高度な使用法
+
+```bash
+# 複数語の検索（引用符で囲む）
+gsearch "Next.js 14 App Router migration"
+
+# 技術的な問題解決
+gtech "Docker container exit code 137 memory"
+
+# 最新の業界動向
+gnews "OpenAI GPT-5 development"
+
+# 検索履歴から再検索
+gsearch-history  # 履歴を表示して番号で選択
+```
+
+#### 検索結果の特徴
+
+- **AI要約**: Geminiが検索結果を要約して提供
+- **関連リンク**: 参考になるURLも併せて表示
+- **コンテキスト理解**: 自然言語での質問に対応
+- **日本語対応**: 日本語での検索・回答に完全対応
+
+#### トラブルシューティング
+
+```bash
+# Gemini CLIが見つからない場合
+which gemini || echo "Gemini CLI not installed"
+
+# 認証状態の確認
+gemini auth status
+
+# 再認証が必要な場合
+gemini auth logout && gemini auth login
+```
+
+---
+
 ## 開発ツール
 
 ### Docker
@@ -284,6 +378,7 @@ echo $DBT_AWS_ENV      # DBT環境設定
 - `aws-bastion` / `aws-bastion-select` - AWS SSM接続
 - `dotfiles-diag` - システム診断ツール
 - `terraform` / `gh` - 補完機能
+- `gsearch` / `gtech` / `gnews` - Gemini検索機能
 
 初回実行時は若干の遅延がありますが、2回目以降は高速に動作します。
 
@@ -323,6 +418,28 @@ ls -la ~/.zsh_history
 
 # 権限が正しくない場合は修正
 chmod 600 ~/.zsh_history
+```
+
+#### Gemini検索が動作しない場合
+```bash
+# Gemini CLIがインストールされているか確認
+which gemini
+
+# インストールされていない場合（Homebrewを使用）
+brew tap google/gemini
+brew install gemini
+
+# 認証状態を確認
+gemini auth status
+
+# 認証が必要な場合
+gemini auth login
+
+# 検索履歴ファイルの権限を確認
+ls -la ~/.gemini_search_history.txt
+
+# エラーが続く場合は詳細ログを確認
+gsearch "test" 2>&1
 ```
 
 ### パフォーマンスの最適化

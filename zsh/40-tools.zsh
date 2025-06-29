@@ -53,6 +53,8 @@ _tool_preexec() {
 
 # preexecフックのリストに追加
 autoload -Uz add-zsh-hook
+# 既存のフックを削除してから追加（重複防止）
+add-zsh-hook -d preexec _tool_preexec 2>/dev/null
 add-zsh-hook preexec _tool_preexec
 
 # 即座に必要なツール

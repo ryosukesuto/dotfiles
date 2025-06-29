@@ -202,5 +202,7 @@ autoload -Uz add-zsh-hook
             add-zsh-hook -d precmd _try_setup_completions
         fi
     }
+    # 既存のフックを削除してから追加（重複防止）
+    add-zsh-hook -d precmd _try_setup_completions 2>/dev/null
     add-zsh-hook precmd _try_setup_completions
 }
