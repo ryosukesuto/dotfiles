@@ -268,48 +268,22 @@ alias obs-weekly='obs-search summary weekly'
 alias obs-todo='obs-search todo'
 alias obs-gcal='cd ~/src/github.com/ryosukesuto/obsidian-notes && python scripts/google_calendar_to_obsidian.py'
 
-# インタラクティブ週次レビュー
+# 週次レビュー作成（Claude Code経由）
 obs-weekly-review() {
-    local vault_path="$HOME/src/github.com/ryosukesuto/obsidian-notes"
-    if [[ -f "$vault_path/scripts/interactive-weekly-review.sh" ]]; then
-        "$vault_path/scripts/interactive-weekly-review.sh"
-    else
-        echo "interactive-weekly-review.sh が見つかりません"
-        return 1
-    fi
+    echo "週次レビューはClaude Codeとの対話で作成してください。"
+    echo "使い方: Claude Codeで「週次レビューをしたい」と伝える"
+    echo "保存先: 04_Docs/Reviews/Weekly/"
 }
 
 # エイリアス
 alias obs-wr='obs-weekly-review'
 
-# 10秒アクション追加（10 second action）
-tsa() {
-    if [[ -z "$1" ]]; then
-        echo "使用方法: tsa <10秒アクション>"
-        echo "例: tsa 'VSCodeを開く'"
-        return 1
-    fi
-    
-    # 10秒アクション専用の絵文字を付けて記録
-    th "⚡ 10秒アクション: $*"
-}
-
-# 10秒アクション完了
-tsad() {
-    if [[ -z "$1" ]]; then
-        echo "使用方法: tsad <完了した10秒アクション>"
-        return 1
-    fi
-    
-    # 完了マークを付けて記録
-    th "⚡✅ 10秒アクション完了: $*"
-}
 
 # タスクを10秒アクションに分解するヘルパー
 task-break() {
     echo "🎯 タスクを10秒アクションに分解します"
     echo ""
-    echo "以下のプロンプトをClaude/ChatGPTで使用してください："
+    echo "以下のプロンプトをClaude Codeで使用してください："
     echo "---"
     cat "$HOME/src/github.com/ryosukesuto/obsidian-notes/05_Tech/Prompts/10sec-action.md" | head -20
     echo "---"
