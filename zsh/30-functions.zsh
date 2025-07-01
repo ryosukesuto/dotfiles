@@ -196,13 +196,13 @@ th() {
     if [[ ! -f "$daily_note" ]]; then
         echo "# ${today}" > "$daily_note"
         echo "" >> "$daily_note"
-        echo "## メモ" >> "$daily_note"
+        echo "## 📝 メモ" >> "$daily_note"
     fi
     
     # メモセクションが存在しない場合は追加
-    if ! grep -q "^## メモ" "$daily_note"; then
+    if ! grep -q "^## 📝 メモ" "$daily_note"; then
         echo "" >> "$daily_note"
-        echo "## メモ" >> "$daily_note"
+        echo "## 📝 メモ" >> "$daily_note"
     fi
     
     # メモを追加
@@ -218,7 +218,7 @@ th() {
     # 行番号を記録しながら処理
     while IFS= read -r line; do
         ((line_num++))
-        if [[ "$line" == "## メモ" ]]; then
+        if [[ "$line" == "## 📝 メモ" ]]; then
             in_memo_section=1
         elif [[ $in_memo_section -eq 1 ]]; then
             if [[ "$line" =~ ^-[[:space:]] ]]; then
@@ -237,7 +237,7 @@ th() {
         awk -v line="$last_memo_line" -v memo="$new_memo" 'NR==line{print; print memo; next} 1' "$daily_note" > "$temp_file"
     else
         # メモセクションはあるが、まだメモがない場合
-        awk -v memo="$new_memo" '/^## メモ$/{print; print memo; next} 1' "$daily_note" > "$temp_file"
+        awk -v memo="$new_memo" '/^## 📝 メモ$/{print; print memo; next} 1' "$daily_note" > "$temp_file"
     fi
     
     # mvのエイリアスを無効化して実行（-iオプションを避ける）
