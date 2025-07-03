@@ -174,6 +174,13 @@ create_symlink "$DOTFILES_DIR/git/gitconfig" "$HOME/.gitconfig"
 # .configディレクトリの設定
 create_symlink "$DOTFILES_DIR/config/gh" "$HOME/.config/gh"
 
+# Claude設定
+if [ -f "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" ]; then
+    create_symlink "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" "$HOME/.config/claude/claude_desktop_config.json"
+else
+    create_symlink "$DOTFILES_DIR/config/claude/claude_desktop_config.json" "$HOME/.config/claude/claude_desktop_config.json"
+fi
+
 # tmux設定
 create_symlink "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
 
@@ -240,6 +247,13 @@ if [ ! -f "$HOME/.aws/credentials" ]; then
     echo "テンプレートファイルを参考にしてください:"
     echo "  cp $DOTFILES_DIR/aws/credentials.template ~/.aws/credentials"
     echo "  # その後、実際の認証情報を入力してください"
+fi
+
+if [ ! -f "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" ]; then
+    warn "重要: Claude MCP設定をカスタマイズする場合は claude_desktop_config.json.local を作成してください"
+    echo "テンプレートファイルを参考にしてください:"
+    echo "  cp $DOTFILES_DIR/config/claude/claude_desktop_config.json.local.example $DOTFILES_DIR/config/claude/claude_desktop_config.json.local"
+    echo "  # その後、実際のAPIトークンを入力してください"
 fi
 
 # 補完用ディレクトリの作成
