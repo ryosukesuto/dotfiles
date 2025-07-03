@@ -85,6 +85,8 @@ $ npm run build  # 再実行
 2. **プロジェクト移動**: peco-srcによる高速ディレクトリ移動
 3. **AWS環境**: SSM Session Manager経由でのbastion接続
 4. **シェル環境**: Zshのモジュラー設定（番号付きファイルでロード順制御）
+5. **MCP統合**: Notion APIとの連携（claude_desktop_config.json）
+6. **ユーティリティコマンド**: `~/src/github.com/ryosukesuto/dotfiles/bin`配下のツール群
 
 ### 効率的な作業のための推奨事項
 ```bash
@@ -412,7 +414,11 @@ except jwt.InvalidTokenError:
 **重要な作業やタスクの完了時は、以下のコマンドでObsidianのデイリーノートに記録してください：**
 
 ```bash
+# 標準的な使用方法（シェル起動後）
 th "✅ 作業内容"
+
+# Claude Code内での使用（source不要）
+~/src/github.com/ryosukesuto/dotfiles/bin/th "✅ 作業内容"
 ```
 
 ### 使用例
@@ -446,4 +452,5 @@ th "✅ プロジェクトキックオフMTGの議事録作成完了"
 ## 🔒 セキュリティ注意事項
 - パスワードや秘密鍵は記載しない
 - 環境固有の情報は `.env.local` で管理
+- APIトークンは `claude_desktop_config.json.local` で管理（gitignore済み）
 - リポジトリ固有のルールは各プロジェクトのCLAUDE.mdを参照

@@ -1,0 +1,31 @@
+#!/bin/bash
+# th-alias - bashで動作する軽量版
+
+# エイリアスとして使用する場合の例
+# alias th='/Users/ryosukesuto/src/github.com/ryosukesuto/dotfiles/bin/th-alias'
+
+if [ -z "$1" ]; then
+    echo "使用方法: th <メモ内容>"
+    exit 1
+fi
+
+vault_path="$HOME/src/github.com/ryosukesuto/obsidian-notes"
+today=$(date +%Y-%m-%d)
+daily_note="$vault_path/01_Daily/${today}.md"
+timestamp=$(date "+%Y/%m/%d %H:%M:%S")
+
+# ディレクトリ作成
+mkdir -p "$vault_path/01_Daily"
+
+# デイリーノートが存在しない場合は作成
+if [ ! -f "$daily_note" ]; then
+    {
+        echo "# ${today}"
+        echo ""
+        echo "## 📝 メモ"
+    } > "$daily_note"
+fi
+
+# メモを追加（シンプルな実装）
+echo "- ${timestamp}: $*" >> "$daily_note"
+echo "✅ メモを追加しました: $*"

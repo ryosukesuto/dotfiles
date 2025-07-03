@@ -1,0 +1,5 @@
+#!/bin/bash
+# th-simple - 最もシンプルな実装
+
+# zsh関数を直接実行する方法
+zsh -c "source $HOME/src/github.com/ryosukesuto/dotfiles/zsh/functions/obsidian.zsh && th '$*'"

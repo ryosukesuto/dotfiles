@@ -23,6 +23,7 @@ typeset -U path PATH
 path=(
     $HOME/.local/bin(N-/)
     $HOME/bin(N-/)
+    $HOME/src/github.com/ryosukesuto/dotfiles/bin(N-/)
     $path
 )
 
