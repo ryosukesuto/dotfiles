@@ -1,4 +1,9 @@
-# プロンプトのカスタマイズ
+#!/usr/bin/env zsh
+# ============================================================================
+# 60-prompt.zsh - カスタムプロンプト設定
+# ============================================================================
+# このファイルはGit、Python、AWS、Terraform情報を表示するプロンプトを設定します。
+# キャッシュシステムにより、プロンプト表示のパフォーマンスを最適化しています。
 
 # 色の定義
 autoload -U colors && colors
@@ -9,12 +14,8 @@ typeset -g _prompt_cache_git_branch=""
 typeset -g _prompt_cache_git_status=""
 typeset -g _prompt_cache_repo_name=""
 typeset -g _prompt_cache_python_env=""
-typeset -g _prompt_cache_node_env=""
-typeset -g _prompt_cache_go_env=""
 typeset -g _prompt_cache_aws_env=""
 typeset -g _prompt_cache_terraform_env=""
-typeset -g _prompt_cache_k8s_env=""
-typeset -g _prompt_cache_docker_env=""
 typeset -g _prompt_cache_timestamp=0
 
 # キャッシュの有効期限（秒）
@@ -27,12 +28,8 @@ _prompt_clear_cache() {
   _prompt_cache_git_status=""
   _prompt_cache_repo_name=""
   _prompt_cache_python_env=""
-  _prompt_cache_node_env=""
-  _prompt_cache_go_env=""
   _prompt_cache_aws_env=""
   _prompt_cache_terraform_env=""
-  _prompt_cache_k8s_env=""
-  _prompt_cache_docker_env=""
   _prompt_cache_timestamp=0
 }
 
@@ -125,29 +122,6 @@ python_env_info() {
   echo "$_prompt_cache_python_env"
 }
 
-# Node.js環境を表示する関数（キャッシュ対応）
-node_env_info() {
-  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_node_env" ]]; then
-    if [[ -f package.json ]] && command -v node &> /dev/null; then
-      _prompt_cache_node_env=" %F{green}(⬢ node:$(node --version | sed 's/v//'))%f"
-    else
-      _prompt_cache_node_env=""
-    fi
-  fi
-  echo "$_prompt_cache_node_env"
-}
-
-# Go環境を表示する関数（キャッシュ対応）
-go_env_info() {
-  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_go_env" ]]; then
-    if [[ -f go.mod ]] && command -v go &> /dev/null; then
-      _prompt_cache_go_env=" %F{cyan}(🐹go:$(go version | awk '{print $3}' | sed 's/go//'))%f"
-    else
-      _prompt_cache_go_env=""
-    fi
-  fi
-  echo "$_prompt_cache_go_env"
-}
 
 # AWS環境を表示する関数（キャッシュ対応）
 aws_env_info() {
@@ -178,34 +152,6 @@ terraform_env_info() {
   echo "$_prompt_cache_terraform_env"
 }
 
-# Kubernetes環境を表示する関数（キャッシュ対応）
-k8s_env_info() {
-  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_k8s_env" ]]; then
-    if command -v kubectl &> /dev/null; then
-      local context=$(kubectl config current-context 2>/dev/null)
-      if [[ -n "$context" ]]; then
-        _prompt_cache_k8s_env=" %F{cyan}(⎈ k8s:$(echo $context | cut -d'/' -f1))%f"
-      else
-        _prompt_cache_k8s_env=""
-      fi
-    else
-      _prompt_cache_k8s_env=""
-    fi
-  fi
-  echo "$_prompt_cache_k8s_env"
-}
-
-# Docker環境を表示する関数（キャッシュ対応）
-docker_env_info() {
-  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_docker_env" ]]; then
-    if [[ -n "$DOCKER_CONTEXT" && "$DOCKER_CONTEXT" != "default" ]]; then
-      _prompt_cache_docker_env=" %F{blue}(🐳docker:$DOCKER_CONTEXT)%f"
-    else
-      _prompt_cache_docker_env=""
-    fi
-  fi
-  echo "$_prompt_cache_docker_env"
-}
 
 # 実行時間を測定する関数
 preexec() {
@@ -256,7 +202,7 @@ if [[ "$TERM" != "dumb" ]]; then
   setopt PROMPT_SUBST
   
   # 2行プロンプト（すべての推奨項目表示）
-  PROMPT='%F{cyan}$(smart_pwd)%f$(git_prompt_info)$(python_env_info)$(node_env_info)$(go_env_info)$(aws_env_info)$(terraform_env_info)$(k8s_env_info)$(docker_env_info)
+  PROMPT='%F{cyan}$(smart_pwd)%f$(git_prompt_info)$(python_env_info)$(aws_env_info)$(terraform_env_info)
 %F{yellow}❯%f%{$reset_color%} '
   
   # 右側プロンプト（時刻とコマンド実行時間）

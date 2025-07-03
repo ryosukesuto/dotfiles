@@ -6,119 +6,80 @@
 
 # AWS SSM Session Manager経由でBastionサーバーに接続
 aws-bastion() {
-    # AWS CLIの存在確認
-    if ! command -v aws &> /dev/null; then
-        echo "❌ AWS CLIがインストールされていません" >&2
-        echo "インストール方法: brew install awscli" >&2
-        return 1
-    fi
+    local profile="${1:-prod}"
+    local instance_id="${2}"
+    local region="${3:-ap-northeast-1}"
     
-    # Session Manager Pluginの存在確認
-    if ! command -v session-manager-plugin &> /dev/null; then
-        echo "❌ AWS Session Manager Pluginがインストールされていません" >&2
-        echo "インストール方法: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html" >&2
-        return 1
-    fi
-    
-    local instance_id="$1"
-    
+    # インスタンスIDが指定されていない場合はヘルプを表示
     if [[ -z "$instance_id" ]]; then
-        echo "使用方法: aws-bastion <instance-id>"
+        echo "使用方法: aws-bastion [profile] <instance-id> [region]"
+        echo "例: aws-bastion prod i-1234567890abcdef0"
         echo "または aws-bastion-select を使用してインタラクティブに選択"
         return 1
     fi
     
-    # プロファイル指定がある場合は使用
-    local profile_option=""
-    if [[ -n "$AWS_PROFILE" ]]; then
-        profile_option="--profile $AWS_PROFILE"
-    fi
+    echo "🔐 AWS SSO ログイン中..."
+    aws sso login --profile "$profile"
     
-    echo "🔐 Bastionサーバーに接続中: $instance_id"
-    echo "プロファイル: ${AWS_PROFILE:-default}"
-    
-    # SSM Session Manager経由で接続
-    aws ssm start-session \
-        --target "$instance_id" \
-        $profile_option \
-        --document-name AWS-StartPortForwardingSessionToRemoteHost \
-        --parameters '{
-            "host": ["localhost"],
-            "portNumber": ["3306"],
-            "localPortNumber": ["3306"]
-        }'
+    echo "🚀 踏み台サーバーへのSSMセッションを開始中..."
+    aws ssm start-session --target "$instance_id" --profile "$profile" --region "$region"
 }
 
 # インタラクティブにBastionサーバーを選択して接続
 aws-bastion-select() {
-    # 依存コマンドの確認
-    if ! command -v aws &> /dev/null; then
-        echo "❌ AWS CLIがインストールされていません" >&2
-        return 1
-    fi
+    local profile="${1:-prod}"
+    local region="${2:-ap-northeast-1}"
     
-    if ! command -v fzf &> /dev/null && ! command -v peco &> /dev/null; then
-        echo "❌ fzfまたはpecoがインストールされていません" >&2
-        echo "インストール方法: brew install fzf" >&2
-        return 1
-    fi
+    echo "🔐 AWS SSO ログイン中..."
+    aws sso login --profile "$profile"
     
-    # プロファイル指定
-    local profile_option=""
-    if [[ -n "$AWS_PROFILE" ]]; then
-        profile_option="--profile $AWS_PROFILE"
-    fi
+    echo "🔍 利用可能なインスタンスを検索中..."
     
-    echo "🔍 Bastionサーバーを検索中..."
-    echo "プロファイル: ${AWS_PROFILE:-default}"
+    # bastionタグを持つ実行中のインスタンスを取得
+    local instances=$(aws ec2 describe-instances \
+        --filters "Name=tag-key,Values=bastion" "Name=instance-state-name,Values=running" \
+        --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name]' \
+        --output text \
+        --profile "$profile" \
+        --region "$region" 2>/dev/null)
     
-    # EC2インスタンスのリストを取得（Bastion タグでフィルタ）
-    local instances
-    instances=$(aws ec2 describe-instances \
-        $profile_option \
-        --filters "Name=tag:Name,Values=*[Bb]astion*" \
-                 "Name=instance-state-name,Values=running" \
-        --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`] | [0].Value,PrivateIpAddress,PublicIpAddress]' \
-        --output text 2>/dev/null)
-    
+    # bastionタグを持つインスタンスが見つからない場合は、全ての実行中のインスタンスを取得
     if [[ -z "$instances" ]]; then
-        # Bastionタグがない場合は全てのrunningインスタンスを取得
-        echo "⚠️  'Bastion'タグのインスタンスが見つかりません。全てのインスタンスを表示します。"
+        echo "⚠️  bastionタグを持つインスタンスが見つかりません。全ての実行中のインスタンスを表示します..."
         instances=$(aws ec2 describe-instances \
-            $profile_option \
             --filters "Name=instance-state-name,Values=running" \
-            --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`] | [0].Value,PrivateIpAddress,PublicIpAddress]' \
-            --output text 2>/dev/null)
+            --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name]' \
+            --output text \
+            --profile "$profile" \
+            --region "$region" 2>/dev/null)
     fi
     
     if [[ -z "$instances" ]]; then
-        echo "❌ 実行中のインスタンスが見つかりません" >&2
+        echo "❌ 実行中のインスタンスが見つかりません"
         return 1
     fi
     
-    # フォーマットして表示
-    local formatted_instances
-    formatted_instances=$(echo "$instances" | awk '{
-        printf "%-20s %-40s %-15s %-15s\n", $1, $2, $3, $4
-    }')
-    
-    # セレクターを使用して選択
+    # fzfまたはpecoで選択
     local selected
     if command -v fzf &> /dev/null; then
-        selected=$(echo "$formatted_instances" | fzf \
-            --header="インスタンスID      名前                                     プライベートIP   パブリックIP" \
-            --height=40% \
-            --reverse)
+        selected=$(echo "$instances" | fzf --header="接続するインスタンスを選択してください" --height=50% --layout=reverse)
+    elif command -v peco &> /dev/null; then
+        selected=$(echo "$instances" | peco --prompt="接続するインスタンスを選択 >")
     else
-        selected=$(echo "$formatted_instances" | peco \
-            --prompt="Bastionサーバーを選択 >")
+        # fzfもpecoもない場合は番号選択
+        echo "インスタンス一覧:"
+        echo "$instances" | nl
+        echo -n "接続するインスタンスの番号を入力してください: "
+        read num
+        selected=$(echo "$instances" | sed -n "${num}p")
     fi
     
     if [[ -n "$selected" ]]; then
         local instance_id=$(echo "$selected" | awk '{print $1}')
-        aws-bastion "$instance_id"
+        echo "🚀 ${instance_id} へのSSMセッションを開始中..."
+        aws ssm start-session --target "$instance_id" --profile "$profile" --region "$region"
     else
-        echo "❌ キャンセルされました" >&2
+        echo "❌ インスタンスが選択されませんでした"
         return 1
     fi
 }

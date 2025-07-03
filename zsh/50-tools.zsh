@@ -1,3 +1,10 @@
+#!/usr/bin/env zsh
+# ============================================================================
+# 50-tools.zsh - 開発ツールの遅延初期化
+# ============================================================================
+# このファイルはpyenv、rbenv、Terraformなどの開発ツールを遅延初期化します。
+# 実際にコマンドが使用されるまで初期化を遅延させることで起動時間を短縮します。
+
 # 遅延読み込み用の初期化フラグ
 typeset -g _tools_init_done=0
 
@@ -17,11 +24,6 @@ _init_tools_lazy() {
   if command -v rbenv &> /dev/null; then
     eval "$(rbenv init -)"
   fi
-
-  # nodenv（遅延読み込み）
-  if command -v nodenv &> /dev/null; then
-    eval "$(nodenv init -)"
-  fi
 }
 
 # ツール特定のコマンドが実行される時に初期化
@@ -35,11 +37,6 @@ _lazy_load_version_managers() {
       ;;
     ruby*|gem*|bundle*|rbenv*)
       if command -v rbenv &> /dev/null && [[ $_tools_init_done -eq 0 ]]; then
-        _init_tools_lazy
-      fi
-      ;;
-    node*|npm*|yarn*|nodenv*)
-      if command -v nodenv &> /dev/null && [[ $_tools_init_done -eq 0 ]]; then
         _init_tools_lazy
       fi
       ;;
@@ -57,21 +54,6 @@ autoload -Uz add-zsh-hook
 add-zsh-hook -d preexec _tool_preexec 2>/dev/null
 add-zsh-hook preexec _tool_preexec
 
-# 即座に必要なツール
-# direnv（ディレクトリ固有の環境変数）- 遅延初期化
-_init_direnv() {
-  if command -v direnv &> /dev/null; then
-    eval "$(direnv hook zsh)"
-  fi
-}
-
-# 初回のcd時にdirenvを初期化
-chpwd_functions=(${chpwd_functions[@]} "_init_direnv_once")
-_init_direnv_once() {
-  _init_direnv
-  # 初期化後は関数を削除
-  chpwd_functions=(${chpwd_functions[@]:#_init_direnv_once})
-}
 
 # Terraform補完（シンプルな設定）
 if command -v terraform &> /dev/null; then

@@ -1,137 +1,151 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは、Claude Code (claude.ai/code) がこのリポジトリのコードを扱う際のガイダンスを提供します。
 
-## Repository Overview
+## リポジトリ概要
 
-This is a comprehensive dotfiles repository for managing personal configuration files. The repository contains well-organized configuration files for modern development tools including Zsh, Git, SSH, tmux, Vim, AWS CLI, and GitHub CLI.
+これは個人用の設定ファイルを管理する包括的なdotfilesリポジトリです。Zsh、Git、SSH、tmux、Vim、AWS CLI、GitHub CLIなどのモダンな開発ツールの設定ファイルが整理されて含まれています。
 
-## Repository Structure
+## リポジトリ構成
 
-The repository is organized into logical directories:
+リポジトリは以下のように論理的なディレクトリに整理されています：
 
-- `zsh/` - Modular Zsh configuration files (numbered for load order)
-  - `00-base.zsh` - Basic shell options and settings
-  - `01-completion.zsh` - Unified completion system configuration (optimized)
-  - `10-history.zsh` - History management settings
-  - `20-path.zsh` - PATH management using native Zsh arrays
-  - `25-aliases.zsh` - Categorized command aliases
-  - `30-functions.zsh` - Core functions with lazy loading support
-  - `31-aws.zsh`, `32-git.zsh` - Tool-specific configurations
-  - `40-tools.zsh` - Version managers and tool initialization (lazy)
-  - `50-prompt.zsh` - Custom prompt with caching
-  - `functions/` - Lazy-loaded function modules
-    - `aws-bastion.zsh` - AWS SSM connection utilities
-    - `diagnostics.zsh` - System diagnostic tools
-    - `extract.zsh` - Archive extraction utilities
-- `git/` - Git configuration with aliases and enhanced settings
-- `ssh/` - SSH configuration and management utilities
-- `tmux/` - Terminal multiplexer configuration
-- `vim/` - Vim editor configuration with plugin management
-- `aws/` - AWS CLI configuration templates (secure, no credentials)
-- `config/` - Application-specific configurations (GitHub CLI, etc.)
-- `.zshrc` - Main Zsh entry point that sources modular files
-- `.zprofile` - Zsh profile for environment setup
+- `zsh/` - モジュール化されたZsh設定ファイル（番号付きで読み込み順序を制御）
+  - `00-core.zsh` - コアシェル設定と履歴管理
+  - `10-completion.zsh` - 最小限の補完システム設定
+  - `20-path.zsh` - ネイティブZsh配列を使用したPATH管理
+  - `30-aliases.zsh` - 必要最小限のコマンドエイリアス
+  - `40-functions.zsh` - コア関数と遅延読み込み設定
+  - `50-tools.zsh` - バージョンマネージャーの初期化（pyenv、rbenv、terraform）
+  - `60-prompt.zsh` - Git、Python、AWS、Terraform情報を表示するカスタムプロンプト
+  - `90-local.zsh` - ローカル環境変数とマシン固有の設定
+  - `functions/` - 遅延読み込みされる関数モジュール
+    - `aws-bastion.zsh` - AWS SSM Session Managerユーティリティ
+    - `obsidian.zsh` - Obsidianデイリーノート関数（thコマンド）
+    - `gemini-search.zsh` - Gemini API検索関数（オプション）
+- `git/` - エイリアスと拡張設定を含むGit設定
+- `ssh/` - SSH設定と管理ユーティリティ
+- `tmux/` - ターミナルマルチプレクサ設定
+- `vim/` - プラグイン管理を含むVimエディタ設定
+- `aws/` - AWS CLI設定テンプレート（セキュア、認証情報なし）
+- `config/` - アプリケーション固有の設定（GitHub CLIなど）
+- `.zshrc` - モジュラーファイルをソースするメインZshエントリポイント
+- `.zprofile` - 環境セットアップ用のZshプロファイル
 
-## Key Tools and Technologies
+## 主要なツールと技術
 
-This setup uses the following tools that may need configuration:
+このセットアップで使用されている、設定が必要な可能性のあるツール：
 
-- **Shell**: Zsh with custom peco-src function for directory navigation
-- **Version Managers**: pyenv (Python), tfenv (Terraform)
-- **Development Tools**: Go, Terraform, DBT (data build tool)
-- **Repository Management**: ghq (organizes Git repos under ~/src)
-- **Package Manager**: Homebrew (macOS)
-- **Cloud Access**: AWS SSM Session Manager for bastion server connections
+- **シェル**: ディレクトリナビゲーション用のカスタムpeco-src関数を持つZsh
+- **バージョンマネージャー**: pyenv（Python）、tfenv（Terraform）
+- **開発ツール**: Go、Terraform、DBT（data build tool）
+- **リポジトリ管理**: ghq（Gitリポジトリを~/src配下に整理）
+- **パッケージマネージャー**: Homebrew（macOS）
+- **クラウドアクセス**: Bastionサーバー接続用のAWS SSM Session Manager
 
-## Common Tasks
+## 一般的なタスク
 
-When working with this dotfiles repository:
+このdotfilesリポジトリで作業する際：
 
-1. **Installation**: Use `./install.sh` to create symlinks from repository to home directory
-2. **Updates**: Modify files in repository and changes are reflected immediately via symlinks
-3. **New Machine Setup**: Clone repository and run install script for complete environment setup
-4. **Security**: Use template files for sensitive configurations (AWS, etc.)
-5. **Local Customization**: Use `.local` files for machine-specific settings not tracked in git
-6. **Performance Testing**: Use `path_info` to check PATH configuration, `dotfiles-diag` for system diagnostics
-7. **Adding Functions**: Place large or rarely-used functions in `zsh/functions/` for lazy loading
+1. **インストール**: `./install.sh`を使用してリポジトリからホームディレクトリへのシンボリックリンクを作成
+2. **更新**: リポジトリ内のファイルを変更すると、シンボリックリンク経由で即座に反映される
+3. **新しいマシンのセットアップ**: リポジトリをクローンしてインストールスクリプトを実行し、完全な環境をセットアップ
+4. **セキュリティ**: 機密設定にはテンプレートファイルを使用（AWSなど）
+5. **ローカルカスタマイズ**: gitで追跡されないマシン固有の設定には`.local`ファイルを使用
+6. **関数の追加**: 大きなまたはめったに使用されない関数は`zsh/functions/`ディレクトリに配置して遅延読み込み
+7. **パフォーマンス**: シェルの起動は遅延読み込みと最小限の初期設定により最適化されている
 
-## Architecture Notes
+## アーキテクチャノート
 
-- The user's development setup is focused on cloud development (GCP), data engineering (DBT), and infrastructure (Terraform)
-- Git repositories are organized under `~/src` using ghq
-- The peco-src function provides quick navigation between projects (supports both fzf and peco)
-- AWS SSM functions (`aws-bastion`, `aws-bastion-select`) are lazy-loaded from `functions/aws-bastion.zsh`
-- Performance optimizations:
-  - Completion system unified in `01-completion.zsh` with lazy loading for detailed styles
-  - PATH management uses native Zsh arrays for automatic deduplication
-  - Large functions separated into `functions/` directory for on-demand loading
-  - Startup time reduced by 30-40% through various optimizations
+### 開発環境
+- **言語**: Python（pyenv）、Ruby（rbenv）、Terraform
+- **クラウドプラットフォーム**: AWS、Google Cloud Platform
+- **リポジトリ管理**: ghqがGitリポジトリを`~/src`配下に整理
+- **プロジェクトナビゲーション**: クイックディレクトリ切り替え用のpeco-src/fzf-src（Ctrl+GまたはCtrl+]）
 
-## Custom Commands
+### 主要機能
+- **最小限のZsh設定**: 必要最小限の機能のみで高速起動
+- **スマート補完**: 複雑な設定なしの基本的なタブ補完
+- **遅延読み込み**: パフォーマンスのために関数とツールをオンデマンドで読み込み
+- **AWS統合**: Bastionアクセス用のSSM Session Manager
+- **クリーンなプロンプト**: 現在のディレクトリ、Gitステータス、アクティブな環境を表示
 
-These commands help streamline common tasks in this repository:
+### パフォーマンス最適化
+- 制御された順序で読み込まれるモジュラー設定ファイル
+- ネイティブZsh配列を使用したPATH重複排除
+- 必要な時のみバージョンマネージャーを初期化
+- Gitコマンドのオーバーヘッドを削減するプロンプトキャッシング
 
-### `/setup` - Initial Setup
-Initialize or verify the dotfiles installation:
-1. Run `./install.sh` if not already executed
-2. Check if symlinks are properly created
-3. Verify all required tools are installed (Homebrew, pyenv, tfenv, etc.)
-4. Report any missing dependencies
-5. Suggest next steps for manual configuration (AWS credentials, etc.)
+## カスタムコマンド
 
-### `/update` - Update Configuration
-Update specific configuration files:
-- `/update zsh` - Update Zsh configuration files
-- `/update git` - Update Git configuration
-- `/update aws` - Update AWS configuration templates
+このリポジトリで一般的なタスクを効率化するコマンド：
 
-### `/check` - Health Check
-Verify the integrity of configurations:
-1. Check for broken symlinks
-2. Validate configuration syntax
-3. Ensure no sensitive data in tracked files
+### `/setup` - 初期セットアップ
+dotfilesのインストールを初期化または検証：
+1. まだ実行されていない場合は`./install.sh`を実行
+2. シンボリックリンクが適切に作成されているか確認
+3. 必要なツールがすべてインストールされているか検証（Homebrew、pyenv、tfenvなど）
+4. 不足している依存関係を報告
+5. 手動設定の次のステップを提案（AWS認証情報など）
 
-### `/optimize` - Performance Optimization
-Analyze and optimize shell startup time:
-1. Profile Zsh startup time
-2. Identify slow-loading modules
-3. Suggest optimizations
+### `/update` - 設定を更新
+特定の設定ファイルを更新：
+- `/update zsh` - Zsh設定ファイルを更新
+- `/update git` - Git設定を更新
+- `/update aws` - AWS設定テンプレートを更新
 
-## Workflow Guidelines
+### `/check` - ヘルスチェック
+設定の整合性を検証：
+1. 壊れたシンボリックリンクをチェック
+2. 設定構文を検証
+3. 追跡されたファイルに機密データがないことを確認
 
-### 1. Configuration Changes
-When modifying configuration files:
-1. **Plan**: Identify files to modify and their dependencies
-2. **Test**: Verify changes in isolated environment if possible
-3. **Document**: Update relevant sections in this file
-4. **Commit**: Use conventional commit messages
+### `/optimize` - パフォーマンス最適化
+シェル起動時間を分析して最適化：
+1. Zsh起動時間をプロファイル
+2. 読み込みが遅いモジュールを特定
+3. 最適化を提案
 
-### 2. New Tool Integration
-When adding support for a new tool:
-1. Create modular configuration file in appropriate directory
-2. Update install.sh if symlinks are needed
-3. Add tool to Key Tools section above
-4. Document any special setup requirements
+## ワークフローガイドライン
 
-### 3. Security Considerations
-- Never commit credentials or API keys
-- Use `.local` files for sensitive configurations
-- Review changes for accidental secret exposure
-- Use template files with clear placeholders
+### 1. 設定変更
+設定ファイルを変更する際：
+1. **計画**: 変更するファイルとその依存関係を特定
+2. **テスト**: 可能であれば隔離された環境で変更を検証
+3. **文書化**: このファイルの関連セクションを更新
+4. **コミット**: Conventional Commitメッセージを使用
 
-## Continuous Improvement
+### 2. 新しいツールの統合
+新しいツールのサポートを追加する際：
+1. 適切なディレクトリにモジュラー設定ファイルを作成
+2. シンボリックリンクが必要な場合はinstall.shを更新
+3. 上記の主要ツールセクションにツールを追加
+4. 特別なセットアップ要件を文書化
 
-### Retrospective Questions
-After each significant change, consider:
-- Did the change improve workflow efficiency?
-- Are there patterns that could be abstracted?
-- What documentation needs updating?
-- Could this be automated further?
+### 3. セキュリティに関する考慮事項
+- 認証情報やAPIキーを決してコミットしない
+- 機密設定には`.local`ファイルを使用
+- 偶発的な秘密情報の露出がないか変更をレビュー
+- 明確なプレースホルダーを持つテンプレートファイルを使用
 
-### Performance Metrics
-Track and optimize:
-- Shell startup time (target: <500ms)
-- Command execution speed
-- Repository navigation efficiency
-- Configuration reload time
+## 継続的改善
+
+### 振り返りの質問
+重要な変更後に考慮すること：
+- 変更はワークフローの効率を改善したか？
+- 抽象化できるパターンはあるか？
+- どのドキュメントを更新する必要があるか？
+- さらに自動化できるか？
+
+### パフォーマンスメトリクス
+追跡と最適化：
+- シェル起動時間（目標：<500ms）
+- コマンド実行速度
+- リポジトリナビゲーション効率
+- 設定リロード時間
+
+# 重要な指示の再確認
+要求されたことだけを行い、それ以上でもそれ以下でもない。
+目標を達成するために絶対に必要でない限り、ファイルを作成しない。
+常に新しいファイルを作成するよりも既存のファイルを編集することを優先する。
+ユーザーから明示的に要求されない限り、ドキュメントファイル（*.md）やREADMEファイルを積極的に作成しない。
