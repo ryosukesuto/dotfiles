@@ -28,21 +28,24 @@ show_help() {
 Usage: ./install.sh [OPTIONS]
 
 Options:
-    -h, --help      このヘルプを表示
-    -f, --force     確認なしでインストール
-    -b, --backup    既存ファイルをバックアップ（デフォルト）
-    -n, --no-backup バックアップを作成しない
+    -h, --help          このヘルプを表示
+    -f, --force         確認なしでインストール
+    -b, --backup        既存ファイルをバックアップ（デフォルト）
+    -n, --no-backup     バックアップを作成しない
+    -c, --clean-backup  インストール後にバックアップファイルを削除
 
 Example:
-    ./install.sh            # 通常のインストール（バックアップあり）
-    ./install.sh --force    # 確認なしでインストール
-    ./install.sh --no-backup # バックアップなしでインストール
+    ./install.sh                # 通常のインストール（バックアップあり）
+    ./install.sh --force        # 確認なしでインストール
+    ./install.sh --no-backup    # バックアップなしでインストール
+    ./install.sh --clean-backup # インストール後にバックアップを削除
 EOF
 }
 
 # オプション解析
 FORCE=false
 BACKUP=true
+CLEAN_BACKUP=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -60,6 +63,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -n|--no-backup)
             BACKUP=false
+            shift
+            ;;
+        -c|--clean-backup)
+            CLEAN_BACKUP=true
             shift
             ;;
         *)
@@ -136,6 +143,15 @@ create_symlink() {
         return 0
     fi
     
+    # 既にシンボリックリンクが存在し、同じ場所を指している場合はスキップ
+    if [ -L "$dest" ]; then
+        local current_link=$(readlink "$dest")
+        if [ "$current_link" = "$src" ]; then
+            info "既に正しくリンクされています: $dest -> $src"
+            return 0
+        fi
+    fi
+    
     # 既存のファイルやリンクがある場合の処理
     if [ -e "$dest" ] || [ -L "$dest" ]; then
         if [ "$BACKUP" = true ]; then
@@ -203,6 +219,7 @@ if [ ! -d "$HOME/.claude" ]; then
     info "Claude ディレクトリを作成: ~/.claude"
 fi
 create_symlink "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+create_symlink "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
 
 # AWS設定は手動でテンプレートからコピー
 # create_symlink "$DOTFILES_DIR/aws/config" "$HOME/.aws/config"
@@ -259,15 +276,24 @@ fi
 # 補完用ディレクトリの作成
 mkdir -p "$HOME/.zsh/cache"
 
-# バックアップファイルの削除案内
-backup_files=$(/usr/bin/find "$HOME" -maxdepth 3 -name "*backup*" -type l 2>/dev/null | head -10)
-if [ -n "$backup_files" ]; then
-    echo ""
-    warn "バックアップシンボリックリンクが見つかりました:"
-    echo "$backup_files"
-    echo ""
-    echo "不要な場合は以下のコマンドで削除できます:"
-    echo "  /usr/bin/find \$HOME -maxdepth 3 -name '*backup*' -type l -delete 2>/dev/null"
+# バックアップファイルの削除
+if [ "$CLEAN_BACKUP" = true ]; then
+    info "バックアップファイルを削除しています..."
+    /usr/bin/find "$HOME" -maxdepth 3 -name '*backup*' \( -type f -o -type l \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" -delete 2>/dev/null
+    info "バックアップファイルを削除しました"
+else
+    # バックアップファイルの削除案内
+    backup_files=$(/usr/bin/find "$HOME" -maxdepth 3 -name "*backup*" \( -type f -o -type l \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" 2>/dev/null | head -10)
+    if [ -n "$backup_files" ]; then
+        echo ""
+        warn "バックアップファイルが見つかりました:"
+        echo "$backup_files"
+        echo ""
+        echo "不要な場合は以下のコマンドで削除できます:"
+        echo "  ./install.sh --clean-backup"
+        echo "または手動で削除:"
+        echo "  /usr/bin/find \$HOME -maxdepth 3 -name '*backup*' \\( -type f -o -type l \\) -not -path \"\$HOME/Library/*\" -not -path \"\$HOME/.Trash/*\" -not -path \"\$HOME/Pictures/*\" -delete 2>/dev/null"
+    fi
 fi
 
 info "推奨ツールのインストール案内:"
