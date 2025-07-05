@@ -204,6 +204,42 @@ def get_user_data(user_id: str):
   - `- \`file.md\`` → 空白になる、`- file.md` → 正常に表示
   - `$12-17` → `-17`になる、`\$12-17` → 正常に表示
 
+### GitHub CLI実行時の確認手順
+**重要**: 破壊的操作（review、merge等）の実行前後は必ず以下の手順に従ってください：
+
+1. **実行前の状態確認**
+   ```bash
+   # レビュー前：既存のレビュー状態を確認
+   gh pr view <number> --json reviews --jq '.reviews[-1]'
+   
+   # マージ前：マージ可能性を確認
+   gh pr view <number> --json state,mergeable
+   ```
+
+2. **エラー発生時の対応**
+   ```bash
+   # エラーが出た場合、再実行前に必ず結果を確認
+   # レビューの場合
+   gh pr view <number> --json reviews --jq '.reviews[] | select(.author.login == "ryosukesuto")'
+   
+   # コメントの場合
+   gh pr view <number> --comments | tail -20
+   ```
+
+3. **安全な文字列処理**
+   ```bash
+   # ヒアドキュメントを使用（最も安全）
+   gh pr review <number> --approve --body "$(cat <<'EOF'
+   レビューコメント with `backticks` and $variables
+   EOF
+   )"
+   ```
+
+**重要な注意事項**:
+- エラーメッセージが出ても、コマンドが部分的に成功している場合があります
+- 特に`--body`内のエラーは、本体の処理（approve/merge等）には影響しない場合が多い
+- 再実行前に必ず現在の状態を確認し、重複実行を避けてください
+
 ## 📋 PRレビュー・ワークフロー
 
 ### 重要: /reviewコマンド使用時の必須事項
@@ -418,7 +454,7 @@ except jwt.InvalidTokenError:
 th "✅ 作業内容"
 
 # Claude Code内での使用（source不要）
-~/src/github.com/ryosukesuto/dotfiles/bin/th "✅ 作業内容"
+th "✅ 作業内容"
 ```
 
 ### 使用例

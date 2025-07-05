@@ -33,12 +33,16 @@ Options:
     -b, --backup        既存ファイルをバックアップ（デフォルト）
     -n, --no-backup     バックアップを作成しない
     -c, --clean-backup  インストール後にバックアップファイルを削除
+    -d, --dry-run       実際には変更を加えずに動作を確認
+    --check-deps        依存関係のチェックのみ実行
 
 Example:
     ./install.sh                # 通常のインストール（バックアップあり）
     ./install.sh --force        # 確認なしでインストール
     ./install.sh --no-backup    # バックアップなしでインストール
     ./install.sh --clean-backup # インストール後にバックアップを削除
+    ./install.sh --dry-run      # 実際には変更を加えずに動作確認
+    ./install.sh --check-deps   # 依存関係のチェックのみ
 EOF
 }
 
@@ -46,6 +50,8 @@ EOF
 FORCE=false
 BACKUP=true
 CLEAN_BACKUP=false
+DRY_RUN=false
+CHECK_DEPS_ONLY=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -69,6 +75,14 @@ while [[ $# -gt 0 ]]; do
             CLEAN_BACKUP=true
             shift
             ;;
+        -d|--dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --check-deps)
+            CHECK_DEPS_ONLY=true
+            shift
+            ;;
         *)
             error "不明なオプション: $1"
             ;;
@@ -78,6 +92,69 @@ done
 # dotfilesディレクトリのパスを取得
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 依存関係チェック関数
+check_dependencies() {
+    local missing_deps=()
+    
+    # 必須コマンドのチェック
+    local required_commands=(
+        "git"
+        "zsh"
+        "curl"
+    )
+    
+    for cmd in "${required_commands[@]}"; do
+        if ! command -v "$cmd" &> /dev/null; then
+            missing_deps+=("$cmd")
+        fi
+    done
+    
+    # 推奨コマンドのチェック
+    local recommended_commands=(
+        "brew"
+        "fzf"
+        "eza"
+        "bat"
+        "rg"
+        "fd"
+        "gh"
+        "aws"
+        "terraform"
+        "pyenv"
+        "rbenv"
+    )
+    
+    local missing_recommended=()
+    for cmd in "${recommended_commands[@]}"; do
+        if ! command -v "$cmd" &> /dev/null; then
+            missing_recommended+=("$cmd")
+        fi
+    done
+    
+    # 結果を表示
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        error "必須コマンドが見つかりません: ${missing_deps[*]}"
+        echo "これらのコマンドをインストールしてから再実行してください。"
+        return 1
+    fi
+    
+    if [[ ${#missing_recommended[@]} -gt 0 ]]; then
+        warn "推奨コマンドが見つかりません: ${missing_recommended[*]}"
+        echo "これらのコマンドは後でインストールすることをお勧めします。"
+        echo ""
+    fi
+    
+    info "依存関係チェック完了"
+    return 0
+}
+
+# 依存関係チェックのみモード
+if [ "$CHECK_DEPS_ONLY" = true ]; then
+    info "依存関係をチェックしています..."
+    check_dependencies
+    exit $?
+fi
+
 # ファイル存在チェック関数
 validate_files() {
     local missing_files=()
@@ -86,12 +163,12 @@ validate_files() {
     local required_files=(
         ".zshrc"
         ".zprofile"
-        "git/gitconfig"
+        "config/git/gitconfig"
         "config/gh/config.yml"
         "config/gh/hosts.yml"
-        "tmux/tmux.conf"
-        "vim/vimrc"
-        "ssh/config"
+        "config/tmux/tmux.conf"
+        "config/vim/vimrc"
+        "config/ssh/config"
     )
     
     for file in "${required_files[@]}"; do
@@ -109,6 +186,9 @@ validate_files() {
     info "ファイル存在チェック完了"
     return 0
 }
+
+# 依存関係チェックを実行
+check_dependencies
 
 # ファイル存在チェックを実行
 validate_files
@@ -171,6 +251,12 @@ create_symlink() {
         mkdir -p "$dest_dir"
     fi
     
+    # ドライランモードのチェック
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] シンボリックリンク作成: $src -> $dest"
+        return 0
+    fi
+    
     # シンボリックリンクを作成
     ln -sf "$src" "$dest"
     info "シンボリックリンク作成: $src -> $dest"
@@ -185,7 +271,7 @@ create_symlink "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 create_symlink "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
 
 # Git設定
-create_symlink "$DOTFILES_DIR/git/gitconfig" "$HOME/.gitconfig"
+create_symlink "$DOTFILES_DIR/config/git/gitconfig" "$HOME/.gitconfig"
 
 # .configディレクトリの設定
 create_symlink "$DOTFILES_DIR/config/gh" "$HOME/.config/gh"
@@ -198,34 +284,65 @@ else
 fi
 
 # tmux設定
-create_symlink "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
+create_symlink "$DOTFILES_DIR/config/tmux/tmux.conf" "$HOME/.tmux.conf"
 
 # Vim設定
-create_symlink "$DOTFILES_DIR/vim/vimrc" "$HOME/.vimrc"
+create_symlink "$DOTFILES_DIR/config/vim/vimrc" "$HOME/.vimrc"
 
 # SSH設定
-create_symlink "$DOTFILES_DIR/ssh/config" "$HOME/.ssh/config"
+create_symlink "$DOTFILES_DIR/config/ssh/config" "$HOME/.ssh/config"
 
 # SSH接続用ディレクトリを作成
 if [ ! -d "$HOME/.ssh/sockets" ]; then
-    mkdir -p "$HOME/.ssh/sockets"
-    chmod 700 "$HOME/.ssh/sockets"
-    info "SSH socket ディレクトリを作成: ~/.ssh/sockets"
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] SSH socket ディレクトリを作成: ~/.ssh/sockets"
+    else
+        mkdir -p "$HOME/.ssh/sockets"
+        chmod 700 "$HOME/.ssh/sockets"
+        info "SSH socket ディレクトリを作成: ~/.ssh/sockets"
+    fi
 fi
 
 # Claude Desktop設定
 if [ ! -d "$HOME/.claude" ]; then
-    mkdir -p "$HOME/.claude"
-    info "Claude ディレクトリを作成: ~/.claude"
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Claude ディレクトリを作成: ~/.claude"
+    else
+        mkdir -p "$HOME/.claude"
+        info "Claude ディレクトリを作成: ~/.claude"
+    fi
 fi
-create_symlink "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-create_symlink "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+create_symlink "$DOTFILES_DIR/config/claude/GLOBAL_SETTINGS.md" "$HOME/.claude/CLAUDE.md"
+create_symlink "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settings.json"
 
 # AWS設定は手動でテンプレートからコピー
-# create_symlink "$DOTFILES_DIR/aws/config" "$HOME/.aws/config"
+# create_symlink "$DOTFILES_DIR/config/aws/config" "$HOME/.aws/config"
+
+# ============================================================================
+# binディレクトリのコマンドに実行権限を付与
+# ============================================================================
+info "binディレクトリのコマンドに実行権限を付与"
+if [ -d "$DOTFILES_DIR/bin" ]; then
+    for cmd in "$DOTFILES_DIR/bin"/*; do
+        if [ -f "$cmd" ]; then
+            if [ "$DRY_RUN" = true ]; then
+                info "[DRY RUN] $(basename "$cmd") に実行権限を付与"
+            else
+                chmod +x "$cmd"
+                info "$(basename "$cmd") に実行権限を付与"
+            fi
+        fi
+    done
+fi
 
 echo ""
-info "dotfilesのインストールが完了しました！"
+if [ "$DRY_RUN" = true ]; then
+    info "ドライランモードでの確認が完了しました！"
+    echo ""
+    echo "実際にインストールするには、--dry-run オプションなしで実行してください。"
+else
+    info "dotfilesのインストールが完了しました！"
+fi
 echo ""
 echo "次のステップ:"
 echo "  1. 新しいターミナルを開く"
@@ -255,14 +372,14 @@ fi
 if [ ! -f "$HOME/.aws/config" ]; then
     warn "重要: AWS設定ファイルを ~/.aws/config に作成してください"
     echo "テンプレートファイルを参考にしてください:"
-    echo "  cp $DOTFILES_DIR/aws/config.template ~/.aws/config"
+    echo "  cp $DOTFILES_DIR/config/aws/config.template ~/.aws/config"
     echo "  # その後、実際の値を入力してください"
 fi
 
 if [ ! -f "$HOME/.aws/credentials" ]; then
     warn "重要: AWS認証情報を ~/.aws/credentials に設定してください"
     echo "テンプレートファイルを参考にしてください:"
-    echo "  cp $DOTFILES_DIR/aws/credentials.template ~/.aws/credentials"
+    echo "  cp $DOTFILES_DIR/config/aws/credentials.template ~/.aws/credentials"
     echo "  # その後、実際の認証情報を入力してください"
 fi
 
@@ -274,10 +391,12 @@ if [ ! -f "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" ]; then
 fi
 
 # 補完用ディレクトリの作成
-mkdir -p "$HOME/.zsh/cache"
+if [ "$DRY_RUN" = false ]; then
+    mkdir -p "$HOME/.zsh/cache"
+fi
 
 # バックアップファイルの削除
-if [ "$CLEAN_BACKUP" = true ]; then
+if [ "$CLEAN_BACKUP" = true ] && [ "$DRY_RUN" = false ]; then
     info "バックアップファイルを削除しています..."
     /usr/bin/find "$HOME" -maxdepth 3 -name '*backup*' \( -type f -o -type l \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" -delete 2>/dev/null
     info "バックアップファイルを削除しました"
