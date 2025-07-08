@@ -325,11 +325,21 @@ if [ ! -d "$HOME/.claude/commands" ]; then
     fi
 fi
 
-# プロジェクト固有のClaude commandsディレクトリをシンボリックリンク
+# プロジェクト固有のClaude commandsディレクトリの内容をコピー
 if [ -d "$DOTFILES_DIR/.claude/commands" ]; then
-    create_symlink "$DOTFILES_DIR/.claude/commands" "$HOME/.dotfiles-commands"
-    info "注意: プロジェクト固有のコマンドは .claude/commands に配置されています"
-    info "これらは /project: プレフィックスでアクセスできます（例: /project:sync-remote）"
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] プロジェクト固有のコマンドをユーザーコマンドディレクトリにコピー"
+    else
+        # プロジェクト固有のコマンドをユーザーディレクトリにコピー
+        for cmd in "$DOTFILES_DIR/.claude/commands"/*.md; do
+            if [ -f "$cmd" ]; then
+                cp "$cmd" "$HOME/.claude/commands/"
+                info "コマンドをコピー: $(basename "$cmd")"
+            fi
+        done
+        info "注意: プロジェクト固有のコマンドは /user: プレフィックスでアクセスできます（例: /user:sync-remote）"
+        info "将来的には /project: プレフィックスがサポートされる可能性があります"
+    fi
 fi
 
 # AWS設定は手動でテンプレートからコピー
