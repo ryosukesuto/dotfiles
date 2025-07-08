@@ -80,6 +80,27 @@
 
 このリポジトリで一般的なタスクを効率化するコマンド：
 
+### Claude Code カスタムスラッシュコマンド
+
+このリポジトリには、Claude Codeで使用できるカスタムスラッシュコマンドが含まれています：
+
+#### プロジェクト固有のコマンド（`.claude/commands/`）
+
+- **`/project:sync-remote`** - 現在のブランチをリモートの最新状態に同期
+  - リモートから最新の変更を取得（fetch）
+  - 現在のブランチをリモートにリベース
+  - コンフリクトがある場合は解決方法を提案
+
+#### カスタムコマンドの作成方法
+
+1. **プロジェクト固有のコマンド**: `.claude/commands/` ディレクトリにMarkdownファイルを作成
+   - 例: `.claude/commands/deploy.md` → `/project:deploy` として利用可能
+
+2. **ユーザー固有のコマンド**: `~/.claude/commands/` ディレクトリにMarkdownファイルを作成
+   - 例: `~/.claude/commands/review.md` → `/user:review` として利用可能
+
+### 従来のカスタムコマンド（CLAUDE.md用）
+
 ### `/setup` - 初期セットアップ
 dotfilesのインストールを初期化または検証：
 1. まだ実行されていない場合は`./install.sh`を実行
@@ -105,6 +126,11 @@ dotfilesのインストールを初期化または検証：
 1. Zsh起動時間をプロファイル
 2. 読み込みが遅いモジュールを特定
 3. 最適化を提案
+
+### `/sync-remote` - リモートブランチとの同期 [廃止予定]
+> **注意**: このコマンドはCLAUDE.mdドキュメント用です。
+> 実際のカスタムスラッシュコマンドは `/project:sync-remote` として
+> `.claude/commands/sync-remote.md` に実装されています。
 
 ## ワークフローガイドライン
 

@@ -315,6 +315,23 @@ fi
 create_symlink "$DOTFILES_DIR/config/claude/GLOBAL_SETTINGS.md" "$HOME/.claude/CLAUDE.md"
 create_symlink "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settings.json"
 
+# Claude カスタムコマンドディレクトリを作成
+if [ ! -d "$HOME/.claude/commands" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Claude commands ディレクトリを作成: ~/.claude/commands"
+    else
+        mkdir -p "$HOME/.claude/commands"
+        info "Claude commands ディレクトリを作成: ~/.claude/commands"
+    fi
+fi
+
+# プロジェクト固有のClaude commandsディレクトリをシンボリックリンク
+if [ -d "$DOTFILES_DIR/.claude/commands" ]; then
+    create_symlink "$DOTFILES_DIR/.claude/commands" "$HOME/.dotfiles-commands"
+    info "注意: プロジェクト固有のコマンドは .claude/commands に配置されています"
+    info "これらは /project: プレフィックスでアクセスできます（例: /project:sync-remote）"
+fi
+
 # AWS設定は手動でテンプレートからコピー
 # create_symlink "$DOTFILES_DIR/config/aws/config" "$HOME/.aws/config"
 

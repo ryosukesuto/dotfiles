@@ -26,6 +26,9 @@
 
 ```
 .
+├── .claude/             # Claude Code設定
+│   └── commands/       # カスタムスラッシュコマンド
+│       └── sync-remote.md  # リモートブランチ同期コマンド
 ├── bin/                 # ユーティリティスクリプト
 │   └── th              # Obsidianデイリーノート記録ツール
 ├── config/              # 各種アプリケーション設定
@@ -241,6 +244,15 @@ up                      # 一つ上のディレクトリに移動してls
 cdgr                    # Gitリポジトリのルートに移動
 recent                  # 最近変更されたファイルを表示
 recent 20               # 最近変更された20ファイルを表示
+```
+
+#### Claude Code カスタムスラッシュコマンド
+```bash
+# プロジェクト固有のコマンド（.claude/commands/）
+/project:sync-remote    # リモートブランチと現在のブランチを同期
+
+# ユーザー固有のコマンド（~/.claude/commands/）も作成可能
+# 例: ~/.claude/commands/review.md を作成すると /user:review で利用可能
 ```
 
 #### ファイル展開（遅延読み込み）
