@@ -1,11 +1,55 @@
 {
-  "// Claude Code権限設定": {
-    "// 説明": "allowは明示的に許可する操作、denyは明示的に禁止する操作を定義",
-    "// 注意": "denyはallowより優先される"
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '📖 確認: 読み取るファイルは正しいですか？'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '⚠️ 新規作成前に確認: 既存ファイルの編集ではダメですか？作成場所は正しいですか？'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '✏️ 編集前に確認: 対象ファイルと編集内容は正しいですか？'"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🚨 タスク実行前に確認: ユーザーに確認を取りましたか？作業内容は明確ですか？'"
+          }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '📋 ToDo更新前に確認: 実行計画をユーザーに提示しましたか？'"
+          }
+        ]
+      }
+    ]
   },
   "permissions": {
     "allow": [
-      "// 一般的な開発作業",
       "Bash(npm *)",
       "Bash(yarn *)",
       "Bash(pnpm *)",
@@ -25,8 +69,6 @@
       "Bash(git checkout *)",
       "Bash(git merge *)",
       "Bash(git rebase *)",
-      
-      "// ファイル操作",
       "Bash(ls *)",
       "Bash(cat *)",
       "Bash(grep *)",
@@ -36,16 +78,12 @@
       "Bash(cp *)",
       "Bash(mv *)",
       "Bash(rm [!-]*)",
-      
-      "// システム情報",
       "Bash(pwd)",
       "Bash(date *)",
       "Bash(whoami)",
       "Bash(which *)",
       "Bash(env)",
       "Bash(echo *)",
-      
-      "// テストとビルド",
       "Bash(npm test)",
       "Bash(npm run *)",
       "Bash(yarn test)",
@@ -54,34 +92,23 @@
       "Bash(go test *)",
       "Bash(cargo test *)",
       "Bash(make *)",
-      
-      "// AWS CLI（読み取り専用）",
       "Bash(aws s3 ls *)",
       "Bash(aws ec2 describe-*)",
       "Bash(aws iam list-*)",
       "Bash(aws-bastion*)",
-      
-      "// GitHub CLI",
       "Bash(gh *)",
-      
-      "// 開発ツール",
       "Bash(code *)",
       "Bash(vim *)",
       "Bash(nano *)",
       "Bash(jq *)",
       "Bash(curl *)",
       "Bash(wget *)",
-      
-      "// プロジェクト管理",
       "Bash(ghq *)",
       "Bash(peco-src)",
       "Bash(fzf *)",
-      
-      "// Obsidian連携",
       "Bash(th *)"
     ],
     "deny": [
-      "// 破壊的な削除コマンド",
       "Bash(rm -rf /)",
       "Bash(rm -rf ~)",
       "Bash(rm -rf ~/*)",
@@ -95,45 +122,29 @@
       "Bash(rm -rf ~/Documents)",
       "Bash(rm -rf ~/Desktop)",
       "Bash(rm -rf ~/Downloads)",
-      
-      "// システムファイルの変更",
       "Bash(sudo rm*)",
       "Bash(sudo mv /etc/*)",
       "Bash(sudo chmod 777 /)",
       "Bash(sudo chown*)",
-      
-      "// 危険なGitコマンド",
       "Bash(git push --force origin main)",
       "Bash(git push --force origin master)",
       "Bash(git reset --hard HEAD~*)",
       "Bash(git clean -fdx)",
-      
-      "// プロセス管理",
       "Bash(sudo kill -9 *)",
       "Bash(sudo killall *)",
       "Bash(sudo pkill *)",
-      
-      "// ネットワーク設定の変更",
       "Bash(sudo ifconfig * down)",
       "Bash(sudo iptables -F)",
-      
-      "// パッケージシステムの破壊",
       "Bash(brew uninstall --force *)",
       "Bash(sudo apt-get purge *)",
       "Bash(sudo yum remove *)",
-      
-      "// 認証情報へのアクセス",
       "Read(~/.aws/credentials)",
       "Read(~/.ssh/id_rsa)",
       "Read(~/.ssh/id_ed25519)",
       "Read(~/.env)",
       "Read(~/.env.local)",
-      
-      "// 履歴情報へのアクセス",
       "Read(~/.zsh_history)",
       "Read(~/.bash_history)",
-      
-      "// 設定ファイルの上書き",
       "Write(~/.zshrc)",
       "Write(~/.bashrc)",
       "Write(~/.gitconfig)",
