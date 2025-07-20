@@ -46,32 +46,39 @@ _prompt_cache_valid() {
   return 0
 }
 
-# リポジトリ名を表示する関数（キャッシュ対応）
-repo_name() {
-  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_repo_name" ]]; then
-    if git rev-parse --git-dir &> /dev/null; then
+# Git情報を一括取得して更新する関数
+_dotfiles_update_git_cache() {
+  if ! _prompt_cache_valid; then
+    # Gitリポジトリ内かチェック（1回のgitコマンドで判定）
+    local git_info
+    if git_info=$(git status --porcelain=v1 --branch 2>/dev/null); then
+      # リポジトリ名の取得
       local repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
-      if [[ -n $repo_root ]]; then
+      if [[ -n "$repo_root" ]]; then
         _prompt_cache_repo_name=$(basename "$repo_root")
       else
         _prompt_cache_repo_name=""
       fi
-    else
-      _prompt_cache_repo_name=""
-    fi
-  fi
-  echo "$_prompt_cache_repo_name"
-}
-
-# Git情報を表示する関数（キャッシュ対応）
-git_prompt_info() {
-  if ! _prompt_cache_valid || [[ -z "$_prompt_cache_git_branch" ]]; then
-    if git rev-parse --git-dir &> /dev/null; then
-      local branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD)
-      local git_status=""
       
-      # 作業ディレクトリの状態をチェック
-      if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
+      # ブランチ名の抽出（status --branchの最初の行から）
+      local branch_line=$(echo "$git_info" | head -1)
+      local branch=""
+      if [[ "$branch_line" == "## "* ]]; then
+        # "## " を削除し、空白や...以降を除去
+        branch=${branch_line#"## "}
+        branch=${branch%% *}
+        branch=${branch%%...*}
+        # HEAD (detached)の場合の処理
+        if [[ "$branch" == "HEAD" ]]; then
+          branch=$(git rev-parse --short HEAD 2>/dev/null || echo "detached")
+        fi
+      else
+        branch="unknown"
+      fi
+      
+      # 作業ディレクトリの状態をチェック（porcelainの2行目以降）
+      local git_status=""
+      if [[ $(echo "$git_info" | wc -l) -gt 1 ]]; then
         git_status=" %F{red}✗%f"
       else
         git_status=" %F{green}✓%f"
@@ -79,9 +86,22 @@ git_prompt_info() {
       
       _prompt_cache_git_branch=" %F{magenta}$branch%f$git_status"
     else
+      # Gitリポジトリ外
+      _prompt_cache_repo_name=""
       _prompt_cache_git_branch=""
     fi
   fi
+}
+
+# リポジトリ名を表示する関数（最適化版）
+repo_name() {
+  _dotfiles_update_git_cache
+  echo "$_prompt_cache_repo_name"
+}
+
+# Git情報を表示する関数（最適化版）
+git_prompt_info() {
+  _dotfiles_update_git_cache
   echo "$_prompt_cache_git_branch"
 }
 
@@ -153,39 +173,46 @@ terraform_env_info() {
 }
 
 
-# 実行時間を測定する関数
+# 実行時間を測定する関数（最適化版）
 preexec() {
-  # macOSのdateコマンド対応（ナノ秒はサポートされていない）
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOSではミリ秒精度で測定
-    timer=$(python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || date +%s)
+  # Zsh 5.8.1以降のEPOCHREALTIMEを優先使用
+  if (( ${+EPOCHREALTIME} )); then
+    timer=${EPOCHREALTIME%.*}000  # ミリ秒変換
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS向けフォールバック
+    timer=$(python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || echo $(($(date +%s) * 1000)))
   else
-    # Linuxではナノ秒対応
+    # Linux向けフォールバック
     timer=$(($(date +%s%N)/1000000))
   fi
 }
 
 precmd() {
-  # キャッシュの更新処理
+  # キャッシュの更新処理（dateコマンド最適化）
   if ! _prompt_cache_valid; then
     _prompt_cache_dir="$PWD"
-    _prompt_cache_timestamp=$(date +%s)
+    if (( ${+EPOCHSECONDS} )); then
+      _prompt_cache_timestamp=$EPOCHSECONDS
+    else
+      _prompt_cache_timestamp=$(date +%s)
+    fi
   fi
   
-  # 実行時間の表示処理
+  # 実行時間の表示処理（最適化版）
   if [[ -n $timer ]]; then
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      now=$(python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || date +%s)
-      elapsed=$((now - timer))
+    local now elapsed
+    if (( ${+EPOCHREALTIME} )); then
+      now=${EPOCHREALTIME%.*}000
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+      now=$(python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || echo $(($(date +%s) * 1000)))
     else
       now=$(($(date +%s%N)/1000000))
-      elapsed=$((now - timer))
     fi
+    
+    elapsed=$((now - timer))
     
     # 5秒以上（5000ms）の場合のみ表示
     if [[ $elapsed -gt 5000 ]]; then
-      # 色設定を確実に読み込み
-      autoload -U colors && colors
       print -P "%F{yellow}⏱ ${elapsed}ms%f"
     fi
     

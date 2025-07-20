@@ -6,53 +6,46 @@
 # 実際にコマンドが使用されるまで初期化を遅延させることで起動時間を短縮します。
 
 # 遅延読み込み用の初期化フラグ
-typeset -g _tools_init_done=0
+typeset -g _DOTFILES_PYENV_INIT_DONE=0
+typeset -g _DOTFILES_RBENV_INIT_DONE=0
 
-# 遅延読み込み関数
-_init_tools_lazy() {
-  [[ $_tools_init_done -eq 1 ]] && return
-  _tools_init_done=1
+# pyenv遅延初期化関数
+_dotfiles_init_pyenv() {
+  [[ $_DOTFILES_PYENV_INIT_DONE -eq 1 ]] && return
+  _DOTFILES_PYENV_INIT_DONE=1
 
-  # pyenv設定（遅延読み込み）
   if command -v pyenv &> /dev/null; then
     export PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init --path)"
     eval "$(pyenv init -)"
   fi
+}
 
-  # rbenv（遅延読み込み）
+# rbenv遅延初期化関数
+_dotfiles_init_rbenv() {
+  [[ $_DOTFILES_RBENV_INIT_DONE -eq 1 ]] && return
+  _DOTFILES_RBENV_INIT_DONE=1
+
   if command -v rbenv &> /dev/null; then
     eval "$(rbenv init -)"
   fi
 }
 
-# ツール特定のコマンドが実行される時に初期化
-_lazy_load_version_managers() {
-  local cmd="$1"
-  case "$cmd" in
-    python*|pip*|pyenv*)
-      if command -v pyenv &> /dev/null && [[ $_tools_init_done -eq 0 ]]; then
-        _init_tools_lazy
-      fi
-      ;;
-    ruby*|gem*|bundle*|rbenv*)
-      if command -v rbenv &> /dev/null && [[ $_tools_init_done -eq 0 ]]; then
-        _init_tools_lazy
-      fi
-      ;;
-  esac
-}
+# aliasベースの遅延読み込み設定
+if command -v pyenv &> /dev/null; then
+  alias python='_dotfiles_init_pyenv && unalias python && python'
+  alias python3='_dotfiles_init_pyenv && unalias python3 && python3'
+  alias pip='_dotfiles_init_pyenv && unalias pip && pip'
+  alias pip3='_dotfiles_init_pyenv && unalias pip3 && pip3'
+  alias pyenv='_dotfiles_init_pyenv && unalias pyenv && pyenv'
+fi
 
-# preexecフックに追加（既存のpreexecと競合しないよう配慮）
-_tool_preexec() {
-  _lazy_load_version_managers "$1"
-}
-
-# preexecフックのリストに追加
-autoload -Uz add-zsh-hook
-# 既存のフックを削除してから追加（重複防止）
-add-zsh-hook -d preexec _tool_preexec 2>/dev/null
-add-zsh-hook preexec _tool_preexec
+if command -v rbenv &> /dev/null; then
+  alias ruby='_dotfiles_init_rbenv && unalias ruby && ruby'
+  alias gem='_dotfiles_init_rbenv && unalias gem && gem'
+  alias bundle='_dotfiles_init_rbenv && unalias bundle && bundle'
+  alias rbenv='_dotfiles_init_rbenv && unalias rbenv && rbenv'
+fi
 
 
 # Terraform補完（シンプルな設定）

@@ -15,12 +15,47 @@ if [[ -f "$HOME/.env.local" ]]; then
 fi
 
 # ============================================================================
-# プロジェクト固有の環境変数（セキュリティ注意）
+# プロジェクト固有の環境変数（セキュリティ強化版）
 # ============================================================================
-# カレントディレクトリの.env.localを読み込む
-# 注意: 信頼できるディレクトリでのみ使用すること
-if [[ -f ".env.local" ]]; then
-  set -a
-  source ".env.local"
-  set +a
-fi
+# 信頼できるディレクトリのホワイトリスト
+typeset -g _DOTFILES_TRUSTED_DIRS=(
+  "$HOME/src"
+  "$HOME/work"
+  "$HOME/projects"
+  "$HOME/dev"
+)
+
+# 安全な.env.local読み込み関数
+_dotfiles_load_project_env() {
+  local env_file=".env.local"
+  [[ ! -f "$env_file" ]] && return
+  
+  local current_dir="$(pwd)"
+  local is_trusted=false
+  
+  # ホワイトリストディレクトリ内かチェック
+  for trusted_dir in "${_DOTFILES_TRUSTED_DIRS[@]}"; do
+    if [[ "$current_dir" == "$trusted_dir"/* ]] || [[ "$current_dir" == "$trusted_dir" ]]; then
+      is_trusted=true
+      break
+    fi
+  done
+  
+  if [[ "$is_trusted" == "true" ]]; then
+    # ファイル内容の基本検証（危険なパターンをチェック）
+    if ! grep -qE '(curl|wget|rm\s+-rf|sudo|\$\(|\`|eval)' "$env_file" 2>/dev/null; then
+      set -a
+      source "$env_file"
+      set +a
+      echo "✅ Loaded $env_file from trusted directory"
+    else
+      echo "⚠️ $env_file contains potentially dangerous commands - skipped"
+    fi
+  else
+    echo "⚠️ $env_file found in untrusted directory: $current_dir"
+    echo "   Add to trusted directories or move to: ${_DOTFILES_TRUSTED_DIRS[1]}"
+  fi
+}
+
+# プロジェクト環境変数の読み込み実行
+_dotfiles_load_project_env
