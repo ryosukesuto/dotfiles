@@ -1,53 +1,4 @@
 {
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '📖 確認: 読み取るファイルは正しいですか？'"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '⚠️ 新規作成前に確認: 既存ファイルの編集ではダメですか？作成場所は正しいですか？'"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '✏️ 編集前に確認: 対象ファイルと編集内容は正しいですか？'"
-          }
-        ]
-      },
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '🚨 タスク実行前に確認: ユーザーに確認を取りましたか？作業内容は明確ですか？'"
-          }
-        ]
-      },
-      {
-        "matcher": "TodoWrite",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '📋 ToDo更新前に確認: 実行計画をユーザーに提示しましたか？'"
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Bash(npm *)",
@@ -149,6 +100,56 @@
       "Write(~/.bashrc)",
       "Write(~/.gitconfig)",
       "Write(~/.ssh/config)"
+    ]
+  },
+  "model": "sonnet",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '📖 確認: 読み取るファイルは正しいですか？'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '⚠️ 新規作成前に確認: 既存ファイルの編集ではダメですか？作成場所は正しいですか？'"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '✏️ 編集前に確認: 対象ファイルと編集内容は正しいですか？'"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🚨 タスク実行前に確認: ユーザーに確認を取りましたか？作業内容は明確ですか？'"
+          }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '📋 ToDo更新前に確認: 実行計画をユーザーに提示しましたか？'"
+          }
+        ]
+      }
     ]
   }
 }
