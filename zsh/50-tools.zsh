@@ -33,18 +33,18 @@ _dotfiles_init_rbenv() {
 
 # aliasベースの遅延読み込み設定
 if command -v pyenv &> /dev/null; then
-  alias python='_dotfiles_init_pyenv && unalias python && python'
-  alias python3='_dotfiles_init_pyenv && unalias python3 && python3'
-  alias pip='_dotfiles_init_pyenv && unalias pip && pip'
-  alias pip3='_dotfiles_init_pyenv && unalias pip3 && pip3'
-  alias pyenv='_dotfiles_init_pyenv && unalias pyenv && pyenv'
+  alias python='_dotfiles_init_pyenv && unalias python && command python'
+  alias python3='_dotfiles_init_pyenv && unalias python3 && command python3'
+  alias pip='_dotfiles_init_pyenv && unalias pip && command pip'
+  alias pip3='_dotfiles_init_pyenv && unalias pip3 && command pip3'
+  alias pyenv='_dotfiles_init_pyenv && unalias pyenv && command pyenv'
 fi
 
 if command -v rbenv &> /dev/null; then
-  alias ruby='_dotfiles_init_rbenv && unalias ruby && ruby'
-  alias gem='_dotfiles_init_rbenv && unalias gem && gem'
-  alias bundle='_dotfiles_init_rbenv && unalias bundle && bundle'
-  alias rbenv='_dotfiles_init_rbenv && unalias rbenv && rbenv'
+  alias ruby='_dotfiles_init_rbenv && unalias ruby && command ruby'
+  alias gem='_dotfiles_init_rbenv && unalias gem && command gem'
+  alias bundle='_dotfiles_init_rbenv && unalias bundle && command bundle'
+  alias rbenv='_dotfiles_init_rbenv && unalias rbenv && command rbenv'
 fi
 
 
