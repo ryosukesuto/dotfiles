@@ -129,7 +129,7 @@ python_env_info() {
     if [[ -n "$VIRTUAL_ENV" ]]; then
       _prompt_cache_python_env=" %F{yellow}(🐍$(basename $VIRTUAL_ENV))%f"
     elif command -v pyenv &> /dev/null; then
-      local pyenv_version=$(pyenv version-name 2>/dev/null)
+      local pyenv_version=$(command pyenv version-name 2>/dev/null)
       if [[ -n "$pyenv_version" && "$pyenv_version" != "system" ]]; then
         _prompt_cache_python_env=" %F{yellow}(🐍py:$pyenv_version)%f"
       else
@@ -204,7 +204,7 @@ precmd() {
     if (( ${+EPOCHREALTIME} )); then
       now=${EPOCHREALTIME%.*}000
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-      now=$(python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || echo $(($(date +%s) * 1000)))
+      now=$(command python3 -c "import time; print(int(time.time() * 1000))" 2>/dev/null || echo $(($(date +%s) * 1000)))
     else
       now=$(($(date +%s%N)/1000000))
     fi

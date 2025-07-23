@@ -1,50 +1,19 @@
 #!/usr/bin/env zsh
 # ============================================================================
-# 50-tools.zsh - 開発ツールの遅延初期化
+# 50-tools.zsh - 開発ツールの初期化
 # ============================================================================
-# このファイルはpyenv、rbenv、Terraformなどの開発ツールを遅延初期化します。
-# 実際にコマンドが使用されるまで初期化を遅延させることで起動時間を短縮します。
+# このファイルはpyenv、rbenv、Terraformなどの開発ツールを初期化します。
 
-# 遅延読み込み用の初期化フラグ
-typeset -g _DOTFILES_PYENV_INIT_DONE=0
-typeset -g _DOTFILES_RBENV_INIT_DONE=0
-
-# pyenv遅延初期化関数
-_dotfiles_init_pyenv() {
-  [[ $_DOTFILES_PYENV_INIT_DONE -eq 1 ]] && return
-  _DOTFILES_PYENV_INIT_DONE=1
-
-  if command -v pyenv &> /dev/null; then
-    export PATH="$PYENV_ROOT/bin:$PATH"
-    eval "$(pyenv init --path)"
-    eval "$(pyenv init -)"
-  fi
-}
-
-# rbenv遅延初期化関数
-_dotfiles_init_rbenv() {
-  [[ $_DOTFILES_RBENV_INIT_DONE -eq 1 ]] && return
-  _DOTFILES_RBENV_INIT_DONE=1
-
-  if command -v rbenv &> /dev/null; then
-    eval "$(rbenv init -)"
-  fi
-}
-
-# aliasベースの遅延読み込み設定
+# pyenv初期化
 if command -v pyenv &> /dev/null; then
-  alias python='_dotfiles_init_pyenv && unalias python && command python'
-  alias python3='_dotfiles_init_pyenv && unalias python3 && command python3'
-  alias pip='_dotfiles_init_pyenv && unalias pip && command pip'
-  alias pip3='_dotfiles_init_pyenv && unalias pip3 && command pip3'
-  alias pyenv='_dotfiles_init_pyenv && unalias pyenv && command pyenv'
+  export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init --path)"
+  eval "$(pyenv init -)"
 fi
 
+# rbenv初期化  
 if command -v rbenv &> /dev/null; then
-  alias ruby='_dotfiles_init_rbenv && unalias ruby && command ruby'
-  alias gem='_dotfiles_init_rbenv && unalias gem && command gem'
-  alias bundle='_dotfiles_init_rbenv && unalias bundle && command bundle'
-  alias rbenv='_dotfiles_init_rbenv && unalias rbenv && command rbenv'
+  eval "$(rbenv init -)"
 fi
 
 
