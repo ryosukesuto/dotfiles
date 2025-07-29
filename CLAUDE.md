@@ -28,7 +28,8 @@
 - `tmux/` - ターミナルマルチプレクサ設定
 - `vim/` - プラグイン管理を含むVimエディタ設定
 - `aws/` - AWS CLI設定テンプレート（セキュア、認証情報なし）
-- `config/` - アプリケーション固有の設定（GitHub CLIなど）
+- `config/` - アプリケーション固有の設定（GitHub CLI、Claude Codeなど）
+  - `config/claude/commands/` - ユーザー固有のClaude Codeカスタムコマンド
 - `.zshrc` - モジュラーファイルをソースするメインZshエントリポイント
 - `.zprofile` - 環境セットアップ用のZshプロファイル
 
@@ -96,8 +97,10 @@
 1. **プロジェクト固有のコマンド**: `.claude/commands/` ディレクトリにMarkdownファイルを作成
    - 例: `.claude/commands/deploy.md` → `/project:deploy` として利用可能
 
-2. **ユーザー固有のコマンド**: `~/.claude/commands/` ディレクトリにMarkdownファイルを作成
-   - 例: `~/.claude/commands/review.md` → `/user:review` として利用可能
+2. **ユーザー固有のコマンド**: `config/claude/commands/` ディレクトリにMarkdownファイルを作成
+   - dotfilesリポジトリで管理され、install.shにより `~/.claude/commands/` にシンボリックリンクされる
+   - 例: `config/claude/commands/review.md` → `/user:review` として利用可能
+   - 汎用的なコマンド（GitHub CI、ブランチ管理など）はここに配置
 
 ### 従来のカスタムコマンド（CLAUDE.md用）
 

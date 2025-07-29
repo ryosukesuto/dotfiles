@@ -315,32 +315,8 @@ fi
 create_symlink "$DOTFILES_DIR/config/claude/GLOBAL_SETTINGS.md" "$HOME/.claude/CLAUDE.md"
 create_symlink "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settings.json"
 
-# Claude カスタムコマンドディレクトリを作成
-if [ ! -d "$HOME/.claude/commands" ]; then
-    if [ "$DRY_RUN" = true ]; then
-        info "[DRY RUN] Claude commands ディレクトリを作成: ~/.claude/commands"
-    else
-        mkdir -p "$HOME/.claude/commands"
-        info "Claude commands ディレクトリを作成: ~/.claude/commands"
-    fi
-fi
-
-# プロジェクト固有のClaude commandsディレクトリの内容をコピー
-if [ -d "$DOTFILES_DIR/.claude/commands" ]; then
-    if [ "$DRY_RUN" = true ]; then
-        info "[DRY RUN] プロジェクト固有のコマンドをユーザーコマンドディレクトリにコピー"
-    else
-        # プロジェクト固有のコマンドをユーザーディレクトリにコピー
-        for cmd in "$DOTFILES_DIR/.claude/commands"/*.md; do
-            if [ -f "$cmd" ]; then
-                cp "$cmd" "$HOME/.claude/commands/"
-                info "コマンドをコピー: $(basename "$cmd")"
-            fi
-        done
-        info "注意: プロジェクト固有のコマンドは /user: プレフィックスでアクセスできます（例: /user:sync-remote）"
-        info "将来的には /project: プレフィックスがサポートされる可能性があります"
-    fi
-fi
+# Claude ユーザー固有コマンドのシンボリックリンク作成
+create_symlink "$DOTFILES_DIR/config/claude/commands" "$HOME/.claude/commands"
 
 # AWS設定は手動でテンプレートからコピー
 # create_symlink "$DOTFILES_DIR/config/aws/config" "$HOME/.aws/config"
@@ -425,11 +401,11 @@ fi
 # バックアップファイルの削除
 if [ "$CLEAN_BACKUP" = true ] && [ "$DRY_RUN" = false ]; then
     info "バックアップファイルを削除しています..."
-    /usr/bin/find "$HOME" -maxdepth 3 -name '*backup*' \( -type f -o -type l \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" -delete 2>/dev/null
+    /usr/bin/find "$HOME" -maxdepth 3 -name '*backup*' \( -type f -o -type l -o -type d \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" -delete 2>/dev/null
     info "バックアップファイルを削除しました"
 else
     # バックアップファイルの削除案内
-    backup_files=$(/usr/bin/find "$HOME" -maxdepth 3 -name "*backup*" \( -type f -o -type l \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" 2>/dev/null | head -10)
+    backup_files=$(/usr/bin/find "$HOME" -maxdepth 3 -name "*backup*" \( -type f -o -type l -o -type d \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" 2>/dev/null | head -10)
     if [ -n "$backup_files" ]; then
         echo ""
         warn "バックアップファイルが見つかりました:"
@@ -438,7 +414,7 @@ else
         echo "不要な場合は以下のコマンドで削除できます:"
         echo "  ./install.sh --clean-backup"
         echo "または手動で削除:"
-        echo "  /usr/bin/find \$HOME -maxdepth 3 -name '*backup*' \\( -type f -o -type l \\) -not -path \"\$HOME/Library/*\" -not -path \"\$HOME/.Trash/*\" -not -path \"\$HOME/Pictures/*\" -delete 2>/dev/null"
+        echo "  /usr/bin/find \$HOME -maxdepth 3 -name '*backup*' \\( -type f -o -type l -o -type d \\) -not -path \"\$HOME/Library/*\" -not -path \"\$HOME/.Trash/*\" -not -path \"\$HOME/Pictures/*\" -delete 2>/dev/null"
     fi
 fi
 
