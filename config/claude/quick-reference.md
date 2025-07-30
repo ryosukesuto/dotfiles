@@ -4,31 +4,18 @@ Claude Code作業時に頻出するパターンと即座に使える指示集。
 
 ## ⚡ 頻出パターン
 
-### 🏗️ Terraform作業
-```markdown
-# 基本フロー
-1. terraform plan → 影響範囲確認
-2. 変更ファイル確認 → ドキュメント更新要否判断
-3. variables.tf/outputs.tf更新 → 説明追加
-4. README.md更新 → リソース構成図更新
-```
-
-### 🔄 リファクタリング
-```markdown
-# MVP方式での段階的実装
-1. 改善項目リスト作成 → 優先度評価
-2. 🚨セキュリティ > ⚠️パフォーマンス > 💡保守性 > 📝可読性
-3. 1つのPRに1つの改善項目のみ
-4. 前のPRマージ後に次の項目着手
-```
-
-### 📋 PR作成
+### 📋 PRテンプレート
 ```markdown
 # 単一目標PR
 🎯 このPRの焦点: [改善項目1つのみ]
 🚫 意図的に除外: [他の改善項目]
 ✅ 完了基準: [明確な成功指標]
 🔄 次のステップ: [次の改善項目]
+
+## 変更影響範囲
+- [ ] 既存機能への影響: なし/あり（詳細記載）
+- [ ] CI/CD結果: 全てグリーン
+- [ ] セキュリティ影響: なし/あり（詳細記載）
 ```
 
 ## 🛠️ よく使うコマンド
@@ -41,8 +28,8 @@ date "+%Y-%m-%d (%a) %H:%M"
 # 変更ファイル確認
 git diff --name-only HEAD~1
 
-# Terraformチェック
-terraform plan
+# Terraform（CIエラー回避用）
+terraform fmt -recursive
 terraform validate
 ```
 
@@ -86,15 +73,7 @@ th "⚠️ デプロイ時にメモリ不足エラーが発生"
 
 ## 🔗 関連リンク
 
-### 専門ワークフロー
-- [Terraformワークフロー](terraform-workflow.md) - Terraform特化の詳細手順
-- [PRレビュープロセス](review-process.md) - レビュー基準と手順
-- [ドキュメント更新チェック](documentation-checks.md) - 文書化ルール
-
-### 設定ファイル
-- [セキュリティ基準](security-guidelines.md) - セキュリティ関連制約
-- [技術スタック制約](tech-constraints.md) - 言語・フレームワーク別制約
-- [効率化メトリクス](efficiency-metrics.md) - 生産性測定
+- [Terraformワークフロー](terraform-workflow.md) - Terraform特化の詳細手順とドキュメント基準
 
 ## 💡 時間節約のコツ
 
