@@ -13,15 +13,21 @@
 - `zsh/` - モジュール化されたZsh設定ファイル（番号付きで読み込み順序を制御）
   - `00-core.zsh` - コアシェル設定と履歴管理
   - `10-completion.zsh` - 最小限の補完システム設定
-  - `20-path.zsh` - ネイティブZsh配列を使用したPATH管理
-  - `30-aliases.zsh` - 必要最小限のコマンドエイリアス
-  - `40-functions.zsh` - コア関数と遅延読み込み設定
-  - `50-tools.zsh` - バージョンマネージャーの初期化（pyenv、rbenv、terraform）
-  - `60-prompt.zsh` - Git、Python、AWS、Terraform情報を表示するカスタムプロンプト
+  - `20-path.zsh` - セキュアで効率的なPATH管理（診断機能付き）
+  - `30-aliases.zsh` - カテゴリ別に体系化されたエイリアス定義
+  - `40-functions.zsh` - セキュアな遅延読み込み機構とコア関数
+  - `50-tools.zsh` - miseによる統一バージョンマネージャー初期化
+  - `60-prompt.zsh` - モジュラー化されたプロンプト設定（メインファイル）
   - `90-local.zsh` - ローカル環境変数とマシン固有の設定
+  - `lib/` - **新設** プロンプト機能のモジュラーライブラリ
+    - `git-prompt.zsh` - Git情報表示とキャッシュ機能
+    - `env-prompt.zsh` - 開発環境情報表示（Python/AWS/Terraform）
+    - `timer-prompt.zsh` - コマンド実行時間測定機能
   - `functions/` - 遅延読み込みされる関数モジュール
     - `aws-bastion.zsh` - AWS SSM Session Managerユーティリティ
-    - `obsidian.zsh` - Obsidianデイリーノート関数（thコマンド）
+    - `obsidian-claude.zsh` - Obsidian-Claude連携関数
+    - `diagnostics.zsh` - システム診断ユーティリティ
+    - `extract.zsh` - アーカイブ展開ユーティリティ
     - `gemini-search.zsh` - Gemini API検索関数（オプション）
 - `git/` - エイリアスと拡張設定を含むGit設定
 - `ssh/` - SSH設定と管理ユーティリティ
@@ -38,7 +44,7 @@
 このセットアップで使用されている、設定が必要な可能性のあるツール：
 
 - **シェル**: ディレクトリナビゲーション用のカスタムpeco-src関数を持つZsh
-- **バージョンマネージャー**: pyenv（Python）、tfenv（Terraform）
+- **バージョンマネージャー**: mise（Python、Ruby、Terraform、Node.jsなど統一管理）
 - **開発ツール**: Go、Terraform、DBT（data build tool）
 - **リポジトリ管理**: ghq（Gitリポジトリを~/src配下に整理）
 - **パッケージマネージャー**: Homebrew（macOS）
@@ -59,7 +65,7 @@
 ## アーキテクチャノート
 
 ### 開発環境
-- **言語**: Python（pyenv）、Ruby（rbenv）、Terraform
+- **言語**: Python、Ruby、Terraform（miseで統一管理）
 - **クラウドプラットフォーム**: AWS、Google Cloud Platform
 - **リポジトリ管理**: ghqがGitリポジトリを`~/src`配下に整理
 - **プロジェクトナビゲーション**: クイックディレクトリ切り替え用のpeco-src/fzf-src（Ctrl+GまたはCtrl+]）
@@ -71,11 +77,12 @@
 - **AWS統合**: Bastionアクセス用のSSM Session Manager
 - **クリーンなプロンプト**: 現在のディレクトリ、Gitステータス、アクティブな環境を表示
 
-### パフォーマンス最適化
-- 制御された順序で読み込まれるモジュラー設定ファイル
-- ネイティブZsh配列を使用したPATH重複排除
-- 必要な時のみバージョンマネージャーを初期化
-- Gitコマンドのオーバーヘッドを削減するプロンプトキャッシング
+### パフォーマンス最適化とセキュリティ
+- **モジュラー設計**: プロンプト機能を`zsh/lib/`配下の独立モジュールに分離
+- **セキュアなPATH管理**: 信頼できるパスのみを効率的に追加、セキュリティ検証付き
+- **遅延読み込み機構**: ファイル検証とパフォーマンス測定を統合したセキュアな関数読み込み
+- **統一ツール管理**: miseによる複数言語バージョン管理の統一
+- **キャッシュシステム**: Git情報とプロンプト表示の効率的なキャッシング
 
 ## カスタムコマンド
 
@@ -172,6 +179,29 @@ dotfilesのインストールを初期化または検証：
 - コマンド実行速度
 - リポジトリナビゲーション効率
 - 設定リロード時間
+
+## 新しいユーティリティ機能
+
+### PATH管理ツール
+- `path_diagnostic()` - PATH設定の詳細診断（存在確認、セキュリティ評価）
+- `find_duplicate_paths()` - 重複パスの検出と表示
+- `clean_path()` - PATH環境変数のクリーンアップ
+
+### エイリアス管理ツール
+- `list_aliases()` - 設定済みエイリアスの一覧表示
+- `show_category_aliases <category>` - カテゴリ別エイリアス表示
+- `check_alias_conflicts()` - エイリアス競合の検出
+
+### 遅延読み込み管理
+- `list_loaded_functions()` - 読み込み済み関数の追跡
+- `clear_function_cache()` - 関数キャッシュのクリア
+- `show_function_errors()` - 関数読み込みエラーログの表示
+
+### プロンプト管理
+- `clear_prompt_cache()` - プロンプトキャッシュのクリア
+- `reload_prompt()` - プロンプト設定の再読み込み
+- `prompt_debug()` - プロンプト情報のデバッグ表示
+- `set_timer_threshold <ms>` - コマンド実行時間表示のしきい値設定
 
 # 重要な指示の再確認
 要求されたことだけを行い、それ以上でもそれ以下でもない。

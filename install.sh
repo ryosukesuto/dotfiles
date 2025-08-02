@@ -119,9 +119,7 @@ check_dependencies() {
         "fd"
         "gh"
         "aws"
-        "terraform"
-        "pyenv"
-        "rbenv"
+        "mise"
     )
     
     local missing_recommended=()
@@ -318,6 +316,9 @@ create_symlink "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settin
 # Claude ユーザー固有コマンドのシンボリックリンク作成
 create_symlink "$DOTFILES_DIR/config/claude/commands" "$HOME/.claude/commands"
 
+# mise設定
+create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/config.toml"
+
 # AWS設定は手動でテンプレートからコピー
 # create_symlink "$DOTFILES_DIR/config/aws/config" "$HOME/.aws/config"
 
@@ -419,4 +420,9 @@ else
 fi
 
 info "推奨ツールのインストール案内:"
+echo "  # パッケージマネージャー"
+echo "  curl https://mise.run | sh"
+echo "  mise install"
+echo ""
+echo "  # その他のツール"
 echo "  brew install fzf eza bat ripgrep fd-find"

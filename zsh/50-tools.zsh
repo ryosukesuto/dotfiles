@@ -2,18 +2,11 @@
 # ============================================================================
 # 50-tools.zsh - 開発ツールの初期化
 # ============================================================================
-# このファイルはpyenv、rbenv、Terraformなどの開発ツールを初期化します。
+# このファイルはmiseなどの開発ツールを初期化します。
 
-# pyenv初期化
-if command -v pyenv &> /dev/null; then
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init --path)"
-  eval "$(pyenv init -)"
-fi
-
-# rbenv初期化  
-if command -v rbenv &> /dev/null; then
-  eval "$(rbenv init -)"
+# mise初期化
+if command -v mise &> /dev/null; then
+  eval "$(mise activate zsh)"
 fi
 
 
