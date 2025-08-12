@@ -67,9 +67,9 @@ _add_secure_path "$HOME/.local/share/mise/shims" true
 # ============================================================================
 # 効率化：配列で一括処理
 _path_candidates=(
+    "$HOME/src/github.com/ryosukesuto/dotfiles/bin"
     "$HOME/.local/bin"
     "$HOME/bin"
-    "$HOME/src/github.com/ryosukesuto/dotfiles/bin"
 )
 
 for candidate in "${_path_candidates[@]}"; do

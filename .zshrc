@@ -1,6 +1,9 @@
 # メイン .zshrc ファイル - すべてのモジュール設定ファイルを読み込み
 # このファイルは Zsh 設定のエントリーポイント
 
+# dotfiles/bin を即座にPATHに追加（thコマンドなどを利用可能にする）
+export PATH="$HOME/src/github.com/ryosukesuto/dotfiles/bin:$PATH"
+
 # dotfiles が配置されているディレクトリを取得
 # このファイルがシンボリックリンクの場合は実際のパスを取得
 if [ -L ~/.zshrc ]; then
