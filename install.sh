@@ -316,6 +316,9 @@ create_symlink "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settin
 # Claude ユーザー固有コマンドのシンボリックリンク作成
 create_symlink "$DOTFILES_DIR/config/claude/commands" "$HOME/.claude/commands"
 
+# Claude statuslineのシンボリックリンク作成
+create_symlink "$DOTFILES_DIR/config/claude/statusline.js" "$HOME/.claude/statusline.js"
+
 # mise設定
 create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/config.toml"
 
