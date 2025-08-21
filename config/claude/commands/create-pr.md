@@ -150,6 +150,51 @@ fi
 
 ### 6. PRの作成
 
+#### Terraformリポジトリの場合
+
+```bash
+# Terraformリポジトリの判定
+if [ -f "terraform.tf" ] || [ -f "main.tf" ] || [ -f "provider.tf" ] || [ -d ".terraform" ]; then
+    echo "Terraformリポジトリを検出しました。Sandboxブランチの最新を取り込みます..."
+    
+    # 現在のブランチを保存
+    CURRENT_BRANCH=$(git branch --show-current)
+    
+    # リモートの最新情報を取得
+    git fetch origin
+    
+    # Sandboxブランチが存在する場合、最新を取り込む
+    if git ls-remote --heads origin sandbox | grep -q sandbox; then
+        echo "Sandboxブランチをマージします..."
+        git merge origin/sandbox --no-edit || {
+            echo "マージコンフリクトが発生しました。解決してください。"
+            exit 1
+        }
+    else
+        echo "Sandboxブランチが見つかりません。通常のPR作成を続行します。"
+    fi
+fi
+
+# 変更をコミット（まだの場合）
+git add -A
+git commit -m "feat: [簡潔な説明]
+
+[詳細な説明]
+
+🤖 Generated with [Claude Code](https://claude.ai/code)"
+
+# ブランチをプッシュ
+git push -u origin HEAD
+
+# GitHub CLIでPR作成
+gh pr create \
+    --title "[Type]: 簡潔なタイトル" \
+    --body "[生成されたPR本文]" \
+    --assignee @me
+```
+
+#### 通常のリポジトリの場合
+
 ```bash
 # 変更をコミット（まだの場合）
 git add -A
@@ -188,13 +233,13 @@ gh pr create \
 
 ```bash
 # 基本的な使用
-/pr
+/create-pr
 
 # 特定のタイトルでPR作成
-/pr "feat: ユーザー認証機能の追加"
+/create-pr "feat: ユーザー認証機能の追加"
 
 # ドラフトPRとして作成
-/pr --draft
+/create-pr --draft
 ```
 
 ## 注意事項
