@@ -155,23 +155,55 @@ fi
 ```bash
 # Terraformリポジトリの判定
 if [ -f "terraform.tf" ] || [ -f "main.tf" ] || [ -f "provider.tf" ] || [ -d ".terraform" ]; then
-    echo "Terraformリポジトリを検出しました。Sandboxブランチの最新を取り込みます..."
+    echo "Terraformリポジトリを検出しました。"
     
-    # 現在のブランチを保存
+    # 現在のブランチを確認
     CURRENT_BRANCH=$(git branch --show-current)
     
-    # リモートの最新情報を取得
-    git fetch origin
-    
-    # Sandboxブランチが存在する場合、最新を取り込む
-    if git ls-remote --heads origin sandbox | grep -q sandbox; then
-        echo "Sandboxブランチをマージします..."
-        git merge origin/sandbox --no-edit || {
-            echo "マージコンフリクトが発生しました。解決してください。"
+    # Sandboxブランチ以外にいる場合
+    if [ "$CURRENT_BRANCH" != "sandbox" ]; then
+        echo "Sandboxブランチに切り替えます..."
+        
+        # リモートの最新情報を取得
+        git fetch origin
+        
+        # Sandboxブランチが存在するか確認
+        if git ls-remote --heads origin sandbox | grep -q sandbox; then
+            # ローカルにSandboxブランチがあるか確認
+            if git show-ref --verify --quiet refs/heads/sandbox; then
+                # 既存のSandboxブランチに切り替え
+                git checkout sandbox
+            else
+                # リモートのSandboxブランチをチェックアウト
+                git checkout -b sandbox origin/sandbox
+            fi
+            
+            # リモートのSandboxブランチと同期
+            echo "リモートのSandboxブランチと同期します..."
+            git pull --rebase origin sandbox || {
+                echo "リベースでコンフリクトが発生しました。解決してください。"
+                exit 1
+            }
+            
+            # featureブランチを作成して切り替え
+            FEATURE_BRANCH="feature/$(date +%Y%m%d-%H%M%S)"
+            echo "featureブランチ($FEATURE_BRANCH)を作成します..."
+            git checkout -b "$FEATURE_BRANCH"
+        else
+            echo "リモートにSandboxブランチが見つかりません。通常のPR作成を続行します。"
+        fi
+    else
+        # 既にSandboxブランチにいる場合
+        echo "既にSandboxブランチにいます。リモートと同期します..."
+        git pull --rebase origin sandbox || {
+            echo "リベースでコンフリクトが発生しました。解決してください。"
             exit 1
         }
-    else
-        echo "Sandboxブランチが見つかりません。通常のPR作成を続行します。"
+        
+        # featureブランチを作成して切り替え
+        FEATURE_BRANCH="feature/$(date +%Y%m%d-%H%M%S)"
+        echo "featureブランチ($FEATURE_BRANCH)を作成します..."
+        git checkout -b "$FEATURE_BRANCH"
     fi
 fi
 
