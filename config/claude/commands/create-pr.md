@@ -225,10 +225,17 @@ git commit -m "feat: [簡潔な説明]
 git push -u origin HEAD
 
 # GitHub CLIでPR作成
-gh pr create \
+PR_URL=$(gh pr create \
     --title "[Type]: 簡潔なタイトル" \
     --body "[生成されたPR本文]" \
-    --assignee @me
+    --assignee @me)
+
+# PR作成成功時にthコマンドで作業報告
+if [ -n "$PR_URL" ]; then
+    PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+    th "✅ PR #${PR_NUMBER} 作成完了: ${PR_URL}"
+    echo "✅ PR作成が完了し、Obsidianに記録しました: $PR_URL"
+fi
 ```
 
 #### 通常のリポジトリの場合
@@ -246,10 +253,17 @@ git commit -m "feat: [簡潔な説明]
 git push -u origin HEAD
 
 # GitHub CLIでPR作成
-gh pr create \
+PR_URL=$(gh pr create \
     --title "[Type]: 簡潔なタイトル" \
     --body "[生成されたPR本文]" \
-    --assignee @me
+    --assignee @me)
+
+# PR作成成功時にthコマンドで作業報告
+if [ -n "$PR_URL" ]; then
+    PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+    th "✅ PR #${PR_NUMBER} 作成完了: ${PR_URL}"
+    echo "✅ PR作成が完了し、Obsidianに記録しました: $PR_URL"
+fi
 ```
 
 ## オプション
