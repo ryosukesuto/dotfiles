@@ -205,6 +205,12 @@ if [ -f "terraform.tf" ] || [ -f "main.tf" ] || [ -f "provider.tf" ] || [ -d ".t
         echo "featureブランチ($FEATURE_BRANCH)を作成します..."
         git checkout -b "$FEATURE_BRANCH"
     fi
+    
+    # Terraformファイルをフォーマット
+    echo "Terraformファイルをフォーマットします..."
+    terraform fmt -recursive || {
+        echo "警告: terraform fmtが失敗しました。Terraformがインストールされていない可能性があります。"
+    }
 fi
 
 # 変更をコミット（まだの場合）
