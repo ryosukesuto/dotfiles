@@ -1,40 +1,57 @@
 {
+  "env": {
+    "CLAUDE_CODE_AUTO_CONNECT_IDE": false,
+    "CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL": true,
+    "CLAUDE_CODE_IDE_SKIP_VALID_CHECK": true,
+    "CLAUDE_CODE_ENABLE_TELEMETRY": false,
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": true,
+    "DISABLE_ERROR_REPORTING": true,
+    "DISABLE_TELEMETRY": true,
+    "DISABLE_AUTOUPDATER": true,
+    "DISABLE_MICROCOMPACT": true,
+    "MAX_THINKING_TOKENS": 31999
+  },
   "permissions": {
     "allow": [
+      "// === パッケージマネージャー ===",
       "Bash(npm *)",
       "Bash(yarn *)",
       "Bash(pnpm *)",
+      
+      "// === 言語・ランタイム ===",
       "Bash(python *)",
       "Bash(pip *)",
       "Bash(go *)",
       "Bash(cargo *)",
       "Bash(docker *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git push)",
-      "Bash(git pull)",
-      "Bash(git status)",
-      "Bash(git diff)",
-      "Bash(git log)",
-      "Bash(git branch *)",
-      "Bash(git checkout *)",
-      "Bash(git merge *)",
-      "Bash(git rebase *)",
+      "Bash(mise *)",
+      
+      "// === Git操作 ===",
+      "Bash(git *)",
+      "Bash(gh *)",
+      
+      "// === ファイル操作 ===",
       "Bash(ls *)",
       "Bash(cat *)",
       "Bash(grep *)",
+      "Bash(rg *)",
       "Bash(find *)",
       "Bash(mkdir *)",
       "Bash(touch *)",
       "Bash(cp *)",
       "Bash(mv *)",
       "Bash(rm [!-]*)",
+      
+      "// === システム情報 ===",
       "Bash(pwd)",
       "Bash(date *)",
       "Bash(whoami)",
       "Bash(which *)",
       "Bash(env)",
       "Bash(echo *)",
+      "Bash(command -v *)",
+      
+      "// === テストコマンド ===",
       "Bash(npm test)",
       "Bash(npm run *)",
       "Bash(yarn test)",
@@ -43,28 +60,50 @@
       "Bash(go test *)",
       "Bash(cargo test *)",
       "Bash(make *)",
+      
+      "// === AWS ===",
       "Bash(aws s3 ls *)",
       "Bash(aws ec2 describe-*)",
       "Bash(aws iam list-*)",
       "Bash(aws-bastion*)",
-      "Bash(gh *)",
+      
+      "// === エディタ・開発ツール ===",
       "Bash(code *)",
       "Bash(vim *)",
       "Bash(nano *)",
+      
+      "// === ユーティリティ ===",
       "Bash(jq *)",
       "Bash(curl *)",
       "Bash(wget *)",
       "Bash(ghq *)",
       "Bash(peco-src)",
       "Bash(fzf *)",
-      "Bash(th *)"
+      
+      "// === カスタムツール ===",
+      "Bash(th *)",
+      "Bash(gnews *)",
+      
+      "// === シェル関連 ===",
+      "Bash(source *)",
+      "Bash(reload)",
+      "Bash(zsh *)",
+      "Bash(exec zsh)",
+      "Bash(export PATH=*)",
+      
+      "// === Web取得許可ドメイン ===",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:zenn.dev)",
+      "WebFetch(domain:qiita.com)",
+      "WebFetch(domain:note.com)"
     ],
     "deny": [
+      "// === 破壊的ファイル削除 ===",
       "Bash(rm -rf /)",
       "Bash(rm -rf ~)",
       "Bash(rm -rf ~/*)",
       "Bash(rm -rf /*)",
-      "Bash(rm -rf ~/)",
+      "Bash(rm -rf */)",
       "Bash(rm -rf .)",
       "Bash(rm -rf ..)",
       "Bash(rm -rf *)",
@@ -73,22 +112,32 @@
       "Bash(rm -rf ~/Documents)",
       "Bash(rm -rf ~/Desktop)",
       "Bash(rm -rf ~/Downloads)",
+      
+      "// === sudo系危険操作 ===",
       "Bash(sudo rm*)",
       "Bash(sudo mv /etc/*)",
       "Bash(sudo chmod 777 /)",
       "Bash(sudo chown*)",
+      "Bash(sudo kill *)",
+      "Bash(sudo killall *)",
+      "Bash(sudo pkill *)",
+      
+      "// === Git破壊的操作 ===",
       "Bash(git push --force origin main)",
       "Bash(git push --force origin master)",
       "Bash(git reset --hard HEAD~*)",
       "Bash(git clean -fdx)",
-      "Bash(sudo kill -9 *)",
-      "Bash(sudo killall *)",
-      "Bash(sudo pkill *)",
+      
+      "// === ネットワーク・システム破壊 ===",
       "Bash(sudo ifconfig * down)",
       "Bash(sudo iptables -F)",
+      
+      "// === パッケージ強制削除 ===",
       "Bash(brew uninstall --force *)",
       "Bash(sudo apt-get purge *)",
       "Bash(sudo yum remove *)",
+      
+      "// === 機密ファイル読取禁止 ===",
       "Read(~/.aws/credentials)",
       "Read(~/.ssh/id_rsa)",
       "Read(~/.ssh/id_ed25519)",
@@ -96,6 +145,8 @@
       "Read(~/.env.local)",
       "Read(~/.zsh_history)",
       "Read(~/.bash_history)",
+      
+      "// === 重要設定ファイル書込禁止 ===",
       "Write(~/.zshrc)",
       "Write(~/.bashrc)",
       "Write(~/.gitconfig)",
@@ -105,29 +156,11 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '📖 確認: 読み取るファイルは正しいですか？'"
-          }
-        ]
-      },
-      {
         "matcher": "Write",
         "hooks": [
           {
             "type": "command",
-            "command": "echo '⚠️ 新規作成前に確認: 既存ファイルの編集ではダメですか？作成場所は正しいですか？'"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '✏️ 編集前に確認: 対象ファイルと編集内容は正しいですか？'"
+            "command": "echo '⚠️ 新規作成前に確認: 既存ファイルの編集ではダメですか？'"
           }
         ]
       },
@@ -136,16 +169,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🚨 タスク実行前に確認: ユーザーに確認を取りましたか？作業内容は明確ですか？'"
-          }
-        ]
-      },
-      {
-        "matcher": "TodoWrite",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '📋 ToDo更新前に確認: 実行計画をユーザーに提示しましたか？'"
+            "command": "echo '🚨 タスク実行前に確認: 作業内容は明確ですか？'"
           }
         ]
       }
