@@ -82,7 +82,6 @@ _setup_category_aliases() {
                 "tree:eza --tree:eza"
                 "cat:bat:bat"
                 "grep:rg:rg"
-                "find:fd:fd"
             )
             ;;
     esac
