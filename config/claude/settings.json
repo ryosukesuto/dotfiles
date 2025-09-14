@@ -1,15 +1,41 @@
 {
   "env": {
+    "// === パフォーマンス最適化 ===": "",
+    "MAX_THINKING_TOKENS": 31999,
+    "CLAUDE_CODE_PARALLEL_TOOL_CALLS": true,
+    "CLAUDE_CODE_BATCH_OPERATIONS": true,
+    "CLAUDE_CODE_CACHE_DURATION": 900,
+    "CLAUDE_CODE_MAX_CONCURRENT_TASKS": 5,
+    
+    "// === IDE連携設定 ===": "",
     "CLAUDE_CODE_AUTO_CONNECT_IDE": false,
     "CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL": true,
     "CLAUDE_CODE_IDE_SKIP_VALID_CHECK": true,
+    "CLAUDE_CODE_IDE_DEFAULT": "code",
+    
+    "// === プライバシー・テレメトリ無効化 ===": "",
     "CLAUDE_CODE_ENABLE_TELEMETRY": false,
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": true,
-    "DISABLE_ERROR_REPORTING": true,
     "DISABLE_TELEMETRY": true,
+    "DISABLE_ERROR_REPORTING": true,
     "DISABLE_AUTOUPDATER": true,
-    "DISABLE_MICROCOMPACT": true,
-    "MAX_THINKING_TOKENS": 31999
+    
+    "// === 開発体験向上 ===": "",
+    "CLAUDE_CODE_AUTO_FORMAT": true,
+    "CLAUDE_CODE_AUTO_LINT": true,
+    "CLAUDE_CODE_SHOW_PROGRESS": true,
+    "CLAUDE_CODE_VERBOSE_ERRORS": true,
+    "CLAUDE_CODE_COLOR_OUTPUT": true,
+    
+    "// === セキュリティ設定 ===": "",
+    "CLAUDE_CODE_SANITIZE_OUTPUTS": true,
+    "CLAUDE_CODE_MASK_SECRETS": true,
+    "CLAUDE_CODE_SECURE_MODE": false,
+    
+    "// === デフォルト動作設定 ===": "",
+    "CLAUDE_CODE_DEFAULT_BRANCH": "main",
+    "CLAUDE_CODE_GIT_AUTO_STAGE": false,
+    "CLAUDE_CODE_TEST_BEFORE_COMMIT": true
   },
   "permissions": {
     "allow": [
