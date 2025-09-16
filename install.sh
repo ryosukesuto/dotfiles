@@ -120,6 +120,7 @@ check_dependencies() {
         "gh"
         "aws"
         "mise"
+        "supabase"
     )
     
     local missing_recommended=()
@@ -322,6 +323,16 @@ create_symlink "$DOTFILES_DIR/config/claude/statusline.js" "$HOME/.claude/status
 # mise設定
 create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/config.toml"
 
+# Supabase設定ディレクトリ
+if [ ! -d "$HOME/.supabase" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Supabase ディレクトリを作成: ~/.supabase"
+    else
+        mkdir -p "$HOME/.supabase"
+        info "Supabase ディレクトリを作成: ~/.supabase"
+    fi
+fi
+
 # AWS設定は手動でテンプレートからコピー
 # create_symlink "$DOTFILES_DIR/config/aws/config" "$HOME/.aws/config"
 
@@ -395,6 +406,28 @@ if [ ! -f "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" ]; then
     echo "テンプレートファイルを参考にしてください:"
     echo "  cp $DOTFILES_DIR/config/claude/claude_desktop_config.json.local.example $DOTFILES_DIR/config/claude/claude_desktop_config.json.local"
     echo "  # その後、実際のAPIトークンを入力してください"
+fi
+
+if [ ! -f "$HOME/.supabase/config.toml" ]; then
+    info "ヒント: Supabaseグローバル設定を ~/.supabase/config.toml に作成できます"
+    echo "テンプレートファイルを参考にしてください:"
+    echo "  cp $DOTFILES_DIR/config/supabase/config.toml.template ~/.supabase/config.toml"
+    echo "  # その後、必要に応じて設定を調整してください"
+fi
+
+if [ ! -f "$HOME/.supabase/projects.toml" ]; then
+    info "ヒント: Supabaseプロジェクト設定を ~/.supabase/projects.toml に作成できます"
+    echo "テンプレートファイルを参考にしてください:"
+    echo "  cp $DOTFILES_DIR/config/supabase/projects.toml.template ~/.supabase/projects.toml"
+    echo "  # その後、プロジェクト情報を入力してください"
+fi
+
+if [ ! -f "$HOME/.supabase/.env.local" ]; then
+    warn "重要: Supabase環境変数を ~/.supabase/.env.local に設定してください"
+    echo "テンプレートファイルを参考にしてください:"
+    echo "  cp $DOTFILES_DIR/config/supabase/.env.local.template ~/.supabase/.env.local"
+    echo "  # その後、実際のAPIキーと認証情報を入力してください"
+    echo "  # 注意: このファイルには機密情報が含まれるため、決してコミットしないでください"
 fi
 
 # 補完用ディレクトリの作成

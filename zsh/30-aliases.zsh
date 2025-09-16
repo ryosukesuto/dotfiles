@@ -84,6 +84,21 @@ _setup_category_aliases() {
                 "grep:rg:rg"
             )
             ;;
+        "supabase")
+            # Supabase CLI
+            aliases_def=(
+                "sb:supabase:supabase"
+                "sbl:supabase login:supabase"
+                "sbo:supabase logout:supabase"
+                "sbp:supabase projects list:supabase"
+                "sblink:supabase link:supabase"
+                "sbdb:supabase db:supabase"
+                "sbf:supabase functions:supabase"
+                "sbm:supabase migration:supabase"
+                "sbs:supabase start:supabase"
+                "sbstop:supabase stop:supabase"
+            )
+            ;;
     esac
     
     # エイリアス設定実行
@@ -122,6 +137,9 @@ _setup_category_aliases "git"
 
 # モダンツール（条件付き置換）
 _setup_category_aliases "modern"
+
+# Supabase CLI（条件付き）
+_setup_category_aliases "supabase"
 
 # システムユーティリティ（常時設定）
 _setup_category_aliases "system"
@@ -208,7 +226,7 @@ show_category_aliases() {
     
     if [[ -z "$category" ]]; then
         echo "使用法: show_category_aliases <category>"
-        echo "カテゴリ: tmux, aws, editor, git, modern, system, docker, k8s"
+        echo "カテゴリ: tmux, aws, editor, git, modern, system, docker, k8s, supabase"
         return 1
     fi
     
@@ -222,6 +240,7 @@ show_category_aliases() {
         "system") alias | grep -E '^(h|j|reload|path)=' ;;
         "docker") alias | grep -E '^d[a-z]*=' ;;
         "k8s") alias | grep -E '^k[a-z]*=' ;;
+        "supabase") alias | grep -E '^sb[a-z]*=' ;;
         *) echo "不明なカテゴリ: $category" >&2; return 1 ;;
     esac
 }
