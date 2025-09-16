@@ -4,7 +4,9 @@
 # ==============================================================================
 # Model Settings / モデル設定
 # ==============================================================================
-[model]
+# モデル名（GPT-5 Codexを使用）
+model = "gpt-5-codex"
+
 # 推論努力レベル（low, medium, high）
 # 複雑なタスクには "high" を推奨
 model_reasoning_effort = "high"
@@ -142,3 +144,25 @@ experimental_features = false
 
 # プロファイリング情報を表示
 show_profiling = false
+
+# ==============================================================================
+# Project Trust Settings / プロジェクト信頼設定
+# ==============================================================================
+# 以前の設定から移行したプロジェクト
+[projects."/Users/ryosukesuto/src/github.com/team-youtrust/youtrust-webapp"]
+trust_level = "trusted"
+
+[projects."/Users/ryosukesuto/src/github.com/team-youtrust/youtrust-dbt"]
+trust_level = "trusted"
+
+[projects."/Users/ryosukesuto/src/github.com/team-youtrust/gas-automation-suite"]
+trust_level = "trusted"
+
+[projects."/Users/ryosukesuto/src/github.com/team-youtrust/infra-gcp-dwh"]
+trust_level = "trusted"
+
+[projects."/Users/ryosukesuto/src/github.com/ryosukesuto/riichi-stats"]
+trust_level = "trusted"
+
+[projects."/Users/ryosukesuto/src/github.com/ryosukesuto/dotfiles"]
+trust_level = "trusted"

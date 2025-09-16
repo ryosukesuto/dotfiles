@@ -44,6 +44,7 @@ _is_trusted_path() {
         "$HOME/.local/bin"
         "$HOME/bin"
         "$HOME/.local/share/mise/shims"
+        "$HOME/.gem/ruby/*/bin"
         '/System/*'
         '/usr/sbin'
     )
@@ -113,6 +114,10 @@ fi
 # ============================================================================
 # 開発ツール関連
 # ============================================================================
+# Ruby gems（ユーザー領域のgem）
+# Bundlerなどユーザー領域にインストールされたgemのため
+_add_secure_path "$HOME/.gem/ruby/2.6.0/bin"
+
 # Google Cloud SDK（条件付き追加）
 _add_secure_path "$HOME/google-cloud-sdk/bin"
 
