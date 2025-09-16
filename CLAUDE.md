@@ -34,8 +34,9 @@
 - `tmux/` - ターミナルマルチプレクサ設定
 - `vim/` - プラグイン管理を含むVimエディタ設定
 - `aws/` - AWS CLI設定テンプレート（セキュア、認証情報なし）
-- `config/` - アプリケーション固有の設定（GitHub CLI、Claude Codeなど）
+- `config/` - アプリケーション固有の設定（GitHub CLI、Claude Code、Codex CLIなど）
   - `config/claude/commands/` - ユーザー固有のClaude Codeカスタムコマンド
+  - `config/codex/` - OpenAI Codex CLI設定（config.toml、AGENTS.md）
 - `.zshrc` - モジュラーファイルをソースするメインZshエントリポイント
 - `.zprofile` - 環境セットアップ用のZshプロファイル
 
@@ -46,6 +47,7 @@
 - **シェル**: ディレクトリナビゲーション用のカスタムpeco-src関数を持つZsh
 - **バージョンマネージャー**: mise（Python、Ruby、Terraform、Node.jsなど統一管理）
 - **開発ツール**: Go、Terraform、DBT（data build tool）
+- **AI開発ツール**: Claude Code、Codex CLI（OpenAI）
 - **リポジトリ管理**: ghq（Gitリポジトリを~/src配下に整理）
 - **パッケージマネージャー**: Homebrew（macOS）
 - **クラウドアクセス**: Bastionサーバー接続用のAWS SSM Session Manager

@@ -323,6 +323,18 @@ create_symlink "$DOTFILES_DIR/config/claude/statusline.js" "$HOME/.claude/status
 # mise設定
 create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/config.toml"
 
+# Codex CLI設定
+if [ ! -d "$HOME/.codex" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Codex ディレクトリを作成: ~/.codex"
+    else
+        mkdir -p "$HOME/.codex"
+        info "Codex ディレクトリを作成: ~/.codex"
+    fi
+fi
+create_symlink "$DOTFILES_DIR/config/codex/config.toml" "$HOME/.codex/config.toml"
+create_symlink "$DOTFILES_DIR/config/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
+
 # Supabase設定ディレクトリ
 if [ ! -d "$HOME/.supabase" ]; then
     if [ "$DRY_RUN" = true ]; then
@@ -428,6 +440,19 @@ if [ ! -f "$HOME/.supabase/.env.local" ]; then
     echo "  cp $DOTFILES_DIR/config/supabase/.env.local.template ~/.supabase/.env.local"
     echo "  # その後、実際のAPIキーと認証情報を入力してください"
     echo "  # 注意: このファイルには機密情報が含まれるため、決してコミットしないでください"
+fi
+
+if ! command -v codex &> /dev/null; then
+    info "ヒント: Codex CLIをインストールしてください"
+    echo "インストール方法:"
+    echo "  # npmを使用する場合"
+    echo "  npm install -g @openai/codex"
+    echo "  # またはHomebrewを使用する場合"
+    echo "  brew install codex"
+    echo ""
+    echo "設定ファイルは既に配置されています:"
+    echo "  - ~/.codex/config.toml (基本設定)"
+    echo "  - ~/.codex/AGENTS.md (カスタムインストラクション)"
 fi
 
 # 補完用ディレクトリの作成
