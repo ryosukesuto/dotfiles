@@ -112,7 +112,7 @@ git diff --name-only
 
 作業完了後のPRレビューには以下を使用：
 ```
-/user:pr-review
+/user:review-pr
 ```
 
 ---

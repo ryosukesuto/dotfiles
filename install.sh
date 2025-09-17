@@ -335,6 +335,17 @@ fi
 create_symlink "$DOTFILES_DIR/config/codex/config.toml" "$HOME/.codex/config.toml"
 create_symlink "$DOTFILES_DIR/config/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
 
+# Codex CLIカスタムプロンプト
+if [ ! -d "$HOME/.codex/prompts" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Codex プロンプトディレクトリを作成: ~/.codex/prompts"
+    else
+        mkdir -p "$HOME/.codex/prompts"
+        info "Codex プロンプトディレクトリを作成: ~/.codex/prompts"
+    fi
+fi
+create_symlink "$DOTFILES_DIR/config/codex/prompts/create-pr-pro.md" "$HOME/.codex/prompts/create-pr-pro.md"
+
 # Supabase設定ディレクトリ
 if [ ! -d "$HOME/.supabase" ]; then
     if [ "$DRY_RUN" = true ]; then

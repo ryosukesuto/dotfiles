@@ -27,7 +27,7 @@ Terraformプロジェクトでの作業に特化した品質基準とベスト�
 
 ## 🔍 PRレビュー時の確認観点
 
-> 💡 **PRレビュー時**: `/user:pr-review` コマンドを使用してください
+> 💡 **PRレビュー時**: `/user:review-pr` コマンドを使用してください
 
 ### Terraform固有の追加確認事項
 - CI/CDのterraform plan結果を理解してレビュー
