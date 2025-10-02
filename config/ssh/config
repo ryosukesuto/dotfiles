@@ -185,4 +185,35 @@ Host socks-proxy
     # SOCKSプロキシ設定
     DynamicForward 1080
     RequestTTY no
-    RemoteCommand /bin/true
+    RemoteCommand /bin/true# ===== Progrit 踏み台サーバー設定 =====
+# 追加日: 2025-09-25
+# 用途: Dev環境DB更新作業用
+
+# 基本の踏み台サーバー接続
+Host progrit-bastion
+    HostName 18.176.200.4
+    User ext_ryosuke_suto
+    IdentityFile ~/.ssh/id_rsa
+    ForwardAgent yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    StrictHostKeyChecking ask
+    UserKnownHostsFile ~/.ssh/known_hosts
+
+# エイリアス（短縮名）
+Host bastion
+    HostName 18.176.200.4
+    User ext_ryosuke_suto
+    IdentityFile ~/.ssh/id_rsa
+    ForwardAgent yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# Dev DBトンネリング用
+Host progrit-tunnel
+    HostName 18.176.200.4
+    User ext_ryosuke_suto
+    IdentityFile ~/.ssh/id_rsa
+    LocalForward 13306 consulting-app-db-dev.cluster-c8017lub8nzz.ap-northeast-1.rds.amazonaws.com:3306
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
