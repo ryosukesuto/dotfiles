@@ -134,23 +134,23 @@ Host vagrant
 
 # ===== 踏み台サーバー設定例 =====
 
-# 踏み台サーバー
-Host bastion
+# 踏み台サーバー（例）
+Host bastion-example
     HostName bastion.example.com
     User admin
     Port 22
     IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
-    
+
     # 踏み台サーバー用設定
     ForwardAgent yes
     ControlMaster auto
     ControlPath ~/.ssh/sockets/%r@%h-%p
     ControlPersist 10m
 
-# 踏み台経由でのサーバー接続
+# 踏み台経由でのサーバー接続（例）
 Host internal-*
-    ProxyJump bastion
+    ProxyJump bastion-example
     User admin
     Port 22
     IdentityFile ~/.ssh/id_ed25519
@@ -187,33 +187,34 @@ Host socks-proxy
     RequestTTY no
     RemoteCommand /bin/true# ===== Progrit 踏み台サーバー設定 =====
 # 追加日: 2025-09-25
+# 更新日: 2025-10-02 (ユーザー名を命名規則に従って変更)
 # 用途: Dev環境DB更新作業用
 
 # 基本の踏み台サーバー接続
 Host progrit-bastion
     HostName 18.176.200.4
-    User ext_ryosuke_suto
-    IdentityFile ~/.ssh/id_rsa
+    User suto_ryosuke_external_server
+    IdentityFile ~/.ssh/id_ed25519
     ForwardAgent yes
-    ServerAliveInterval 60
-    ServerAliveCountMax 3
+    ServerAliveInterval 120
+    ServerAliveCountMax 12
     StrictHostKeyChecking ask
     UserKnownHostsFile ~/.ssh/known_hosts
 
 # エイリアス（短縮名）
 Host bastion
     HostName 18.176.200.4
-    User ext_ryosuke_suto
-    IdentityFile ~/.ssh/id_rsa
+    User suto_ryosuke_external_server
+    IdentityFile ~/.ssh/id_ed25519
     ForwardAgent yes
-    ServerAliveInterval 60
-    ServerAliveCountMax 3
+    ServerAliveInterval 120
+    ServerAliveCountMax 12
 
 # Dev DBトンネリング用
 Host progrit-tunnel
     HostName 18.176.200.4
-    User ext_ryosuke_suto
-    IdentityFile ~/.ssh/id_rsa
+    User suto_ryosuke_external_server
+    IdentityFile ~/.ssh/id_ed25519
     LocalForward 13306 consulting-app-db-dev.cluster-c8017lub8nzz.ap-northeast-1.rds.amazonaws.com:3306
-    ServerAliveInterval 60
-    ServerAliveCountMax 3
+    ServerAliveInterval 120
+    ServerAliveCountMax 12
