@@ -28,11 +28,12 @@ fi
 log_verbose "Starting review for: $TRANSCRIPT_FILE"
 
 # JSONL形式のトランスクリプトから最新のアシスタント応答を抽出
-LATEST_RESPONSE=$(tail -1 "$TRANSCRIPT_FILE" | jq -r 'select(.role == "assistant") | .content // ""')
+# 構造: {"type":"assistant", "message": {"content": [{"type":"text","text":"..."}]}}
+LATEST_RESPONSE=$(grep '"type":"assistant"' "$TRANSCRIPT_FILE" | tail -1 | jq -r '.message.content[] | select(.type == "text") | .text' | tr '\n' ' ')
 
 if [[ -z "$LATEST_RESPONSE" ]]; then
     echo '{"status":"error","message":"No assistant response found"}' > "$REVIEW_RESULT"
-    log_verbose "ERROR: No assistant response in transcript"
+    log_verbose "ERROR: No assistant response with text content in transcript"
     exit 0
 fi
 
