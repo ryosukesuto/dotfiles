@@ -7,6 +7,7 @@ set -euo pipefail
 CODEX_REVIEW_TIMEOUT="${CODEX_REVIEW_TIMEOUT:-10}"  # タイムアウト秒数（デフォルト10秒）
 CODEX_REVIEW_VERBOSE="${CODEX_REVIEW_VERBOSE:-false}"  # 詳細ログ出力
 CODEX_REVIEW_PLAN="${CODEX_REVIEW_PLAN:-false}"  # プラン生成を含める
+CODEX_REVIEW_NOTIFY="${CODEX_REVIEW_NOTIFY:-true}"  # 完了通知（デフォルト有効）
 
 TRANSCRIPT_FILE="${1:-}"
 
@@ -52,6 +53,27 @@ log_verbose() {
     if [[ "$CODEX_REVIEW_VERBOSE" == "true" ]]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$REVIEW_LOG"
     fi
+}
+
+# macOS通知センターへの通知送信
+send_notification() {
+    local title="$1"
+    local message="$2"
+    local sound="${3:-default}"  # デフォルトサウンド
+
+    # 通知が無効な場合はスキップ
+    if [[ "$CODEX_REVIEW_NOTIFY" != "true" ]]; then
+        log_verbose "Notification skipped (CODEX_REVIEW_NOTIFY=$CODEX_REVIEW_NOTIFY)"
+        return 0
+    fi
+
+    # macOS通知を送信（失敗してもスクリプトは続行）
+    osascript -e "display notification \"$message\" with title \"$title\" sound name \"$sound\"" 2>/dev/null || {
+        log_verbose "WARNING: Failed to send notification"
+        return 0
+    }
+
+    log_verbose "Notification sent: $title - $message"
 }
 
 # 引数の検証
@@ -212,6 +234,27 @@ if wait "$CODEX_PID" 2>/dev/null; then
             echo "$LAST_MESSAGE" > "$REVIEW_RESULT"
             chmod 600 "$REVIEW_RESULT" 2>/dev/null || true
             log_verbose "Extracted last assistant message (${#LAST_MESSAGE} chars)"
+
+            # スコアを取得して通知内容を決定
+            AVG_SCORE=$(jq -r '
+                (.security_score // 0) + (.quality_score // 0) + (.efficiency_score // 0) | . / 3 | floor
+            ' "$REVIEW_RESULT" 2>/dev/null || echo "0")
+
+            STATUS=$(jq -r '.status // "unknown"' "$REVIEW_RESULT" 2>/dev/null || echo "unknown")
+
+            if [[ "$STATUS" == "ok" || "$STATUS" == "warning" ]]; then
+                if [[ $AVG_SCORE -ge 80 ]]; then
+                    send_notification "Codex Review" "✅ 完了 (スコア: ${AVG_SCORE}/100)" "Glass"
+                elif [[ $AVG_SCORE -ge 70 ]]; then
+                    send_notification "Codex Review" "◎ 完了 (スコア: ${AVG_SCORE}/100)" "default"
+                elif [[ $AVG_SCORE -ge 50 ]]; then
+                    send_notification "Codex Review" "⚠️ 完了 (スコア: ${AVG_SCORE}/100)" "Basso"
+                else
+                    send_notification "Codex Review" "⚠️ 改善が必要 (スコア: ${AVG_SCORE}/100)" "Sosumi"
+                fi
+            else
+                send_notification "Codex Review" "⚠️ レビューエラー" "Basso"
+            fi
         else
             log_verbose "WARNING: Could not extract message, falling back to pending"
             echo '{"status":"pending","message":"No valid response"}' > "$REVIEW_RESULT"
@@ -238,8 +281,10 @@ else
     if [[ $EXIT_CODE -eq 143 ]] || [[ $EXIT_CODE -eq 137 ]]; then
         # 143=SIGTERM, 137=SIGKILL（タイムアウト）
         echo '{"status":"pending","message":"Review timeout (>'${CODEX_REVIEW_TIMEOUT}'s)"}' > "$REVIEW_RESULT"
+        send_notification "Codex Review" "⏱️ タイムアウト (${CODEX_REVIEW_TIMEOUT}秒超過)" "Funk"
     else
         echo '{"status":"error","message":"Review failed (exit: '$EXIT_CODE')"}' > "$REVIEW_RESULT"
+        send_notification "Codex Review" "❌ レビュー失敗 (終了コード: $EXIT_CODE)" "Basso"
     fi
 fi
 

@@ -7,7 +7,8 @@
 # デフォルト設定
 MODE="${CODEX_STATUSLINE_MODE:-smart}"      # smart/compact/verbose
 DETAIL_THRESHOLD=70                          # smartモード時の詳細表示閾値
-SHOW_TREND=true                              # トレンド表示
+SHOW_TREND="${SHOW_TREND:-true}"             # トレンド表示
+SHOW_PREVIOUS="${SHOW_PREVIOUS:-true}"       # 前回レビュー詳細表示
 MAX_ISSUES=5                                 # 最大Issue表示数
 
 # ユーザーグローバル設定を読み込み
@@ -94,6 +95,39 @@ calculate_trend() {
     else
         TREND_SYMBOL=""  # 変化なし
     fi
+}
+
+# ============================================================================
+# 前回レビュー詳細の抽出
+# ============================================================================
+extract_prev_details() {
+    local PREV_FILE="$1"
+
+    # グローバル変数を初期化
+    PREV_AVG=0
+    PREV_SUMMARY=""
+    PREV_ISSUES=""
+    PREV_EXISTS=false
+
+    if [[ ! -f "$PREV_FILE" ]]; then
+        return
+    fi
+
+    # 前回の平均スコア計算
+    PREV_AVG=$(jq -r '
+        (.security_score // 0) + (.quality_score // 0) + (.efficiency_score // 0) | . / 3 | floor
+    ' "$PREV_FILE" 2>/dev/null)
+
+    if [[ "$PREV_AVG" -eq 0 ]]; then
+        return
+    fi
+
+    # 有効な前回レビューが存在
+    PREV_EXISTS=true
+
+    # 前回のサマリーとIssue取得
+    PREV_SUMMARY=$(jq -r '.summary // ""' "$PREV_FILE" 2>/dev/null)
+    PREV_ISSUES=$(jq -r '.issues[]? // empty' "$PREV_FILE" 2>/dev/null)
 }
 
 # ============================================================================
@@ -184,6 +218,34 @@ format_verbose() {
                 "${COLOR_DIM}" "$((total_issues - MAX_ISSUES))" "${COLOR_RESET}"
         fi
     fi
+
+    # 前回レビュー詳細を表示（設定が有効かつ前回が存在する場合）
+    if [[ "$SHOW_PREVIOUS" == "true" ]] && [[ "$PREV_EXISTS" == "true" ]]; then
+        printf "\n  %b────────────────────────────────────────%b\n" \
+            "${COLOR_DIM}" "${COLOR_RESET}"
+        printf "  %b[Previous Review: %d/100]%b\n" \
+            "${COLOR_DIM}" "$PREV_AVG" "${COLOR_RESET}"
+
+        if [[ -n "$PREV_SUMMARY" ]]; then
+            printf "  %bSummary:%b %s\n" "${COLOR_DIM}" "${COLOR_RESET}" "$PREV_SUMMARY"
+        fi
+
+        if [[ -n "$PREV_ISSUES" ]]; then
+            printf "  %bIssues:%b\n" "${COLOR_DIM}" "${COLOR_RESET}"
+            local count=0
+            while IFS= read -r issue && [[ $count -lt $MAX_ISSUES ]]; do
+                printf "    • %s\n" "$issue"
+                count=$((count + 1))
+            done <<< "$PREV_ISSUES"
+
+            local total_prev_issues
+            total_prev_issues=$(echo "$PREV_ISSUES" | wc -l | tr -d ' ')
+            if [[ $total_prev_issues -gt $MAX_ISSUES ]]; then
+                printf "    %b... and %d more issues%b\n" \
+                    "${COLOR_DIM}" "$((total_prev_issues - MAX_ISSUES))" "${COLOR_RESET}"
+            fi
+        fi
+    fi
 }
 
 # Smart表示（スコアに応じて自動調整）
@@ -224,6 +286,9 @@ get_codex_review() {
 
             # トレンド計算
             calculate_trend "$REVIEW_FILE" "$REVIEW_RESULT_PREV"
+
+            # 前回レビュー詳細を抽出
+            extract_prev_details "$REVIEW_RESULT_PREV"
 
             # サマリーとIssue取得
             SUMMARY=$(jq -r '.summary // ""' "$REVIEW_FILE" 2>/dev/null)

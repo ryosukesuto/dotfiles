@@ -150,6 +150,19 @@ fi
 
 ### 6. PRの作成
 
+```bash
+# コマンド引数を解析
+DRAFT_FLAG=""
+REMAINING_ARGS=()
+for arg in "$@"; do
+    if [ "$arg" = "--draft" ]; then
+        DRAFT_FLAG="--draft"
+    else
+        REMAINING_ARGS+=("$arg")
+    fi
+done
+```
+
 #### Terraformリポジトリの場合
 
 ```bash
@@ -228,7 +241,8 @@ git push -u origin HEAD
 PR_URL=$(gh pr create \
     --title "[Type]: 簡潔なタイトル" \
     --body "[生成されたPR本文]" \
-    --assignee @me)
+    --assignee @me \
+    $DRAFT_FLAG)
 
 # PR作成成功時にthコマンドで作業報告
 if [ -n "$PR_URL" ]; then
@@ -256,7 +270,8 @@ git push -u origin HEAD
 PR_URL=$(gh pr create \
     --title "[Type]: 簡潔なタイトル" \
     --body "[生成されたPR本文]" \
-    --assignee @me)
+    --assignee @me \
+    $DRAFT_FLAG)
 
 # PR作成成功時にthコマンドで作業報告
 if [ -n "$PR_URL" ]; then
