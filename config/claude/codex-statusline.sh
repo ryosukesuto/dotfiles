@@ -118,13 +118,16 @@ format_compact() {
     # トレンド表示の準備
     local trend_output=""
     if [[ "$SHOW_TREND" == "true" ]] && [[ -n "$TREND_SYMBOL" ]]; then
-        local trend_color
+        local trend_color delta_text
         if [[ $TREND_DELTA -gt 0 ]]; then
             trend_color="${COLOR_GREEN}"
+            delta_text="+$TREND_DELTA"
         elif [[ $TREND_DELTA -lt 0 ]]; then
             trend_color="${COLOR_YELLOW}"
+            delta_text="$TREND_DELTA"  # 負の数は自動的に - が付いている
         else
             trend_color="${COLOR_DIM}"
+            delta_text="±0"
         fi
 
         # トレンド部分を別途出力
@@ -134,7 +137,7 @@ format_compact() {
             "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE"
 
         printf "%b(Δ%s%s)%b\n" \
-            "$trend_color" "${TREND_DELTA:+$TREND_DELTA}" "$TREND_SYMBOL" "${COLOR_RESET}"
+            "$trend_color" "$delta_text" "$TREND_SYMBOL" "${COLOR_RESET}"
     else
         # トレンドなしの場合
         printf "%b%s%b %b%s%b/100 🔒%s 💎%s ⚡%s\n" \
@@ -180,6 +183,13 @@ format_verbose() {
 
 # Smart表示（スコアに応じて自動調整）
 format_smart() {
+    # status=warning の場合は常に詳細表示（セキュリティ警告を隠さない）
+    if [[ "$STATUS" == "warning" ]]; then
+        format_verbose
+        return
+    fi
+
+    # status=ok の場合はスコアで判定
     if [[ $AVG_SCORE -ge $DETAIL_THRESHOLD ]]; then
         # 閾値以上：簡潔表示
         format_compact
@@ -199,7 +209,7 @@ get_codex_review() {
         return
     fi
 
-    local STATUS
+    # STATUS はグローバル変数（format_smart から参照される）
     STATUS=$(jq -r '.status // "unknown"' "$REVIEW_FILE" 2>/dev/null)
 
     case "$STATUS" in
