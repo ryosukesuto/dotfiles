@@ -162,7 +162,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.transcript_path' | xargs ~/.claude/codex-review.sh"
+            "command": "export CODEX_REVIEW_VERBOSE=true CODEX_REVIEW_TIMEOUT=30 CODEX_REVIEW_PLAN=false && jq -r '.transcript_path' | xargs ~/.claude/codex-review.sh"
           },
           {
             "type": "command",
