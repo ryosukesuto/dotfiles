@@ -9,14 +9,41 @@ CODEX_REVIEW_VERBOSE="${CODEX_REVIEW_VERBOSE:-false}"  # 詳細ログ出力
 CODEX_REVIEW_PLAN="${CODEX_REVIEW_PLAN:-false}"  # プラン生成を含める
 
 TRANSCRIPT_FILE="${1:-}"
-REVIEW_RESULT="/tmp/claude-codex-review.json"
-REVIEW_RESULT_PREV="/tmp/claude-codex-review-prev.json"
-REVIEW_LOG="/tmp/claude-codex-review.log"
 
-# セキュアなファイル初期化（初回のみ）
-for file in "$REVIEW_RESULT" "$REVIEW_RESULT_PREV"; do
-    if [[ ! -f "$file" ]]; then
-        touch "$file" 2>/dev/null && chmod 600 "$file" 2>/dev/null
+# プロジェクトごとに異なるファイル名を生成（複数プロジェクト同時使用対応）
+# ワーキングディレクトリのハッシュを使用（macOS専用）
+WORKDIR_HASH=$(echo -n "$PWD" | md5 | cut -c1-8)
+
+REVIEW_RESULT="/tmp/claude-codex-review-${WORKDIR_HASH}.json"
+REVIEW_RESULT_PREV="/tmp/claude-codex-review-${WORKDIR_HASH}-prev.json"
+REVIEW_LOG="/tmp/claude-codex-review-${WORKDIR_HASH}.log"
+
+# セキュアなファイル初期化関数（シンボリックリンク攻撃対策）
+secure_init_file() {
+    local file="$1"
+
+    # シンボリックリンクの場合は削除して再作成
+    if [[ -L "$file" ]]; then
+        echo "[WARNING] Removing symlink at $file" >&2
+        rm -f "$file" 2>/dev/null || return 1
+    fi
+
+    # 既存の通常ファイルがある場合はパーミッションを修正
+    if [[ -f "$file" ]] && [[ ! -L "$file" ]]; then
+        chmod 600 "$file" 2>/dev/null || return 1
+        return 0
+    fi
+
+    # 新規作成（umaskを設定してatomicに作成）
+    (umask 077 && : > "$file") 2>/dev/null || return 1
+    chmod 600 "$file" 2>/dev/null || return 1
+}
+
+# 初期化実行
+for file in "$REVIEW_RESULT" "$REVIEW_RESULT_PREV" "$REVIEW_LOG"; do
+    if ! secure_init_file "$file"; then
+        echo '{"status":"error","message":"Failed to initialize secure file: '"$file"'"}' >&2
+        exit 1
     fi
 done
 

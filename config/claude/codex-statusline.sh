@@ -12,6 +12,15 @@ readonly COLOR_DIM="\033[2m"
 readonly COLOR_BOLD="\033[1m"
 
 # ============================================================================
+# プロジェクト固有のファイルパス生成（codex-review.shと同期）
+# ============================================================================
+# ワーキングディレクトリのハッシュを使用（macOS専用）
+WORKDIR_HASH=$(echo -n "$PWD" | md5 | cut -c1-8)
+
+REVIEW_RESULT="/tmp/claude-codex-review-${WORKDIR_HASH}.json"
+REVIEW_RESULT_PREV="/tmp/claude-codex-review-${WORKDIR_HASH}-prev.json"
+
+# ============================================================================
 # スコア計算とデータ抽出（共通処理）
 # ============================================================================
 extract_scores() {
@@ -26,7 +35,7 @@ extract_scores() {
 # Codexレビュー情報表示（詳細版）
 # ============================================================================
 get_codex_review() {
-    local REVIEW_FILE="${1:-/tmp/claude-codex-review.json}"
+    local REVIEW_FILE="${1:-$REVIEW_RESULT}"
     local LABEL="${2:-}"
 
     if [[ ! -f "$REVIEW_FILE" ]]; then
@@ -100,15 +109,15 @@ get_codex_review() {
 # ステータスライン構築
 # ============================================================================
 # 最新のCodexレビュー情報を表示
-CODEX_INFO=$(get_codex_review "/tmp/claude-codex-review.json" "最新")
+CODEX_INFO=$(get_codex_review "$REVIEW_RESULT" "最新")
 
 if [[ -n "$CODEX_INFO" ]]; then
     printf "%b" "$CODEX_INFO"
 
     # 直近のレビュー結果が存在する場合は区切り線と共に表示
-    if [[ -f "/tmp/claude-codex-review-prev.json" ]]; then
+    if [[ -f "$REVIEW_RESULT_PREV" ]]; then
         printf "\n${COLOR_DIM}%s${COLOR_RESET}\n" "$(printf '─%.0s' {1..60})"
-        CODEX_INFO_PREV=$(get_codex_review "/tmp/claude-codex-review-prev.json" "直近")
+        CODEX_INFO_PREV=$(get_codex_review "$REVIEW_RESULT_PREV" "直近")
         if [[ -n "$CODEX_INFO_PREV" ]]; then
             printf "%b" "$CODEX_INFO_PREV"
         fi
