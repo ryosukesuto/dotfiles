@@ -8,7 +8,7 @@ CODEX_REVIEW_TIMEOUT="${CODEX_REVIEW_TIMEOUT:-10}"  # タイムアウト秒数�
 CODEX_REVIEW_VERBOSE="${CODEX_REVIEW_VERBOSE:-false}"  # 詳細ログ出力
 CODEX_REVIEW_PLAN="${CODEX_REVIEW_PLAN:-false}"  # プラン生成を含める
 
-RESPONSE_FILE="${1:-}"
+TRANSCRIPT_FILE="${1:-}"
 REVIEW_RESULT="/tmp/claude-codex-review.json"
 REVIEW_LOG="/tmp/claude-codex-review.log"
 
@@ -19,13 +19,24 @@ log_verbose() {
     fi
 }
 
-if [[ -z "$RESPONSE_FILE" ]] || [[ ! -f "$RESPONSE_FILE" ]]; then
-    echo '{"status":"error","message":"No response file"}' > "$REVIEW_RESULT"
-    log_verbose "ERROR: Response file not found or empty: $RESPONSE_FILE"
+if [[ -z "$TRANSCRIPT_FILE" ]] || [[ ! -f "$TRANSCRIPT_FILE" ]]; then
+    echo '{"status":"error","message":"No transcript file"}' > "$REVIEW_RESULT"
+    log_verbose "ERROR: Transcript file not found or empty: $TRANSCRIPT_FILE"
     exit 0
 fi
 
-log_verbose "Starting review for: $RESPONSE_FILE"
+log_verbose "Starting review for: $TRANSCRIPT_FILE"
+
+# JSONL形式のトランスクリプトから最新のアシスタント応答を抽出
+LATEST_RESPONSE=$(tail -1 "$TRANSCRIPT_FILE" | jq -r 'select(.role == "assistant") | .content // ""')
+
+if [[ -z "$LATEST_RESPONSE" ]]; then
+    echo '{"status":"error","message":"No assistant response found"}' > "$REVIEW_RESULT"
+    log_verbose "ERROR: No assistant response in transcript"
+    exit 0
+fi
+
+log_verbose "Extracted latest assistant response (${#LATEST_RESPONSE} chars)"
 
 # Codex execでレビュー実行（非対話・JSON出力）
 PROMPT="以下のClaude Code応答をレビューし、JSON形式で評価してください。
@@ -46,7 +57,7 @@ PROMPT="以下のClaude Code応答をレビューし、JSON形式で評価して
 }
 
 ---応答内容---
-$(cat "$RESPONSE_FILE")
+$LATEST_RESPONSE
 "
 
 # JSON Schemaファイルのパス（存在する場合のみ使用）
