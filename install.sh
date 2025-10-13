@@ -473,11 +473,54 @@ if [ "$DRY_RUN" = false ]; then
     mkdir -p "$HOME/.zsh/cache"
 fi
 
-# バックアップファイルの削除
+# バックアップファイルの削除（安全化版）
 if [ "$CLEAN_BACKUP" = true ] && [ "$DRY_RUN" = false ]; then
-    info "バックアップファイルを削除しています..."
-    /usr/bin/find "$HOME" -maxdepth 3 -name '*backup*' \( -type f -o -type l -o -type d \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" -delete 2>/dev/null
-    info "バックアップファイルを削除しました"
+    info "バックアップファイルを検索しています..."
+
+    # 削除対象ファイルを一時ファイルに保存
+    temp_list=$(mktemp)
+    /usr/bin/find "$HOME" -maxdepth 3 -name '*backup*' \( -type f -o -type l -o -type d \) \
+        -not -path "$HOME/Library/*" \
+        -not -path "$HOME/.Trash/*" \
+        -not -path "$HOME/Pictures/*" \
+        2>/dev/null > "$temp_list"
+
+    file_count=$(wc -l < "$temp_list" | tr -d ' ')
+
+    if [ "$file_count" -eq 0 ]; then
+        info "削除対象のバックアップファイルは見つかりませんでした"
+        rm -f "$temp_list"
+    else
+        echo ""
+        warn "以下の${file_count}個のバックアップファイル/ディレクトリが見つかりました:"
+        head -20 "$temp_list"
+        if [ "$file_count" -gt 20 ]; then
+            echo "... 他 $((file_count - 20)) 件"
+        fi
+        echo ""
+        read -p "これらを削除してもよろしいですか？ (y/N): " -n 1 -r
+        echo
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            info "バックアップファイルを削除しています..."
+            deleted_count=0
+            while IFS= read -r file; do
+                if [ -e "$file" ] || [ -L "$file" ]; then
+                    if rm -rf "$file" 2>/dev/null; then
+                        ((deleted_count++))
+                        info "削除: $file"
+                    else
+                        warn "削除失敗: $file"
+                    fi
+                fi
+            done < "$temp_list"
+            info "バックアップファイルの削除が完了しました（${deleted_count}/${file_count}件）"
+        else
+            info "削除をキャンセルしました"
+        fi
+
+        rm -f "$temp_list"
+    fi
 else
     # バックアップファイルの削除案内
     backup_files=$(/usr/bin/find "$HOME" -maxdepth 3 -name "*backup*" \( -type f -o -type l -o -type d \) -not -path "$HOME/Library/*" -not -path "$HOME/.Trash/*" -not -path "$HOME/Pictures/*" 2>/dev/null | head -10)
@@ -487,9 +530,7 @@ else
         echo "$backup_files"
         echo ""
         echo "不要な場合は以下のコマンドで削除できます:"
-        echo "  ./install.sh --clean-backup"
-        echo "または手動で削除:"
-        echo "  /usr/bin/find \$HOME -maxdepth 3 -name '*backup*' \\( -type f -o -type l -o -type d \\) -not -path \"\$HOME/Library/*\" -not -path \"\$HOME/.Trash/*\" -not -path \"\$HOME/Pictures/*\" -delete 2>/dev/null"
+        echo "  ./install.sh --clean-backup  # 確認プロンプト付きで安全に削除"
     fi
 fi
 

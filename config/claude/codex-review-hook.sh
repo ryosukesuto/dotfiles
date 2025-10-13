@@ -10,6 +10,13 @@ export CODEX_REVIEW_VERBOSE="${CODEX_REVIEW_VERBOSE:-true}"
 export CODEX_REVIEW_TIMEOUT="${CODEX_REVIEW_TIMEOUT:-30}"
 export CODEX_REVIEW_PLAN="${CODEX_REVIEW_PLAN:-false}"
 
+# ログファイルのパスとセキュアな初期化
+LOG_FILE="/tmp/claude-codex-review.log"
+if [[ ! -f "$LOG_FILE" ]]; then
+    touch "$LOG_FILE"
+    chmod 600 "$LOG_FILE"  # 所有者のみ読み書き可能
+fi
+
 # stdinからJSONを読み取り
 JSON_INPUT=$(cat)
 
@@ -20,8 +27,8 @@ TRANSCRIPT_PATH=$(echo "$JSON_INPUT" | jq -er '.transcript_path | select(. != nu
 if [[ $? -ne 0 ]] || [[ -z "$TRANSCRIPT_PATH" ]]; then
     echo "Error: Failed to extract transcript_path from hook input" >&2
     if [[ "$CODEX_REVIEW_VERBOSE" == "true" ]]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Failed to extract transcript_path" >> /tmp/claude-codex-review.log
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Input JSON: $JSON_INPUT" >> /tmp/claude-codex-review.log
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Failed to extract transcript_path" >> "$LOG_FILE"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Input JSON: $JSON_INPUT" >> "$LOG_FILE"
     fi
     exit 1
 fi
@@ -30,7 +37,7 @@ fi
 if [[ ! -f "$TRANSCRIPT_PATH" ]]; then
     echo "Error: Transcript file not found: $TRANSCRIPT_PATH" >&2
     if [[ "$CODEX_REVIEW_VERBOSE" == "true" ]]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Transcript file not found: $TRANSCRIPT_PATH" >> /tmp/claude-codex-review.log
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Transcript file not found: $TRANSCRIPT_PATH" >> "$LOG_FILE"
     fi
     exit 1
 fi

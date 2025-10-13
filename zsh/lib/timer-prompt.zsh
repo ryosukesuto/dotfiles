@@ -73,7 +73,7 @@ set_timer_threshold() {
     return 1
   fi
   
-  if [[ "$threshold" =~ '^[0-9]+$' ]]; then
+  if [[ "$threshold" =~ ^[0-9]+$ ]]; then
     _timer_threshold=$threshold
     echo "タイマーしきい値を ${threshold}ms に設定しました"
   else

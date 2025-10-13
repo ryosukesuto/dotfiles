@@ -12,7 +12,9 @@ typeset -g _git_cache_repo_name=""
 typeset -g _git_cache_timestamp=0
 
 # Git関連キャッシュの有効期限（秒）
-typeset -g _git_cache_ttl=30
+# 環境変数 GIT_PROMPT_CACHE_TTL で変更可能（デフォルト: 30秒）
+# 例: export GIT_PROMPT_CACHE_TTL=60  # 1分間キャッシュ
+typeset -g _git_cache_ttl="${GIT_PROMPT_CACHE_TTL:-30}"
 
 # Gitキャッシュが有効かチェックする関数
 _git_cache_valid() {

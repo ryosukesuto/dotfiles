@@ -2,7 +2,24 @@
 # このファイルは Zsh 設定のエントリーポイント
 
 # dotfiles/bin を即座にPATHに追加（thコマンドなどを利用可能にする）
-export PATH="$HOME/src/github.com/ryosukesuto/dotfiles/bin:$PATH"
+# セキュリティチェック付き
+_dotfiles_bin="$HOME/src/github.com/ryosukesuto/dotfiles/bin"
+if [[ -d "$_dotfiles_bin" ]]; then
+    # ディレクトリの所有者チェック（自分が所有している場合のみ）
+    if [[ -O "$_dotfiles_bin" ]]; then
+        # 他者による書き込み権限がないことを確認
+        local perms
+        perms=$(stat -f "%Mp%Lp" "$_dotfiles_bin" 2>/dev/null || stat -c "%a" "$_dotfiles_bin" 2>/dev/null)
+        if [[ "$perms" != *"2"* && "$perms" != *"6"* ]]; then
+            export PATH="$_dotfiles_bin:$PATH"
+        else
+            echo "Warning: Skipping $_dotfiles_bin - insecure permissions (group/other writable)" >&2
+        fi
+    else
+        echo "Warning: Skipping $_dotfiles_bin - not owned by current user" >&2
+    fi
+fi
+unset _dotfiles_bin
 
 # dotfiles が配置されているディレクトリを取得
 # このファイルがシンボリックリンクの場合は実際のパスを取得
