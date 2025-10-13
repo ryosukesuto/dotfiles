@@ -320,6 +320,7 @@ create_symlink "$DOTFILES_DIR/config/claude/commands" "$HOME/.claude/commands"
 # Claude statuslineのシンボリックリンク作成
 create_symlink "$DOTFILES_DIR/config/claude/codex-statusline.sh" "$HOME/.claude/codex-statusline.sh"
 create_symlink "$DOTFILES_DIR/config/claude/codex-review.sh" "$HOME/.claude/codex-review.sh"
+create_symlink "$DOTFILES_DIR/config/claude/codex-review-hook.sh" "$HOME/.claude/codex-review-hook.sh"
 
 # mise設定
 create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/config.toml"
