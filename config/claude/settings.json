@@ -162,7 +162,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "export CODEX_REVIEW_VERBOSE=true CODEX_REVIEW_TIMEOUT=30 CODEX_REVIEW_PLAN=false && jq -r '.transcript_path' | xargs ~/.claude/codex-review.sh"
+            "command": "export CODEX_REVIEW_VERBOSE=true CODEX_REVIEW_TIMEOUT=30 CODEX_REVIEW_PLAN=false && transcript_path=$(jq -er '.transcript_path | select(. != null and . != \"\")') && [ -f \"$transcript_path\" ] && ~/.claude/codex-review.sh \"$transcript_path\" || echo \"Error: Invalid or missing transcript_path\" >&2"
           },
           {
             "type": "command",

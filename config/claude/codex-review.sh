@@ -19,10 +19,25 @@ log_verbose() {
     fi
 }
 
-if [[ -z "$TRANSCRIPT_FILE" ]] || [[ ! -f "$TRANSCRIPT_FILE" ]]; then
-    echo '{"status":"error","message":"No transcript file"}' > "$REVIEW_RESULT"
-    log_verbose "ERROR: Transcript file not found or empty: $TRANSCRIPT_FILE"
-    exit 0
+# 引数の検証
+if [[ -z "$TRANSCRIPT_FILE" ]]; then
+    echo '{"status":"error","message":"No transcript_path argument provided"}' > "$REVIEW_RESULT"
+    log_verbose "ERROR: No transcript_path argument provided"
+    exit 1
+fi
+
+# "null"文字列が渡された場合のチェック
+if [[ "$TRANSCRIPT_FILE" == "null" ]]; then
+    echo '{"status":"error","message":"transcript_path is null"}' > "$REVIEW_RESULT"
+    log_verbose "ERROR: transcript_path is null"
+    exit 1
+fi
+
+# ファイルの存在確認
+if [[ ! -f "$TRANSCRIPT_FILE" ]]; then
+    echo '{"status":"error","message":"Transcript file not found: '"$TRANSCRIPT_FILE"'"}' > "$REVIEW_RESULT"
+    log_verbose "ERROR: Transcript file not found: $TRANSCRIPT_FILE"
+    exit 1
 fi
 
 log_verbose "Starting review for: $TRANSCRIPT_FILE"
