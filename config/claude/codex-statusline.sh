@@ -64,6 +64,7 @@ calculate_trend() {
 
     TREND_DELTA=0
     TREND_SYMBOL=""
+    TREND_VALID=false  # 有効な前回レビューが存在するか
 
     if [[ ! -f "$PREV_FILE" ]]; then
         return
@@ -79,6 +80,9 @@ calculate_trend() {
         return
     fi
 
+    # 有効な前回レビューが存在
+    TREND_VALID=true
+
     # 差分計算
     TREND_DELTA=$(( AVG_SCORE - PREV_AVG ))
 
@@ -88,7 +92,7 @@ calculate_trend() {
     elif [[ $TREND_DELTA -lt 0 ]]; then
         TREND_SYMBOL="↘"
     else
-        TREND_SYMBOL=""
+        TREND_SYMBOL=""  # 変化なし
     fi
 }
 
@@ -117,7 +121,7 @@ format_compact() {
 
     # トレンド表示の準備
     local trend_output=""
-    if [[ "$SHOW_TREND" == "true" ]] && [[ -n "$TREND_SYMBOL" ]]; then
+    if [[ "$SHOW_TREND" == "true" ]] && [[ "$TREND_VALID" == "true" ]]; then
         local trend_color delta_text
         if [[ $TREND_DELTA -gt 0 ]]; then
             trend_color="${COLOR_GREEN}"
@@ -136,6 +140,7 @@ format_compact() {
             "${COLOR_BOLD}" "$AVG_SCORE" "${COLOR_RESET}" \
             "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE"
 
+        # TREND_SYMBOLが空でも表示（±0の場合）
         printf "%b(Δ%s%s)%b\n" \
             "$trend_color" "$delta_text" "$TREND_SYMBOL" "${COLOR_RESET}"
     else
