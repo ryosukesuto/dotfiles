@@ -12,10 +12,22 @@ readonly COLOR_DIM="\033[2m"
 readonly COLOR_BOLD="\033[1m"
 
 # ============================================================================
+# スコア計算とデータ抽出（共通処理）
+# ============================================================================
+extract_scores() {
+    local REVIEW_FILE="$1"
+    SEC_SCORE=$(jq -r '.security_score // 0' "$REVIEW_FILE" 2>/dev/null)
+    QUAL_SCORE=$(jq -r '.quality_score // 0' "$REVIEW_FILE" 2>/dev/null)
+    EFF_SCORE=$(jq -r '.efficiency_score // 0' "$REVIEW_FILE" 2>/dev/null)
+    AVG_SCORE=$(( (SEC_SCORE + QUAL_SCORE + EFF_SCORE) / 3 ))
+}
+
+# ============================================================================
 # Codexレビュー情報表示（詳細版）
 # ============================================================================
 get_codex_review() {
-    local REVIEW_FILE="/tmp/claude-codex-review.json"
+    local REVIEW_FILE="${1:-/tmp/claude-codex-review.json}"
+    local LABEL="${2:-}"
 
     if [[ ! -f "$REVIEW_FILE" ]]; then
         return
@@ -26,14 +38,15 @@ get_codex_review() {
 
     case "$STATUS" in
         "ok")
-            SEC_SCORE=$(jq -r '.security_score // 0' "$REVIEW_FILE" 2>/dev/null)
-            QUAL_SCORE=$(jq -r '.quality_score // 0' "$REVIEW_FILE" 2>/dev/null)
-            EFF_SCORE=$(jq -r '.efficiency_score // 0' "$REVIEW_FILE" 2>/dev/null)
-            AVG_SCORE=$(( (SEC_SCORE + QUAL_SCORE + EFF_SCORE) / 3 ))
+            extract_scores "$REVIEW_FILE"
             SUMMARY=$(jq -r '.summary // ""' "$REVIEW_FILE" 2>/dev/null)
             ISSUES=$(jq -r '.issues[]? // empty' "$REVIEW_FILE" 2>/dev/null)
 
-            printf "${COLOR_GREEN}${COLOR_BOLD}✓ Codex Review${COLOR_RESET}\n"
+            if [[ -n "$LABEL" ]]; then
+                printf "${COLOR_GREEN}${COLOR_BOLD}✓ Codex Review${COLOR_RESET} ${COLOR_DIM}($LABEL)${COLOR_RESET}\n"
+            else
+                printf "${COLOR_GREEN}${COLOR_BOLD}✓ Codex Review${COLOR_RESET}\n"
+            fi
             printf "  ${COLOR_DIM}Score:${COLOR_RESET} %s/100 (🔒%s 💎%s ⚡%s)\n" "$AVG_SCORE" "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE"
             if [[ -n "$SUMMARY" ]]; then
                 printf "  ${COLOR_DIM}Summary:${COLOR_RESET} %s\n" "$SUMMARY"
@@ -46,10 +59,16 @@ get_codex_review() {
             fi
             ;;
         "warning")
+            extract_scores "$REVIEW_FILE"
             SUMMARY=$(jq -r '.summary // ""' "$REVIEW_FILE" 2>/dev/null)
             ISSUES=$(jq -r '.issues[]? // empty' "$REVIEW_FILE" 2>/dev/null)
 
-            printf "${COLOR_YELLOW}${COLOR_BOLD}⚠ Codex Review - Warning${COLOR_RESET}\n"
+            if [[ -n "$LABEL" ]]; then
+                printf "${COLOR_YELLOW}${COLOR_BOLD}⚠ Codex Review - Warning${COLOR_RESET} ${COLOR_DIM}($LABEL)${COLOR_RESET}\n"
+            else
+                printf "${COLOR_YELLOW}${COLOR_BOLD}⚠ Codex Review - Warning${COLOR_RESET}\n"
+            fi
+            printf "  ${COLOR_DIM}Score:${COLOR_RESET} %s/100 (🔒%s 💎%s ⚡%s)\n" "$AVG_SCORE" "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE"
             if [[ -n "$SUMMARY" ]]; then
                 printf "  ${COLOR_DIM}Summary:${COLOR_RESET} %s\n" "$SUMMARY"
             fi
@@ -62,7 +81,11 @@ get_codex_review() {
             ;;
         "error")
             SUMMARY=$(jq -r '.summary // ""' "$REVIEW_FILE" 2>/dev/null)
-            printf "${COLOR_RED}${COLOR_BOLD}✗ Codex Review - Error${COLOR_RESET}\n"
+            if [[ -n "$LABEL" ]]; then
+                printf "${COLOR_RED}${COLOR_BOLD}✗ Codex Review - Error${COLOR_RESET} ${COLOR_DIM}($LABEL)${COLOR_RESET}\n"
+            else
+                printf "${COLOR_RED}${COLOR_BOLD}✗ Codex Review - Error${COLOR_RESET}\n"
+            fi
             if [[ -n "$SUMMARY" ]]; then
                 printf "  %s\n" "$SUMMARY"
             fi
@@ -76,9 +99,18 @@ get_codex_review() {
 # ============================================================================
 # ステータスライン構築
 # ============================================================================
-# Codexレビュー情報のみ出力
-CODEX_INFO=$(get_codex_review)
+# 最新のCodexレビュー情報を表示
+CODEX_INFO=$(get_codex_review "/tmp/claude-codex-review.json" "最新")
 
 if [[ -n "$CODEX_INFO" ]]; then
     printf "%b" "$CODEX_INFO"
+
+    # 直近のレビュー結果が存在する場合は区切り線と共に表示
+    if [[ -f "/tmp/claude-codex-review-prev.json" ]]; then
+        printf "\n${COLOR_DIM}%s${COLOR_RESET}\n" "$(printf '─%.0s' {1..60})"
+        CODEX_INFO_PREV=$(get_codex_review "/tmp/claude-codex-review-prev.json" "直近")
+        if [[ -n "$CODEX_INFO_PREV" ]]; then
+            printf "%b" "$CODEX_INFO_PREV"
+        fi
+    fi
 fi

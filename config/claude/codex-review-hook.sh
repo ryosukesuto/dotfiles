@@ -42,5 +42,7 @@ if [[ ! -f "$TRANSCRIPT_PATH" ]]; then
     exit 1
 fi
 
-# codex-review.shを実行
-~/.claude/codex-review.sh "$TRANSCRIPT_PATH"
+# codex-review.shを実行（完全非同期で即座に制御を返す）
+# nohup: SIGHUP無視、サブシェル: 親プロセスからの切り離し
+# stdout/stderrはログファイルに記録（トラブルシュート用）
+(nohup ~/.claude/codex-review.sh "$TRANSCRIPT_PATH" </dev/null >>"$LOG_FILE" 2>&1 &)
