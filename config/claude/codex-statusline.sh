@@ -144,7 +144,7 @@ format_compact() {
         color_status="${COLOR_GREEN}"
     elif [[ $AVG_SCORE -ge 70 ]]; then
         status_icon="◎"
-        color_status=""
+        color_status="${COLOR_BLUE}"
     elif [[ $AVG_SCORE -ge 50 ]]; then
         status_icon="⚠"
         color_status="${COLOR_YELLOW}"
@@ -152,6 +152,9 @@ format_compact() {
         status_icon="✗"
         color_status="${COLOR_RED}"
     fi
+
+    # ラベル表示（Cyan + Bold）
+    printf "%b%bCodex Review:%b " "${COLOR_CYAN}" "${COLOR_BOLD}" "${COLOR_RESET}"
 
     # トレンド表示の準備
     local trend_output=""
@@ -169,20 +172,20 @@ format_compact() {
         fi
 
         # トレンド部分を別途出力
-        printf "%b%s%b %b%s%b/100 🔒%s 💎%s ⚡%s " \
+        printf "%b%s%b %b%s%b/100 %b🔒%s 💎%s ⚡%s%b " \
             "$color_status" "$status_icon" "${COLOR_RESET}" \
             "${COLOR_BOLD}" "$AVG_SCORE" "${COLOR_RESET}" \
-            "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE"
+            "${COLOR_DIM}" "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE" "${COLOR_RESET}"
 
         # TREND_SYMBOLが空でも表示（±0の場合）
         printf "%b(Δ%s%s)%b\n" \
             "$trend_color" "$delta_text" "$TREND_SYMBOL" "${COLOR_RESET}"
     else
         # トレンドなしの場合
-        printf "%b%s%b %b%s%b/100 🔒%s 💎%s ⚡%s\n" \
+        printf "%b%s%b %b%s%b/100 %b🔒%s 💎%s ⚡%s%b\n" \
             "$color_status" "$status_icon" "${COLOR_RESET}" \
             "${COLOR_BOLD}" "$AVG_SCORE" "${COLOR_RESET}" \
-            "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE"
+            "${COLOR_DIM}" "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE" "${COLOR_RESET}"
     fi
 }
 
@@ -309,14 +312,18 @@ get_codex_review() {
             ;;
         "error")
             SUMMARY=$(jq -r '.summary // ""' "$REVIEW_FILE" 2>/dev/null)
-            printf "%b✗%b Review failed" "${COLOR_RED}" "${COLOR_RESET}"
+            printf "%b%bCodex Review:%b %b✗%b Failed" \
+                "${COLOR_CYAN}" "${COLOR_BOLD}" "${COLOR_RESET}" \
+                "${COLOR_RED}" "${COLOR_RESET}"
             if [[ -n "$SUMMARY" ]]; then
                 printf " - %b%s%b" "${COLOR_DIM}" "$SUMMARY" "${COLOR_RESET}"
             fi
             printf "\n"
             ;;
         "pending")
-            printf "%b◐%b Reviewing...\n" "${COLOR_CYAN}" "${COLOR_RESET}"
+            printf "%b%bCodex Review:%b %b◐%b Reviewing...\n" \
+                "${COLOR_CYAN}" "${COLOR_BOLD}" "${COLOR_RESET}" \
+                "${COLOR_CYAN}" "${COLOR_RESET}"
             ;;
     esac
 }

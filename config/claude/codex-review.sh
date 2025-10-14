@@ -3,6 +3,13 @@
 
 set -euo pipefail
 
+# 環境変数ファイルを読み込み（Slack Webhook URLなど）
+if [[ -f "$HOME/.env.local" ]]; then
+    set -a  # 自動エクスポートを有効化
+    source "$HOME/.env.local"
+    set +a  # 自動エクスポートを無効化
+fi
+
 # 環境変数での設定オプション
 CODEX_REVIEW_TIMEOUT="${CODEX_REVIEW_TIMEOUT:-10}"  # タイムアウト秒数（デフォルト10秒）
 CODEX_REVIEW_VERBOSE="${CODEX_REVIEW_VERBOSE:-false}"  # 詳細ログ出力
@@ -55,7 +62,7 @@ log_verbose() {
     fi
 }
 
-# macOS通知センターへの通知送信
+# macOS通知センターへの通知送信（シンプル版）
 send_notification() {
     local title="$1"
     local message="$2"
@@ -67,13 +74,150 @@ send_notification() {
         return 0
     fi
 
-    # macOS通知を送信（失敗してもスクリプトは続行）
-    osascript -e "display notification \"$message\" with title \"$title\" sound name \"$sound\"" 2>/dev/null || {
+    # macOS通知を送信（改行対応のためヒアドキュメント使用）
+    if ! osascript <<EOF 2>/dev/null
+display notification "$message" with title "$title" sound name "$sound"
+EOF
+    then
         log_verbose "WARNING: Failed to send notification"
         return 0
-    }
+    fi
 
     log_verbose "Notification sent: $title - $message"
+}
+
+# Slack通知送信
+send_slack_notification() {
+    local status_emoji="$1"
+    local avg_score="$2"
+    local sec_score="$3"
+    local qual_score="$4"
+    local eff_score="$5"
+    local summary="$6"
+    local issues="$7"
+    local repo_info="$8"
+
+    # Webhook URLが設定されていない場合はスキップ
+    if [[ -z "$CODEX_REVIEW_SLACK_WEBHOOK" ]]; then
+        log_verbose "Slack notification skipped (CODEX_REVIEW_SLACK_WEBHOOK not set)"
+        return 0
+    fi
+
+    # Issuesを整形（最大5個）
+    local issues_text=""
+    if [[ -n "$issues" ]]; then
+        local count=0
+        while IFS= read -r issue && [[ $count -lt 5 ]]; do
+            # 実際の改行文字を使用
+            issues_text="${issues_text}• ${issue}"$'\n'
+            count=$((count + 1))
+        done <<< "$issues"
+    fi
+
+    # jqを使ってJSONペイロードを安全に構築（自動エスケープ）
+    local text_header="${status_emoji} Codex Review完了"
+    local text_repo="📁 *${repo_info}*"
+    # $'...' 形式で改行を実際の改行文字として扱う
+    local text_score=$'*総合スコア*\n*'"${avg_score}"$'*/100'
+    local text_details=$'*詳細*\n🔒 Security: '"${sec_score}"$'\n💎 Quality: '"${qual_score}"$'\n⚡ Efficiency: '"${eff_score}"
+
+    # 基本ブロック（ヘッダー、リポジトリ、スコア）
+    local slack_payload
+    slack_payload=$(jq -n \
+        --arg text "$text_header" \
+        --arg repo "$text_repo" \
+        --arg score "$text_score" \
+        --arg details "$text_details" \
+        '{
+            "text": $text,
+            "blocks": [
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": $text
+                    }
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": $repo
+                        }
+                    ]
+                },
+                {
+                    "type": "section",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": $score
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": $details
+                        }
+                    ]
+                }
+            ]
+        }')
+
+    # サマリーブロックを追加（存在する場合）
+    if [[ -n "$summary" ]]; then
+        # $'...' 形式で改行を実際の改行文字として扱う
+        local text_summary=$'*サマリー*\n'"${summary}"
+        slack_payload=$(echo "$slack_payload" | jq \
+            --arg summary "$text_summary" \
+            '.blocks += [{
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": $summary
+                }
+            }]')
+    fi
+
+    # Issuesブロックを追加（存在する場合）
+    if [[ -n "$issues_text" ]]; then
+        # $'...' 形式で改行を実際の改行文字として扱う
+        local text_issues=$'*Issues*\n'"${issues_text}"
+        slack_payload=$(echo "$slack_payload" | jq \
+            --arg issues "$text_issues" \
+            '.blocks += [{
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": $issues
+                }
+            }]')
+    fi
+
+    # JSON妥当性検証（ペイロード破損の早期検出）
+    if ! echo "$slack_payload" | jq empty 2>/dev/null; then
+        log_verbose "ERROR: Invalid JSON payload generated, skipping Slack notification"
+        log_verbose "Payload preview: ${slack_payload:0:200}..."
+        return 1
+    fi
+
+    # Slackに送信（詳細エラーログ付き）
+    local response
+    local http_code
+    response=$(curl -X POST -H 'Content-type: application/json' \
+        --data "$slack_payload" \
+        "$CODEX_REVIEW_SLACK_WEBHOOK" \
+        --write-out "\n%{http_code}" \
+        --silent --show-error \
+        --max-time 5 2>&1)
+
+    http_code=$(echo "$response" | tail -n1)
+
+    if [[ "$http_code" == "200" ]]; then
+        log_verbose "Slack notification sent successfully (HTTP 200)"
+    else
+        log_verbose "WARNING: Slack notification failed (HTTP ${http_code})"
+        log_verbose "Response: $(echo "$response" | head -n-1)"
+    fi
 }
 
 # 引数の検証
@@ -235,23 +379,59 @@ if wait "$CODEX_PID" 2>/dev/null; then
             chmod 600 "$REVIEW_RESULT" 2>/dev/null || true
             log_verbose "Extracted last assistant message (${#LAST_MESSAGE} chars)"
 
-            # スコアを取得して通知内容を決定
+            # スコアと詳細情報を取得
             AVG_SCORE=$(jq -r '
                 (.security_score // 0) + (.quality_score // 0) + (.efficiency_score // 0) | . / 3 | floor
             ' "$REVIEW_RESULT" 2>/dev/null || echo "0")
 
-            STATUS=$(jq -r '.status // "unknown"' "$REVIEW_RESULT" 2>/dev/null || echo "unknown")
+            SEC_SCORE=$(jq -r '.security_score // 0' "$REVIEW_RESULT" 2>/dev/null || echo "0")
+            QUAL_SCORE=$(jq -r '.quality_score // 0' "$REVIEW_RESULT" 2>/dev/null || echo "0")
+            EFF_SCORE=$(jq -r '.efficiency_score // 0' "$REVIEW_RESULT" 2>/dev/null || echo "0")
 
-            if [[ "$STATUS" == "ok" || "$STATUS" == "warning" ]]; then
-                if [[ $AVG_SCORE -ge 80 ]]; then
-                    send_notification "Codex Review" "✅ 完了 (スコア: ${AVG_SCORE}/100)" "Glass"
-                elif [[ $AVG_SCORE -ge 70 ]]; then
-                    send_notification "Codex Review" "◎ 完了 (スコア: ${AVG_SCORE}/100)" "default"
-                elif [[ $AVG_SCORE -ge 50 ]]; then
-                    send_notification "Codex Review" "⚠️ 完了 (スコア: ${AVG_SCORE}/100)" "Basso"
-                else
-                    send_notification "Codex Review" "⚠️ 改善が必要 (スコア: ${AVG_SCORE}/100)" "Sosumi"
+            STATUS=$(jq -r '.status // "unknown"' "$REVIEW_RESULT" 2>/dev/null || echo "unknown")
+            SUMMARY=$(jq -r '.summary // ""' "$REVIEW_RESULT" 2>/dev/null)
+
+            # 全Issuesを取得（Slack用）
+            ISSUES_ALL=$(jq -r '.issues[]? // empty' "$REVIEW_RESULT" 2>/dev/null)
+
+            # リポジトリ情報を取得
+            REPO_NAME="unknown"
+            if git rev-parse --git-dir >/dev/null 2>&1; then
+                REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+                if [[ -n "$REPO_ROOT" ]]; then
+                    REPO_NAME=$(basename "$REPO_ROOT")
                 fi
+            fi
+
+            # 通知メッセージを構築
+            if [[ "$STATUS" == "ok" || "$STATUS" == "warning" ]]; then
+                status_emoji=""
+                msg_text=""
+                sound=""
+
+                if [[ $AVG_SCORE -ge 80 ]]; then
+                    status_emoji="✅"
+                    msg_text="${AVG_SCORE}/100"
+                    sound="Glass"
+                elif [[ $AVG_SCORE -ge 70 ]]; then
+                    status_emoji="◎"
+                    msg_text="${AVG_SCORE}/100"
+                    sound="default"
+                elif [[ $AVG_SCORE -ge 50 ]]; then
+                    status_emoji="⚠️"
+                    msg_text="${AVG_SCORE}/100"
+                    sound="Basso"
+                else
+                    status_emoji="⚠️"
+                    msg_text="${AVG_SCORE}/100"
+                    sound="Sosumi"
+                fi
+
+                # macOS通知（シンプル）
+                send_notification "Codex Review" "${status_emoji} ${msg_text}" "$sound"
+
+                # Slack通知（詳細）
+                send_slack_notification "$status_emoji" "$AVG_SCORE" "$SEC_SCORE" "$QUAL_SCORE" "$EFF_SCORE" "$SUMMARY" "$ISSUES_ALL" "$REPO_NAME"
             else
                 send_notification "Codex Review" "⚠️ レビューエラー" "Basso"
             fi
