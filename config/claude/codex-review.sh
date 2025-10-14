@@ -346,6 +346,28 @@ if echo "$LATEST_RESPONSE" | grep -q '<function_calls>'; then
     fi
 fi
 
+# 3. git/GitHub操作の完了報告をスキップ（文脈ベース判定）
+# function_callsに"git commit"や"gh pr create"が含まれ、かつテキストが短い場合
+if echo "$LATEST_RESPONSE" | grep -q '<function_calls>'; then
+    FUNCTION_CALLS=$(echo "$LATEST_RESPONSE" | sed -n '/<function_calls>/,/<\/function_calls>/p')
+
+    # git commit または gh pr create が含まれているか確認
+    if echo "$FUNCTION_CALLS" | grep -qE '(git commit|gh pr create)'; then
+        # テキスト部分（タグ以外）を取得
+        TEXT_CONTENT=$(echo "$LATEST_RESPONSE" | sed '/<function_calls>/,/<\/function_calls>/d')
+        TEXT_LENGTH=${#TEXT_CONTENT}
+
+        # 800文字未満で完了を示すキーワードを含む場合はスキップ
+        if [[ $TEXT_LENGTH -lt 800 ]]; then
+            if echo "$TEXT_CONTENT" | grep -qE '(コミット|完了|commit|done|success|PR|プルリクエスト|pull request|created)'; then
+                log_message "Review skipped: Git/PR operation summary response ($TEXT_LENGTH chars)"
+                echo '{"status":"skipped","message":"Git/PR operation summary"}' > "$REVIEW_RESULT"
+                exit 0
+            fi
+        fi
+    fi
+fi
+
 # ============================================================================
 # 会話履歴の抽出（文脈理解のため）
 # ============================================================================
