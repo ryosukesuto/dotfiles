@@ -277,8 +277,65 @@ fi
 
 log_verbose "Extracted latest assistant response (${#LATEST_RESPONSE} chars)"
 
+# ============================================================================
+# レビュー必要性の判定（スキップ条件）
+# ============================================================================
+
+# 1. 極めて短い応答のみスキップ（30文字未満かつツールなし）
+# 「はい」「OK」「承知しました」などの確認応答のみをスキップ
+if [[ ${#LATEST_RESPONSE} -lt 30 ]] && ! echo "$LATEST_RESPONSE" | grep -q '<function_calls>'; then
+    log_message "Review skipped: Very short response (${#LATEST_RESPONSE} chars)"
+    echo '{"status":"skipped","message":"Very short response"}' > "$REVIEW_RESULT"
+    exit 0
+fi
+
+# 2. ツール呼び出しのみの応答はスキップ
+# <function_calls>タグの前後にあるテキストが50バイト未満ならスキップ（日本語対応）
+if echo "$LATEST_RESPONSE" | grep -q '<function_calls>'; then
+    # タグより前の行のみを取得（タグを含む行は除外）
+    TEXT_BEFORE=$(echo "$LATEST_RESPONSE" | sed '/<function_calls>/,$d' | tr -d '[:space:]')
+    # タグより後の行のみを取得（タグを含む行は除外）
+    TEXT_AFTER=$(echo "$LATEST_RESPONSE" | sed '1,/<\/function_calls>/d' | tr -d '[:space:]')
+
+    # バイト数でカウント（日本語対応）- wc -c を使用
+    BYTES_BEFORE=$(echo -n "$TEXT_BEFORE" | wc -c | tr -d ' ')
+    BYTES_AFTER=$(echo -n "$TEXT_AFTER" | wc -c | tr -d ' ')
+    TOTAL_TEXT_BYTES=$((BYTES_BEFORE + BYTES_AFTER))
+
+    if [[ $TOTAL_TEXT_BYTES -lt 50 ]]; then
+        log_message "Review skipped: Tool use only response (text: $TOTAL_TEXT_BYTES bytes)"
+        echo '{"status":"skipped","message":"Tool use only"}' > "$REVIEW_RESULT"
+        exit 0
+    fi
+fi
+
+# ============================================================================
+# 会話履歴の抽出（文脈理解のため）
+# ============================================================================
+
+# 最近の5ターン（user/assistant各5件）を抽出
+# JSONL形式なので各行を個別に処理
+CONVERSATION_CONTEXT=$(grep -E '"type":"(user|assistant)"' "$TRANSCRIPT_FILE" 2>/dev/null | tail -10 | while IFS= read -r line; do
+    echo "$line" | jq -r '
+        if .type == "user" then
+            "User: " + ((.message.content // []) | map(select(.type == "text") | .text) | join(" ") | .[0:200])
+        elif .type == "assistant" then
+            "Assistant: " + ((.message.content // []) | map(select(.type == "text") | .text) | join(" ") | .[0:200])
+        else
+            empty
+        end
+    ' 2>/dev/null
+done || echo "")
+
+log_verbose "Extracted conversation context (${#CONVERSATION_CONTEXT} chars)"
+
+# ============================================================================
 # Codex execでレビュー実行（非対話・JSON出力）
+# ============================================================================
+
 PROMPT="以下のClaude Code応答をレビューし、JSON形式で評価してください。
+
+会話履歴を参考に、文脈を理解した上でレビューしてください。
 
 評価基準:
 - セキュリティ（security）: 破壊的コマンド、機密情報漏洩の有無
@@ -295,7 +352,10 @@ PROMPT="以下のClaude Code応答をレビューし、JSON形式で評価して
   \"summary\": \"簡潔な総評\"
 }
 
----応答内容---
+---会話履歴（最近5ターン）---
+$CONVERSATION_CONTEXT
+
+---最新の応答（レビュー対象）---
 $LATEST_RESPONSE
 "
 
