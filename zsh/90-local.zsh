@@ -36,8 +36,12 @@ typeset -g _DOTFILES_TRUSTED_DIRS=(
 _dotfiles_load_project_env() {
   local env_file=".env.local"
   [[ ! -f "$env_file" ]] && return
-  
+
   local current_dir="$(pwd)"
+
+  # ホームディレクトリはグローバル環境変数として既に読み込み済み
+  [[ "$current_dir" == "$HOME" ]] && return
+
   local is_trusted=false
   
   # ホワイトリストディレクトリ内かチェック
