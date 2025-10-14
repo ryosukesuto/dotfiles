@@ -248,6 +248,43 @@ fi
 
 log_message "Starting review for: $TRANSCRIPT_FILE"
 
+# ============================================================================
+# トランスクリプトファイルの新しさチェック（複数セッション対策）
+# ============================================================================
+
+# ファイルの最終更新時刻を取得（Unix timestamp）
+FILE_MTIME=$(stat -f "%m" "$TRANSCRIPT_FILE" 2>/dev/null || echo "0")
+CURRENT_TIME=$(date +%s)
+AGE_SECONDS=$((CURRENT_TIME - FILE_MTIME))
+
+# 5分（300秒）以上古い場合は警告
+if [[ $AGE_SECONDS -gt 300 ]]; then
+    log_message "WARNING: Transcript file is $((AGE_SECONDS / 60)) minutes old"
+
+    # 同じプロジェクトディレクトリ内の最新ファイルを検索
+    PROJECT_DIR=$(dirname "$TRANSCRIPT_FILE")
+    LATEST_FILE=$(find "$PROJECT_DIR" -name "*.jsonl" -type f -print0 2>/dev/null | \
+        xargs -0 stat -f "%m %N" 2>/dev/null | \
+        sort -rn | \
+        head -1 | \
+        cut -d' ' -f2-)
+
+    if [[ -n "$LATEST_FILE" ]] && [[ "$LATEST_FILE" != "$TRANSCRIPT_FILE" ]]; then
+        LATEST_MTIME=$(stat -f "%m" "$LATEST_FILE" 2>/dev/null || echo "0")
+        LATEST_AGE_SECONDS=$((CURRENT_TIME - LATEST_MTIME))
+
+        # より新しいファイルが見つかった場合
+        if [[ $LATEST_MTIME -gt $FILE_MTIME ]]; then
+            log_message "Found newer transcript: $(basename "$LATEST_FILE") ($((LATEST_AGE_SECONDS / 60)) minutes old)"
+            log_message "Switching from: $(basename "$TRANSCRIPT_FILE")"
+            TRANSCRIPT_FILE="$LATEST_FILE"
+
+            # 切り替え後の警告（ユーザーに通知）
+            log_verbose "Auto-switched to newer transcript file"
+        fi
+    fi
+fi
+
 # JSONL形式のトランスクリプトから最新のアシスタント応答を抽出
 # 構造: {"type":"assistant", "message": {"content": [{"type":"text","text":"..."}]}}
 # パイプラインを分割してgrepの失敗を確実に検知
