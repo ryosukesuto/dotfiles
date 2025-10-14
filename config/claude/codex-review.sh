@@ -55,10 +55,15 @@ for file in "$REVIEW_RESULT" "$REVIEW_RESULT_PREV" "$REVIEW_LOG"; do
     fi
 done
 
-# 詳細ログ関数
+# ログ関数（常に出力）
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$REVIEW_LOG"
+}
+
+# 詳細ログ関数（verbose時のみ）
 log_verbose() {
     if [[ "$CODEX_REVIEW_VERBOSE" == "true" ]]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$REVIEW_LOG"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] [VERBOSE] $*" >> "$REVIEW_LOG"
     fi
 }
 
@@ -195,7 +200,7 @@ send_slack_notification() {
 
     # JSON妥当性検証（ペイロード破損の早期検出）
     if ! echo "$slack_payload" | jq empty 2>/dev/null; then
-        log_verbose "ERROR: Invalid JSON payload generated, skipping Slack notification"
+        log_message "ERROR: Invalid JSON payload generated, skipping Slack notification"
         log_verbose "Payload preview: ${slack_payload:0:200}..."
         return 1
     fi
@@ -213,9 +218,9 @@ send_slack_notification() {
     http_code=$(echo "$response" | tail -n1)
 
     if [[ "$http_code" == "200" ]]; then
-        log_verbose "Slack notification sent successfully (HTTP 200)"
+        log_message "Slack notification sent successfully (HTTP 200)"
     else
-        log_verbose "WARNING: Slack notification failed (HTTP ${http_code})"
+        log_message "WARNING: Slack notification failed (HTTP ${http_code})"
         log_verbose "Response: $(echo "$response" | head -n-1)"
     fi
 }
@@ -223,25 +228,25 @@ send_slack_notification() {
 # 引数の検証
 if [[ -z "$TRANSCRIPT_FILE" ]]; then
     echo '{"status":"error","message":"No transcript_path argument provided"}' > "$REVIEW_RESULT"
-    log_verbose "ERROR: No transcript_path argument provided"
+    log_message "ERROR: No transcript_path argument provided"
     exit 1
 fi
 
 # "null"文字列が渡された場合のチェック
 if [[ "$TRANSCRIPT_FILE" == "null" ]]; then
     echo '{"status":"error","message":"transcript_path is null"}' > "$REVIEW_RESULT"
-    log_verbose "ERROR: transcript_path is null"
+    log_message "ERROR: transcript_path is null"
     exit 1
 fi
 
 # ファイルの存在確認
 if [[ ! -f "$TRANSCRIPT_FILE" ]]; then
     echo '{"status":"error","message":"Transcript file not found: '"$TRANSCRIPT_FILE"'"}' > "$REVIEW_RESULT"
-    log_verbose "ERROR: Transcript file not found: $TRANSCRIPT_FILE"
+    log_message "ERROR: Transcript file not found: $TRANSCRIPT_FILE"
     exit 1
 fi
 
-log_verbose "Starting review for: $TRANSCRIPT_FILE"
+log_message "Starting review for: $TRANSCRIPT_FILE"
 
 # JSONL形式のトランスクリプトから最新のアシスタント応答を抽出
 # 構造: {"type":"assistant", "message": {"content": [{"type":"text","text":"..."}]}}
@@ -351,7 +356,7 @@ if wait "$CODEX_PID" 2>/dev/null; then
     # タイムアウト監視は不要になったため停止（EXITトラップで正式に回収される）
     kill -TERM "$WATCHER_PID" 2>/dev/null || true
 
-    log_verbose "Review completed successfully"
+    log_message "Review completed successfully"
 
     # JSONL出力から最後のアシスタントメッセージを抽出
     if command -v jq &>/dev/null && [[ -f "$JSONL_OUTPUT" ]]; then
@@ -427,6 +432,9 @@ if wait "$CODEX_PID" 2>/dev/null; then
                     sound="Sosumi"
                 fi
 
+                # レビュー結果をログに記録
+                log_message "Review result: ${status_emoji} ${msg_text} (Security:${SEC_SCORE} Quality:${QUAL_SCORE} Efficiency:${EFF_SCORE})"
+
                 # macOS通知（シンプル）
                 send_notification "Codex Review" "${status_emoji} ${msg_text}" "$sound"
 
@@ -455,18 +463,20 @@ else
     # ウォッチャープロセスをクリーンアップ（EXITトラップで正式に回収される）
     kill -TERM "$WATCHER_PID" 2>/dev/null || true
 
-    log_verbose "ERROR: Codex exec failed with exit code $EXIT_CODE"
+    log_message "ERROR: Codex exec failed with exit code $EXIT_CODE"
 
     # タイムアウトまたはエラー時
     if [[ $EXIT_CODE -eq 143 ]] || [[ $EXIT_CODE -eq 137 ]]; then
         # 143=SIGTERM, 137=SIGKILL（タイムアウト）
         echo '{"status":"pending","message":"Review timeout (>'${CODEX_REVIEW_TIMEOUT}'s)"}' > "$REVIEW_RESULT"
+        log_message "Review timeout (${CODEX_REVIEW_TIMEOUT}s exceeded)"
         send_notification "Codex Review" "⏱️ タイムアウト (${CODEX_REVIEW_TIMEOUT}秒超過)" "Funk"
     else
         echo '{"status":"error","message":"Review failed (exit: '$EXIT_CODE')"}' > "$REVIEW_RESULT"
+        log_message "Review failed (exit code: $EXIT_CODE)"
         send_notification "Codex Review" "❌ レビュー失敗 (終了コード: $EXIT_CODE)" "Basso"
     fi
 fi
 
-log_verbose "Review process completed"
+log_message "Review process completed"
 exit 0
