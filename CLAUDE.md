@@ -63,6 +63,7 @@
 5. **ローカルカスタマイズ**: gitで追跡されないマシン固有の設定には`.local`ファイルを使用
 6. **関数の追加**: 大きなまたはめったに使用されない関数は`zsh/functions/`ディレクトリに配置して遅延読み込み
 7. **パフォーマンス**: シェルの起動は遅延読み込みと最小限の初期設定により最適化されている
+8. **AWS CLI**: `~/.aws/config` にAWS SSO設定が含まれており、`aws sso login --profile <profile-name>` でログインすればAWS CLIコマンドが利用可能（利用可能なプロファイル: prod, sandbox, dev, prod-admin, sandbox-admin）
 
 ## アーキテクチャノート
 

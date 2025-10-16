@@ -32,6 +32,12 @@
 4. 完了基準の明確化 → 何を持って完了とするかを具体的に記載
 5. 次のPR計画を記載 → 残課題と次の改善項目を明示
 
+### AWS CLI作業時
+1. プロファイル確認 → `~/.aws/config` で利用可能なプロファイルを確認
+2. SSOログイン → `aws sso login --profile <profile-name>` でログイン
+3. AWS操作実行 → `--profile <profile-name>` を指定してAWS CLIコマンド実行
+4. 利用可能なプロファイル: prod, sandbox, dev, prod-admin, sandbox-admin
+
 ### Codexとの協業
 
 Codexは専門的な調査・分析・検証タスクで活用し、Claude Codeは実装・修正を担当する。
