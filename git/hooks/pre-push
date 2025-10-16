@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# pre-push hook: PRマージ済みブランチへの誤pushを防ぐ
+#
+# このhookは、push前に以下をチェックします：
+# 1. 現在のブランチに対応するPRが存在するか
+# 2. そのPRがすでにマージ済みか
+# 3. マージ済みの場合、ユーザーに確認を求める
+
+# 色定義
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# 現在のブランチ名を取得
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+# mainブランチへのpushはスキップ（別の警告で対応）
+if [[ "$current_branch" == "main" ]] || [[ "$current_branch" == "master" ]]; then
+    exit 0
+fi
+
+# gh CLIが利用可能かチェック
+if ! command -v gh &> /dev/null; then
+    # gh CLIがない場合はチェックをスキップ
+    exit 0
+fi
+
+# 現在のブランチに対応するPRを検索
+pr_info=$(gh pr list --head "$current_branch" --state all --json number,state,title 2>/dev/null)
+
+# PRが存在しない場合はスキップ
+if [[ -z "$pr_info" ]] || [[ "$pr_info" == "[]" ]]; then
+    exit 0
+fi
+
+# PRの状態を取得
+pr_state=$(echo "$pr_info" | jq -r '.[0].state' 2>/dev/null)
+pr_number=$(echo "$pr_info" | jq -r '.[0].number' 2>/dev/null)
+pr_title=$(echo "$pr_info" | jq -r '.[0].title' 2>/dev/null)
+
+# PRがマージ済みの場合は警告
+if [[ "$pr_state" == "MERGED" ]]; then
+    echo ""
+    echo -e "${RED}⚠️  WARNING: このブランチのPRはすでにマージ済みです${NC}"
+    echo ""
+    echo -e "  ブランチ: ${YELLOW}$current_branch${NC}"
+    echo -e "  PR #$pr_number: $pr_title"
+    echo -e "  状態: ${GREEN}MERGED${NC}"
+    echo ""
+    echo -e "${YELLOW}通常、マージ済みのブランチにはpushしません。${NC}"
+    echo -e "${YELLOW}新しい変更の場合は、新しいブランチを作成してください。${NC}"
+    echo ""
+
+    # 対話的な確認（TTYがある場合のみ）
+    if [ -t 0 ]; then
+        read -p "それでも push しますか? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${RED}Push をキャンセルしました。${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}Push を続行します...${NC}"
+    else
+        # 非対話的な場合はスキップ（CI環境など）
+        echo "非対話的環境のため、チェックをスキップします。"
+    fi
+fi
+
+exit 0

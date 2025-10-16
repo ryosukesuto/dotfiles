@@ -322,6 +322,20 @@ create_symlink "$DOTFILES_DIR/config/claude/codex-statusline.sh" "$HOME/.claude/
 create_symlink "$DOTFILES_DIR/config/claude/codex-review.sh" "$HOME/.claude/codex-review.sh"
 create_symlink "$DOTFILES_DIR/config/claude/codex-review-hook.sh" "$HOME/.claude/codex-review-hook.sh"
 
+# Git hooks（dotfilesリポジトリ用）
+if [ -d "$DOTFILES_DIR/git/hooks" ]; then
+    info "Git hooksをセットアップしています..."
+    # .git/hooks ディレクトリが存在することを確認
+    if [ -d "$DOTFILES_DIR/.git/hooks" ]; then
+        for hook in "$DOTFILES_DIR/git/hooks"/*; do
+            if [ -f "$hook" ]; then
+                hook_name=$(basename "$hook")
+                create_symlink "$hook" "$DOTFILES_DIR/.git/hooks/$hook_name"
+            fi
+        done
+    fi
+fi
+
 # mise設定
 create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/config.toml"
 
