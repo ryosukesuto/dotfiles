@@ -187,5 +187,5 @@
     "type": "command",
     "command": "~/.claude/codex-statusline.sh"
   },
-  "alwaysThinkingEnabled": true
+  "alwaysThinkingEnabled": false
 }
