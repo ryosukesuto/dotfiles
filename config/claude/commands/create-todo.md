@@ -1,3 +1,7 @@
+---
+description: Obsidianの00_Inboxに構造化されたToDoを作成
+---
+
 # ToDo作成コマンド
 
 Obsidianの00_Inboxに構造化されたToDoを作成します。

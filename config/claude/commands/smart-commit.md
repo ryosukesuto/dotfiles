@@ -1,3 +1,7 @@
+---
+description: 変更内容を分析してConventional Commits準拠のコミット自動作成
+---
+
 # /smart-commit - インテリジェントなコミット作成
 
 ## 目的

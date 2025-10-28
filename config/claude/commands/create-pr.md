@@ -1,3 +1,7 @@
+---
+description: git diffを分析して包括的なPull Requestを自動作成
+---
+
 # スマートPR作成コマンド
 
 git diffを分析して、Mermaid図やテスト結果を含む包括的なPull Requestを自動作成します。
