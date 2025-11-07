@@ -268,9 +268,15 @@ echo ""
 # ホームディレクトリ直下のドットファイル
 create_symlink "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 create_symlink "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
+create_symlink "$DOTFILES_DIR/.inputrc" "$HOME/.inputrc"
+create_symlink "$DOTFILES_DIR/.editorconfig" "$HOME/.editorconfig"
+
+# fzf設定
+create_symlink "$DOTFILES_DIR/config/fzf/fzf.zsh" "$HOME/.fzf.zsh"
 
 # Git設定
 create_symlink "$DOTFILES_DIR/config/git/gitconfig" "$HOME/.gitconfig"
+create_symlink "$DOTFILES_DIR/config/git/ignore" "$HOME/.config/git/ignore"
 
 # .configディレクトリの設定
 create_symlink "$DOTFILES_DIR/config/gh" "$HOME/.config/gh"
