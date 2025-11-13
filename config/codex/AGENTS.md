@@ -93,6 +93,12 @@
 - 不要なファイル読み込みを避ける
 - キャッシュを適切に活用
 
+## 🌐 ネットワークとGitHub CLI
+
+- Codex CLIは `network_access=enabled` で稼働していると考え、`api.github.com` への接続は原則可能と判断する
+- `gh` コマンドで `error connecting to api.github.com` が出た場合はネットワーク制限を疑う前に `gh auth status` で認証状態を確認し、必要なら `gh auth login` を実行
+- 一時的な通信エラーの可能性を考慮し、再実行や `https://www.githubstatus.com/` の確認も行う
+
 ## 📊 出力フォーマット
 
 ### コード表示
