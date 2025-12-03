@@ -187,5 +187,6 @@
     "type": "command",
     "command": "~/.claude/codex-statusline.sh"
   },
-  "alwaysThinkingEnabled": false
+  "alwaysThinkingEnabled": false,
+  "model": "opus"
 }
