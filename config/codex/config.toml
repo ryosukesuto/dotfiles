@@ -8,8 +8,8 @@
 model = "gpt-5-codex"
 
 # 推論努力レベル（low, medium, high）
-# 複雑なタスクには "high" を推奨
-model_reasoning_effort = "high"
+# PRレビューなど実用的なタスクには "medium" が最適（速度と品質のバランス）
+model_reasoning_effort = "medium"
 
 # Notify設定（Codex CLI完了時にmacOS通知を表示）
 notify = [

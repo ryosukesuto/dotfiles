@@ -188,5 +188,7 @@
     "command": "~/.claude/codex-statusline.sh"
   },
   "alwaysThinkingEnabled": false,
-  "model": "opus"
+  "includeCoAuthoredBy": false,
+  "outputStyle": "Concise",
+  "cleanupPeriodDays": 7
 }
