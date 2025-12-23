@@ -193,6 +193,7 @@
       "Write(~/.ssh/config)"
     ]
   },
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -246,5 +247,7 @@
     "command": "~/.claude/codex-statusline.sh"
   },
   "outputStyle": "Concise",
-  "model": "opus"
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true
+  }
 }

@@ -42,3 +42,10 @@ fi
 # 環境変数を読み込み
 [ -r ~/.env.local ] && source ~/.env.local
 [ -r "$HOME/.local/bin/env" ] && source "$HOME/.local/bin/env"
+
+# bun completions
+[ -s "/Users/ryosukesuto/.bun/_bun" ] && source "/Users/ryosukesuto/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
