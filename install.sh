@@ -338,6 +338,9 @@ fi
 # mise設定
 create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/config.toml"
 
+# Ghostty設定
+create_symlink "$DOTFILES_DIR/config/ghostty/config" "$HOME/.config/ghostty/config"
+
 # Codex CLI設定
 if [ ! -d "$HOME/.codex" ]; then
     if [ "$DRY_RUN" = true ]; then
@@ -522,3 +525,6 @@ echo "  mise install"
 echo ""
 echo "  # その他のツール"
 echo "  brew install fzf eza bat ripgrep fd-find"
+echo ""
+echo "  # フォント（Ghostty用）"
+echo "  brew install --cask font-udev-gothic-nf"

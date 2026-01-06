@@ -22,6 +22,7 @@ zsh/           - Zsh設定（番号順に読み込み）
 config/        - アプリ設定
   claude/          - Claude Code設定
   codex/           - Codex CLI設定
+  ghostty/         - Ghosttyターミナル設定
   git/             - Git設定
   gh/              - GitHub CLI設定
   tmux/            - tmux設定
@@ -34,6 +35,7 @@ bin/           - カスタムスクリプト
 
 ## 主要ツール
 
+- ターミナル: Ghostty (UDEV Gothic 35NF)
 - シェル: Zsh + ghq/fzf (Ctrl+])
 - バージョン管理: mise
 - AI: Claude Code, Codex CLI

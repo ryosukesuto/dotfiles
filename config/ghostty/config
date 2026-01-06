@@ -2,8 +2,9 @@
 theme = TokyoNight Night
 
 # フォント
-font-family = JetBrains Mono
+font-family = "UDEV Gothic 35NF"
 font-size = 13
+adjust-cell-height = -2
 
 # 操作
 copy-on-select = true
