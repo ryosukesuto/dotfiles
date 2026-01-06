@@ -11,6 +11,7 @@ if (( $+commands[ghq] )); then
         }
         zle -N fzf-src
         bindkey '^]' fzf-src
+        bindkey '\e[91;5u' fzf-src  # CSI u: Ctrl+]
     elif (( $+commands[peco] )); then
         peco-src() {
             local dir=$(ghq list -p | peco)

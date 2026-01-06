@@ -8,7 +8,7 @@ typeset -U path PATH
 [[ -d "$HOME/.local/share/mise/shims" ]] && path=("$HOME/.local/share/mise/shims" $path)
 [[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" $path)
 [[ -d "$HOME/bin" ]] && path=("$HOME/bin" $path)
-[[ -d "$HOME/gh/ryosukesuto/dotfiles/bin" ]] && path=("$HOME/gh/ryosukesuto/dotfiles/bin" $path)
+[[ -n "$DOTFILES_DIR" && -d "$DOTFILES_DIR/bin" ]] && path=("$DOTFILES_DIR/bin" $path)
 
 # Homebrew
 if [[ -d "/opt/homebrew" ]]; then

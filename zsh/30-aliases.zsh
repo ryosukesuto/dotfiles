@@ -32,7 +32,7 @@ alias path='echo -e ${PATH//:/\\n}'
     alias la='eza -la --group-directories-first'
     alias tree='eza --tree'
 }
-(( $+commands[bat] )) && alias cat='bat'
+(( $+commands[bat] )) && alias b='bat'
 (( $+commands[rg] )) && alias grep='rg'
 
 # Docker（存在する場合のみ）
