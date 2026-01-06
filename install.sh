@@ -35,6 +35,7 @@ Options:
     -c, --clean-backup  インストール後にバックアップファイルを削除
     -d, --dry-run       実際には変更を加えずに動作を確認
     --check-deps        依存関係のチェックのみ実行
+    --brew              Brewfileからツールをインストール
 
 Example:
     ./install.sh                # 通常のインストール（バックアップあり）
@@ -43,6 +44,7 @@ Example:
     ./install.sh --clean-backup # インストール後にバックアップを削除
     ./install.sh --dry-run      # 実際には変更を加えずに動作確認
     ./install.sh --check-deps   # 依存関係のチェックのみ
+    ./install.sh --brew         # Brewfileからツールをインストール
 EOF
 }
 
@@ -52,6 +54,7 @@ BACKUP=true
 CLEAN_BACKUP=false
 DRY_RUN=false
 CHECK_DEPS_ONLY=false
+BREW_INSTALL=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -81,6 +84,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --check-deps)
             CHECK_DEPS_ONLY=true
+            shift
+            ;;
+        --brew)
+            BREW_INSTALL=true
             shift
             ;;
         *)
@@ -151,6 +158,24 @@ if [ "$CHECK_DEPS_ONLY" = true ]; then
     info "依存関係をチェックしています..."
     check_dependencies
     exit $?
+fi
+
+# Brewfileからツールをインストール
+if [ "$BREW_INSTALL" = true ]; then
+    if ! command -v brew &> /dev/null; then
+        error "Homebrewがインストールされていません"
+        echo "インストール: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        exit 1
+    fi
+
+    info "Brewfileからツールをインストールしています..."
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] brew bundle install --file=$DOTFILES_DIR/Brewfile"
+    else
+        brew bundle install --file="$DOTFILES_DIR/Brewfile"
+        info "ツールのインストールが完了しました"
+    fi
+    exit 0
 fi
 
 # ファイル存在チェック関数
@@ -528,12 +553,8 @@ else
 fi
 
 info "推奨ツールのインストール案内:"
-echo "  # パッケージマネージャー"
-echo "  curl https://mise.run | sh"
-echo "  mise install"
+echo "  # Brewfileから一括インストール"
+echo "  ./install.sh --brew"
 echo ""
-echo "  # その他のツール"
-echo "  brew install fzf eza bat ripgrep fd-find"
-echo ""
-echo "  # フォント（Ghostty用）"
-echo "  brew install --cask font-udev-gothic-nf"
+echo "  # または個別にインストール"
+echo "  brew bundle install --file=Brewfile"
