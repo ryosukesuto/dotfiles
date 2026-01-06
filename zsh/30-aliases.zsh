@@ -47,7 +47,9 @@ alias path='echo -e ${PATH//:/\\n}'
     alias flushdns='sudo dscacheutil -flushcache'
 }
 
-# 安全な操作
-alias rm='rm -i'
-alias cp='cp -i'
-alias mv='mv -i'
+# 安全な操作（対話シェルのみ）
+if [[ -o interactive ]]; then
+    alias rm='rm -i'
+    alias cp='cp -i'
+    alias mv='mv -i'
+fi
