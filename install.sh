@@ -321,6 +321,9 @@ create_symlink "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settin
 # Claude ユーザー固有コマンドのシンボリックリンク作成
 create_symlink "$DOTFILES_DIR/config/claude/commands" "$HOME/.claude/commands"
 
+# Claude グローバル設定
+create_symlink "$DOTFILES_DIR/config/claude/GLOBAL_SETTINGS.md" "$HOME/.claude/CLAUDE.md"
+
 # Git hooks（dotfilesリポジトリ用）
 if [ -d "$DOTFILES_DIR/git/hooks" ]; then
     info "Git hooksをセットアップしています..."
