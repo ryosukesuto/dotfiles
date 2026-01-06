@@ -7,8 +7,8 @@ font-size = 13
 
 # 操作
 copy-on-select = true
-confirm-close = false
-scrollback-lines = 100000
+confirm-close-surface = false
+scrollback-limit = 100000
 
 # キーバインド
 keybind = shift+enter=text:\n
