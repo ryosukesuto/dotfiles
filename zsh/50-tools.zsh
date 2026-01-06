@@ -4,28 +4,32 @@
 # ============================================================================
 # このファイルはmiseなどの開発ツールを初期化します。
 
-# mise初期化
-if command -v mise &> /dev/null; then
+# 補完キャッシュディレクトリ
+[[ -d ~/.zsh/cache ]] || mkdir -p ~/.zsh/cache
+
+# mise初期化（shimsはPATHにあるがhooks用にactivate）
+if (( $+commands[mise] )); then
   eval "$(mise activate zsh)"
 fi
 
-
-# Terraform補完（シンプルな設定）
-if command -v terraform &> /dev/null; then
+# Terraform補完
+if (( $+commands[terraform] )); then
   autoload -U +X bashcompinit && bashcompinit
-  complete -o nospace -C $(which terraform) terraform
+  complete -o nospace -C "$(whence -p terraform)" terraform
 fi
 
-# GitHub CLI補完（シンプルな設定）
-if command -v gh &> /dev/null; then
-  eval "$(gh completion -s zsh 2>/dev/null)"
+# GitHub CLI補完（キャッシュ付き）
+if (( $+commands[gh] )); then
+  local gh_cache=~/.zsh/cache/gh_completion.zsh
+  local gh_bin="$(whence -p gh)"
+  if [[ ! -f "$gh_cache" ]] || [[ "$gh_bin" -nt "$gh_cache" ]]; then
+    gh completion -s zsh > "$gh_cache" 2>/dev/null
+  fi
+  [[ -f "$gh_cache" ]] && source "$gh_cache"
 fi
 
-# Docker補完（即座に読み込み - ファイルベースなので高速）
-if [[ -f /Applications/Docker.app/Contents/Resources/etc/docker.zsh-completion ]]; then
+# Docker補完（ファイルベースなので高速）
+[[ -f /Applications/Docker.app/Contents/Resources/etc/docker.zsh-completion ]] && \
   source /Applications/Docker.app/Contents/Resources/etc/docker.zsh-completion
-fi
-
-if [[ -f /Applications/Docker.app/Contents/Resources/etc/docker-compose.zsh-completion ]]; then
+[[ -f /Applications/Docker.app/Contents/Resources/etc/docker-compose.zsh-completion ]] && \
   source /Applications/Docker.app/Contents/Resources/etc/docker-compose.zsh-completion
-fi

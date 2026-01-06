@@ -139,7 +139,7 @@
       "Bash(rm -rf ..)",
       "Bash(rm -rf:*)",
       "Bash(rm -rf .:*)",
-      "Bash(rm -rf ~/src)",
+      "Bash(rm -rf ~/gh)",
       "Bash(rm -rf ~/Documents)",
       "Bash(rm -rf ~/Desktop)",
       "Bash(rm -rf ~/Downloads)",

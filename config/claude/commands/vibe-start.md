@@ -47,7 +47,7 @@ if [ ! -f docs/coding-guidelines.md ]; then
 fi
 ```
 
-テンプレート: `~/src/github.com/ryosukesuto/obsidian-notes/04_Docs/Guides/2025-12-03_coding-guidelines_テンプレート.md`
+テンプレート: `~/gh/ryosukesuto/obsidian-notes/04_Docs/Guides/2025-12-03_coding-guidelines_テンプレート.md`
 
 プロジェクトの言語・フレームワークに合わせて不要なセクションを削除してください。
 

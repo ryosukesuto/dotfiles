@@ -62,7 +62,7 @@
 	visual = !gitk
 
 [ghq]
-	root = ~/src
+	root = ~/gh
 
 # ユーザー情報は.gitconfig.localに記載してください
 # 例:

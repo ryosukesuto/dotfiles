@@ -58,7 +58,8 @@ _dotfiles_load_project_env() {
       set -a
       source "$env_file"
       set +a
-      echo "✅ Loaded $env_file from trusted directory"
+      # 成功時は静かに（DOTFILES_VERBOSE=1 で表示）
+      [[ -n "$DOTFILES_VERBOSE" ]] && echo "✅ Loaded $env_file"
     else
       echo "⚠️ $env_file contains potentially dangerous commands - skipped"
     fi

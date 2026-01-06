@@ -1,9 +1,0 @@
-# Ignore local configuration files with sensitive data
-.env.local
-*.local
-projects.toml
-config.toml
-
-# Keep templates
-!*.template
-!.env.local.template
