@@ -341,6 +341,12 @@ fi
 # mise設定
 create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/config.toml"
 
+# direnv設定
+if [ ! -d "$HOME/.config/direnv" ]; then
+    mkdir -p "$HOME/.config/direnv"
+fi
+create_symlink "$DOTFILES_DIR/config/direnv/direnvrc" "$HOME/.config/direnv/direnvrc"
+
 # Ghostty設定
 create_symlink "$DOTFILES_DIR/config/ghostty/config" "$HOME/.config/ghostty/config"
 

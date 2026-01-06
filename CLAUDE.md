@@ -22,6 +22,7 @@ zsh/           - Zsh設定（番号順に読み込み）
 config/        - アプリ設定
   claude/          - Claude Code設定
   codex/           - Codex CLI設定
+  direnv/          - direnv設定（環境変数自動切替）
   ghostty/         - Ghosttyターミナル設定
   git/             - Git設定
   gh/              - GitHub CLI設定

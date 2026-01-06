@@ -1,0 +1,81 @@
+# ~/.config/direnv/direnvrc
+# Global direnv configuration with useful functions
+
+# use_mise: Activate mise in direnv (alternative to mise activate)
+use_mise() {
+  direnv_load mise direnv exec
+}
+
+# use_aws_profile: Set AWS profile with validation
+use_aws_profile() {
+  local profile="${1}"
+  if [[ -z "${profile}" ]]; then
+    log_error "use_aws_profile requires a profile name"
+    return 1
+  fi
+
+  export AWS_PROFILE="${profile}"
+
+  # Validate profile exists
+  if ! aws configure list-profiles 2>/dev/null | grep -q "^${profile}$"; then
+    log_error "AWS profile '${profile}' not found"
+    return 1
+  fi
+
+  log_status "AWS_PROFILE=${profile}"
+}
+
+# use_gcp_project: Set GCP project
+use_gcp_project() {
+  local project="${1}"
+  if [[ -z "${project}" ]]; then
+    log_error "use_gcp_project requires a project name"
+    return 1
+  fi
+
+  export GOOGLE_CLOUD_PROJECT="${project}"
+  export GCP_PROJECT="${project}"
+  export CLOUDSDK_CORE_PROJECT="${project}"
+
+  log_status "GCP_PROJECT=${project}"
+}
+
+# use_env: Set ENV and warn if production
+use_env() {
+  local env="${1}"
+  export ENV="${env}"
+
+  if [[ "${env}" == "prd" || "${env}" == "prod" || "${env}" == "production" ]]; then
+    log_error "WARNING: PRODUCTION ENVIRONMENT"
+  else
+    log_status "ENV=${env}"
+  fi
+}
+
+# use_kubeconfig: Set custom kubeconfig
+use_kubeconfig() {
+  local config="${1}"
+  if [[ ! -f "${config}" ]]; then
+    log_error "Kubeconfig not found: ${config}"
+    return 1
+  fi
+
+  export KUBECONFIG="${config}"
+  log_status "KUBECONFIG=${config}"
+}
+
+# layout_iac: Standard IaC project layout
+layout_iac() {
+  local env="${1:-dev}"
+
+  use_env "${env}"
+
+  # Add local bin to PATH
+  PATH_add bin
+  PATH_add scripts
+
+  # Source local overrides if exists
+  if [[ -f ".envrc.local" ]]; then
+    source_env ".envrc.local"
+  fi
+}

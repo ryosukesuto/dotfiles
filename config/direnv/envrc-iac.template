@@ -1,0 +1,51 @@
+# .envrc template for IaC repositories
+# Copy to your repo root and customize: cp envrc-iac.template /path/to/repo/.envrc
+# Then: direnv allow
+
+# ============================================================================
+# Environment Identification (REQUIRED - prevents wrong-env accidents)
+# ============================================================================
+export ENV="dev"  # dev | stg | prd
+
+# ============================================================================
+# AWS Configuration
+# ============================================================================
+export AWS_PROFILE="your-profile-${ENV}"
+export AWS_REGION="ap-northeast-1"
+# export AWS_DEFAULT_REGION="${AWS_REGION}"
+
+# ============================================================================
+# GCP Configuration
+# ============================================================================
+# export GOOGLE_CLOUD_PROJECT="your-project-${ENV}"
+# export GCP_PROJECT="${GOOGLE_CLOUD_PROJECT}"
+# export CLOUDSDK_CORE_PROJECT="${GOOGLE_CLOUD_PROJECT}"
+
+# ============================================================================
+# Kubernetes Configuration
+# ============================================================================
+# export KUBECONFIG="${HOME}/.kube/config-${ENV}"
+# export KUBE_CONTEXT="your-cluster-${ENV}"
+
+# ============================================================================
+# Terraform Configuration
+# ============================================================================
+# export TF_VAR_environment="${ENV}"
+# export TF_WORKSPACE="${ENV}"
+
+# ============================================================================
+# Digger Configuration (if using Digger)
+# ============================================================================
+# export DIGGER_TARGET_PROJECTS="project-${ENV}"
+
+# ============================================================================
+# Safety: Confirm environment on entry
+# ============================================================================
+echo ""
+echo "======================================"
+echo " ENV: ${ENV}"
+echo " AWS_PROFILE: ${AWS_PROFILE}"
+[[ -n "${GOOGLE_CLOUD_PROJECT}" ]] && echo " GCP_PROJECT: ${GOOGLE_CLOUD_PROJECT}"
+[[ -n "${KUBECONFIG}" ]] && echo " KUBECONFIG: ${KUBECONFIG}"
+echo "======================================"
+echo ""

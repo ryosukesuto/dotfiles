@@ -12,6 +12,11 @@ if (( $+commands[mise] )); then
   eval "$(mise activate zsh)"
 fi
 
+# direnv初期化（環境変数の自動切替）
+if (( $+commands[direnv] )); then
+  eval "$(direnv hook zsh)"
+fi
+
 # Terraform補完
 if (( $+commands[terraform] )); then
   autoload -U +X bashcompinit && bashcompinit

@@ -1,0 +1,305 @@
+#!/bin/bash
+# ctx-iac - IaC PR用コンテキスト収集ツール
+# Claude/Codexに渡す一次情報を標準化
+
+set -euo pipefail
+
+# 色定義
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# ヘルプ
+show_help() {
+    cat << 'EOF'
+ctx-iac - IaC PR用コンテキスト収集ツール
+
+Usage:
+    ctx-iac [OPTIONS] [PR_NUMBER]
+
+Options:
+    -h, --help      このヘルプを表示
+    -d, --diff      差分を含める（デフォルト: 要約のみ）
+    -l, --lint      ローカルlintを実行
+    -c, --compact   コンパクト出力（AI用）
+    -p, --plan      planコメントのみ抽出
+    --no-color      色なし出力
+
+Examples:
+    ctx-iac              # 現在のブランチのPR情報
+    ctx-iac 123          # PR #123の情報
+    ctx-iac -d           # 差分を含めて出力
+    ctx-iac -l           # lint結果も含める
+    ctx-iac -c | pbcopy  # AI用にコピー
+EOF
+}
+
+# オプション解析
+INCLUDE_DIFF=false
+RUN_LINT=false
+COMPACT=false
+PLAN_ONLY=false
+NO_COLOR=false
+PR_NUMBER=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help) show_help; exit 0 ;;
+        -d|--diff) INCLUDE_DIFF=true; shift ;;
+        -l|--lint) RUN_LINT=true; shift ;;
+        -c|--compact) COMPACT=true; shift ;;
+        -p|--plan) PLAN_ONLY=true; shift ;;
+        --no-color) NO_COLOR=true; shift ;;
+        [0-9]*) PR_NUMBER="$1"; shift ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+done
+
+# 色なしモード
+if [[ "$NO_COLOR" == "true" ]] || [[ "$COMPACT" == "true" ]]; then
+    RED=''; GREEN=''; YELLOW=''; BLUE=''; CYAN=''; NC=''
+fi
+
+# セクションヘッダー
+section() {
+    if [[ "$COMPACT" == "true" ]]; then
+        echo ""
+        echo "## $1"
+    else
+        echo ""
+        echo -e "${BLUE}━━━ $1 ━━━${NC}"
+    fi
+}
+
+# PR番号取得
+get_pr_number() {
+    if [[ -n "$PR_NUMBER" ]]; then
+        echo "$PR_NUMBER"
+        return
+    fi
+
+    local branch
+    branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+
+    if [[ -z "$branch" || "$branch" == "main" || "$branch" == "master" ]]; then
+        return 1
+    fi
+
+    gh pr view "$branch" --json number -q '.number' 2>/dev/null || return 1
+}
+
+# PR基本情報
+pr_info() {
+    local pr="$1"
+    section "PR Info"
+
+    if [[ "$COMPACT" == "true" ]]; then
+        gh pr view "$pr" --json title,state,baseRefName,headRefName,author \
+            -q '"PR #\(.number): \(.title)\nState: \(.state)\nBase: \(.baseRefName) <- Head: \(.headRefName)\nAuthor: \(.author.login)"'
+    else
+        gh pr view "$pr" --json number,title,state,baseRefName,headRefName,author,url \
+            -q '"PR #\(.number): \(.title)\nState: \(.state)\nBase: \(.baseRefName) <- Head: \(.headRefName)\nAuthor: \(.author.login)\nURL: \(.url)"'
+    fi
+}
+
+# PRチェック結果
+pr_checks() {
+    local pr="$1"
+    section "Checks"
+
+    local checks
+    checks=$(gh pr checks "$pr" 2>/dev/null || echo "No checks found")
+
+    if [[ "$COMPACT" == "true" ]]; then
+        echo "$checks" | grep -E '(fail|✗|pending|⏱)' || echo "All checks passed"
+    else
+        echo "$checks"
+    fi
+}
+
+# 変更ファイル一覧
+changed_files() {
+    local pr="$1"
+    section "Changed Files"
+
+    gh pr diff "$pr" --name-only 2>/dev/null | head -50
+
+    local count
+    count=$(gh pr diff "$pr" --name-only 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$count" -gt 50 ]]; then
+        echo "... and $((count - 50)) more files"
+    fi
+}
+
+# Digger planコメント抽出
+digger_plan() {
+    local pr="$1"
+    section "Digger Plan"
+
+    local comments
+    comments=$(gh pr view "$pr" --comments --json comments \
+        -q '.comments[] | select(.body | contains("digger") or contains("Terraform") or contains("Plan:")) | .body' 2>/dev/null | tail -1)
+
+    if [[ -n "$comments" ]]; then
+        if [[ "$COMPACT" == "true" ]]; then
+            echo "$comments" | grep -E '(Plan:|Changes|No changes|Error)' | head -20
+        else
+            echo "$comments" | head -100
+        fi
+    else
+        echo "No Digger plan comments found"
+    fi
+}
+
+# PipeCD plan-preview抽出
+pipecd_plan() {
+    local pr="$1"
+    section "PipeCD Plan Preview"
+
+    local comments
+    comments=$(gh pr view "$pr" --comments --json comments \
+        -q '.comments[] | select(.body | contains("pipecd") or contains("PipeCD") or contains("plan-preview")) | .body' 2>/dev/null | tail -1)
+
+    if [[ -n "$comments" ]]; then
+        if [[ "$COMPACT" == "true" ]]; then
+            echo "$comments" | grep -E '(Sync|Changes|ADDED|DELETED|MODIFIED)' | head -20
+        else
+            echo "$comments" | head -100
+        fi
+    else
+        echo "No PipeCD plan-preview comments found"
+    fi
+}
+
+# ArgoCD diff抽出
+argocd_plan() {
+    local pr="$1"
+    section "ArgoCD Diff"
+
+    local comments
+    comments=$(gh pr view "$pr" --comments --json comments \
+        -q '.comments[] | select(.body | contains("argocd") or contains("ArgoCD") or contains("app diff")) | .body' 2>/dev/null | tail -1)
+
+    if [[ -n "$comments" ]]; then
+        if [[ "$COMPACT" == "true" ]]; then
+            echo "$comments" | head -20
+        else
+            echo "$comments" | head -100
+        fi
+    else
+        echo "No ArgoCD diff comments found"
+    fi
+}
+
+# 差分出力
+pr_diff() {
+    local pr="$1"
+    section "Diff"
+
+    gh pr diff "$pr" 2>/dev/null | head -500
+
+    local lines
+    lines=$(gh pr diff "$pr" 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$lines" -gt 500 ]]; then
+        echo ""
+        echo "... diff truncated ($lines total lines)"
+    fi
+}
+
+# ローカルlint実行
+run_local_lint() {
+    section "Local Lint Results"
+
+    # Terraform
+    if command -v terraform &>/dev/null && ls *.tf &>/dev/null 2>&1; then
+        echo "### terraform fmt"
+        terraform fmt -check -recursive 2>&1 || true
+        echo ""
+        echo "### terraform validate"
+        terraform validate 2>&1 || true
+    fi
+
+    # tflint
+    if command -v tflint &>/dev/null && ls *.tf &>/dev/null 2>&1; then
+        echo ""
+        echo "### tflint"
+        tflint --recursive 2>&1 || true
+    fi
+
+    # trivy
+    if command -v trivy &>/dev/null; then
+        echo ""
+        echo "### trivy config"
+        trivy config . --severity HIGH,CRITICAL 2>&1 | head -50 || true
+    fi
+
+    # kubeconform
+    if command -v kubeconform &>/dev/null; then
+        local k8s_files
+        k8s_files=$(find . -name "*.yaml" -o -name "*.yml" 2>/dev/null | head -5)
+        if [[ -n "$k8s_files" ]]; then
+            echo ""
+            echo "### kubeconform"
+            kubeconform -summary . 2>&1 || true
+        fi
+    fi
+}
+
+# 環境情報
+env_info() {
+    section "Environment"
+    echo "AWS_PROFILE: ${AWS_PROFILE:-<not set>}"
+    echo "AWS_REGION: ${AWS_REGION:-${AWS_DEFAULT_REGION:-<not set>}}"
+    echo "GCP_PROJECT: ${GOOGLE_CLOUD_PROJECT:-${GCP_PROJECT:-<not set>}}"
+    echo "KUBECONFIG: ${KUBECONFIG:-<default>}"
+
+    if [[ -f ".envrc" ]]; then
+        echo "direnv: .envrc found"
+    fi
+}
+
+# メイン
+main() {
+    local pr
+    pr=$(get_pr_number)
+
+    if [[ -z "$pr" ]]; then
+        echo -e "${RED}Error: No PR found for current branch${NC}"
+        echo "Usage: ctx-iac [PR_NUMBER]"
+        exit 1
+    fi
+
+    # planのみモード
+    if [[ "$PLAN_ONLY" == "true" ]]; then
+        digger_plan "$pr"
+        pipecd_plan "$pr"
+        argocd_plan "$pr"
+        exit 0
+    fi
+
+    # 通常出力
+    env_info
+    pr_info "$pr"
+    pr_checks "$pr"
+    changed_files "$pr"
+
+    # Plan系コメント
+    digger_plan "$pr"
+    pipecd_plan "$pr"
+    argocd_plan "$pr"
+
+    # オプション: 差分
+    if [[ "$INCLUDE_DIFF" == "true" ]]; then
+        pr_diff "$pr"
+    fi
+
+    # オプション: ローカルlint
+    if [[ "$RUN_LINT" == "true" ]]; then
+        run_local_lint
+    fi
+}
+
+main
