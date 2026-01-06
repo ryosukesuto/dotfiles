@@ -20,6 +20,10 @@ ctx-iac - IaC PR用コンテキスト収集ツール
 Usage:
     ctx-iac [OPTIONS] [PR_NUMBER]
 
+Modes:
+    --pr            PRモード（デフォルト）: PR情報 + planコメント + checks
+    --local         ローカルモード: git diff + lint（PR不要）
+
 Options:
     -h, --help      このヘルプを表示
     -d, --diff      差分を含める（デフォルト: 要約のみ）
@@ -30,10 +34,13 @@ Options:
 
 Examples:
     ctx-iac              # 現在のブランチのPR情報
-    ctx-iac 123          # PR #123の情報
-    ctx-iac -d           # 差分を含めて出力
-    ctx-iac -l           # lint結果も含める
+    ctx-iac --pr 123     # PR #123の情報
+    ctx-iac --local      # ローカル差分（コミット前レビュー用）
     ctx-iac -c | pbcopy  # AI用にコピー
+
+Codex連携:
+    ctx-iac --pr | codex exec     # PRレビュー
+    ctx-iac --local | codex exec  # ローカルレビュー
 EOF
 }
 
@@ -43,6 +50,7 @@ RUN_LINT=false
 COMPACT=false
 PLAN_ONLY=false
 NO_COLOR=false
+MODE="pr"  # pr or local
 PR_NUMBER=""
 
 while [[ $# -gt 0 ]]; do
@@ -53,6 +61,8 @@ while [[ $# -gt 0 ]]; do
         -c|--compact) COMPACT=true; shift ;;
         -p|--plan) PLAN_ONLY=true; shift ;;
         --no-color) NO_COLOR=true; shift ;;
+        --pr) MODE="pr"; shift ;;
+        --local) MODE="local"; shift ;;
         [0-9]*) PR_NUMBER="$1"; shift ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
@@ -261,14 +271,42 @@ env_info() {
     fi
 }
 
-# メイン
-main() {
+# ローカル差分情報
+local_diff_info() {
+    section "Local Changes"
+
+    echo "Branch: $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')"
+    echo "Status:"
+    git status -sb 2>/dev/null || echo "Not a git repository"
+}
+
+local_diff_stat() {
+    section "Changed Files (local)"
+    git diff --stat 2>/dev/null || echo "No changes"
+    echo ""
+    git diff --cached --stat 2>/dev/null | head -20
+}
+
+local_diff_full() {
+    section "Diff (local)"
+    git diff 2>/dev/null | head -500
+    local lines
+    lines=$(git diff 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$lines" -gt 500 ]]; then
+        echo ""
+        echo "... diff truncated ($lines total lines)"
+    fi
+}
+
+# メイン（PRモード）
+main_pr() {
     local pr
     pr=$(get_pr_number)
 
     if [[ -z "$pr" ]]; then
         echo -e "${RED}Error: No PR found for current branch${NC}"
-        echo "Usage: ctx-iac [PR_NUMBER]"
+        echo "Usage: ctx-iac [--pr] [PR_NUMBER]"
+        echo "Or use: ctx-iac --local for local changes"
         exit 1
     fi
 
@@ -302,4 +340,24 @@ main() {
     fi
 }
 
-main
+# メイン（ローカルモード）
+main_local() {
+    env_info
+    local_diff_info
+    local_diff_stat
+
+    # 差分を含める（デフォルトで含める）
+    local_diff_full
+
+    # オプション: ローカルlint
+    if [[ "$RUN_LINT" == "true" ]]; then
+        run_local_lint
+    fi
+}
+
+# エントリポイント
+if [[ "$MODE" == "local" ]]; then
+    main_local
+else
+    main_pr
+fi
