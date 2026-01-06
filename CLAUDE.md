@@ -32,6 +32,9 @@ config/        - アプリ設定
   aws/             - AWSテンプレート
   mise/            - mise設定
 bin/           - カスタムスクリプト
+  ctx-iac          - PR情報/planコメント収集（AI連携用）
+  tmux-iac         - IaC用3ペインレイアウト起動
+  th               - Obsidianデイリーノート記録
 ```
 
 ## 主要ツール
@@ -41,6 +44,42 @@ bin/           - カスタムスクリプト
 - バージョン管理: mise
 - AI: Claude Code, Codex CLI
 - クラウド: AWS (SSM Session Manager)
+
+## IaC運用
+
+### 環境切替（direnv）
+
+```bash
+# IaCリポジトリで.envrc作成
+cp ~/gh/ryosukesuto/dotfiles/config/direnv/envrc-iac.template .envrc
+direnv allow
+
+# または簡易版
+echo 'layout_iac dev' > .envrc
+echo 'use_aws_profile my-profile' >> .envrc
+direnv allow
+```
+
+プロンプトにENV/AWS_PROFILE/GCP_PROJECT自動表示（prdは赤警告）
+
+### PR情報収集（ctx-iac）
+
+```bash
+ctx-iac              # 現在ブランチのPR情報
+ctx-iac 123          # PR #123
+ctx-iac -c | pbcopy  # AI用にコピー
+ctx-iac -p           # planコメントのみ
+ctx-iac -l           # ローカルlintも実行
+```
+
+### tmuxレイアウト
+
+```bash
+tmux-iac              # 3ペインセッション起動
+# または既存セッション内で Ctrl-a I
+```
+
+レイアウト: 左=作業、右上=PR監視、右下=Lint
 
 ## タスク
 
