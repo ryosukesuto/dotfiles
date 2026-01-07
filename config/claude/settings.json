@@ -235,8 +235,5 @@
       }
     ]
   },
-  "outputStyle": "Concise",
-  "enabledPlugins": {
-    "claude-mem@thedotmack": true
-  }
+  "outputStyle": "Concise"
 }
