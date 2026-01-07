@@ -1,8 +1,23 @@
+# Added by OrbStack: 'orb' SSH host for Linux machines
+# This only works if it's at the top of ssh_config (before any Host blocks).
+# This won't be added again if you remove it.
+Include ~/.orbstack/ssh/config
+
 # SSH設定ファイル
 # 効率的で安全なSSH接続設定
 
 # ===== 基本設定 =====
 
+# DevPod Start shared-actions.devpod
+Host shared-actions.devpod
+  ForwardAgent yes
+  LogLevel error
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  HostKeyAlgorithms rsa-sha2-256,rsa-sha2-512,ssh-rsa
+  ProxyCommand "/opt/homebrew/bin/devpod" ssh --stdio --context default --user vscode shared-actions --workdir "/home/vscode/workspaces/app"
+  User vscode
+# DevPod End shared-actions.devpod
 # 全ホスト共通設定
 Host *
     # 接続タイムアウト設定

@@ -2,7 +2,7 @@
 # Usage: brew bundle install --file=Brewfile
 
 # Taps
-tap "homebrew/cask-fonts"
+# (homebrew/cask-fonts は廃止、homebrew-cask に統合済み)
 
 # ===== 必須 =====
 brew "git"
@@ -27,6 +27,11 @@ brew "mise"
 brew "tflint"        # Terraform linter
 brew "trivy"         # セキュリティスキャナ
 brew "kubeconform"   # K8sマニフェスト検証
+
+# ===== 開発環境 =====
+cask "orbstack"      # Docker/Linux VM (軽量・高速)
+cask "devpod"        # Dev Container管理
+brew "go-task"       # タスクランナー
 
 # ===== フォント =====
 cask "font-udev-gothic-nf"
