@@ -29,7 +29,9 @@ brew "trivy"         # セキュリティスキャナ
 brew "kubeconform"   # K8sマニフェスト検証
 
 # ===== 開発環境 =====
-cask "orbstack"      # Docker/Linux VM (軽量・高速)
+brew "colima"        # Docker runtime (軽量・OSS)
+brew "docker"        # Docker CLI
+brew "docker-compose" # Docker Compose
 cask "devpod"        # Dev Container管理
 brew "go-task"       # タスクランナー
 
