@@ -19,6 +19,7 @@ brew "ripgrep"       # grep代替
 brew "fd"            # find代替
 brew "jq"            # JSON処理
 brew "ghq"           # リポジトリ管理
+brew "terminal-notifier"  # macOS通知
 
 # ===== バージョン管理 =====
 brew "mise"
