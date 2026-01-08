@@ -13,9 +13,11 @@ model_reasoning_effort = "medium"
 
 # Notify設定（Codex CLI完了時にmacOS通知を表示）
 notify = [
-  "osascript",
-  "-e",
-  "display notification \"Codex CLIのタスクが完了しました\" with title \"Codex CLI\" subtitle \"処理終了\" sound name \"Hero\""
+  "terminal-notifier",
+  "-title", "Codex CLI",
+  "-subtitle", "処理終了",
+  "-message", "タスクが完了しました",
+  "-sound", "Hero"
 ]
 
 # レスポンスの最大トークン数（デフォルト: 4096）
