@@ -342,6 +342,7 @@ if [ ! -d "$HOME/.claude" ]; then
     fi
 fi
 create_symlink "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settings.json"
+create_symlink "$DOTFILES_DIR/config/claude/statusline.sh" "$HOME/.claude/statusline.sh"
 
 # Claude ユーザー固有コマンドのシンボリックリンク作成
 create_symlink "$DOTFILES_DIR/config/claude/commands" "$HOME/.claude/commands"
