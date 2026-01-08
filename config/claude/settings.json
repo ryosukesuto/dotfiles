@@ -1,4 +1,5 @@
 {
+  "language": "japanese",
   "cleanupPeriodDays": 7,
   "statusLine": {
     "type": "command",
