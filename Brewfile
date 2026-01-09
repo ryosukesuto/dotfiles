@@ -29,6 +29,10 @@ brew "tflint"        # Terraform linter
 brew "trivy"         # セキュリティスキャナ
 brew "kubeconform"   # K8sマニフェスト検証
 
+# ===== クラウドCLI =====
+brew "awscli"        # AWS CLI
+cask "google-cloud-sdk"  # gcloud CLI
+
 # ===== 開発環境 =====
 brew "colima"        # Docker runtime (軽量・OSS)
 brew "docker"        # Docker CLI
@@ -39,5 +43,13 @@ brew "go-task"       # タスクランナー
 # ===== フォント =====
 cask "font-udev-gothic-nf"
 
-# ===== ターミナル（オプション） =====
-# cask "ghostty"     # 手動インストール推奨
+# ===== ターミナル =====
+cask "ghostty"
+
+# ===== アプリケーション =====
+cask "1password"           # パスワード管理
+cask "arc"                 # ブラウザ
+cask "obsidian"            # ノートアプリ
+cask "chatgpt"             # ChatGPTデスクトップ
+cask "figma"               # デザインツール
+cask "google-japanese-ime" # 日本語入力
