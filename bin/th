@@ -11,7 +11,7 @@ if [[ -z "$1" ]]; then
 fi
 
 # 設定
-vault_path="$HOME/src/github.com/ryosukesuto/obsidian-notes"
+vault_path="$HOME/gh/github.com/ryosukesuto/obsidian-notes"
 today=$(date +%Y-%m-%d)
 daily_note="$vault_path/01_Daily/${today}.md"
 timestamp=$(date "+%Y/%m/%d %H:%M:%S")
