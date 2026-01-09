@@ -7,6 +7,11 @@
 # 補完キャッシュディレクトリ
 [[ -d ~/.zsh/cache ]] || mkdir -p ~/.zsh/cache
 
+# GitHub API レート制限回避（mise等が使用）
+if (( $+commands[gh] )) && [[ -z "$GITHUB_TOKEN" ]]; then
+  export GITHUB_TOKEN="$(gh auth token 2>/dev/null)"
+fi
+
 # mise初期化（shimsはPATHにあるがhooks用にactivate）
 if (( $+commands[mise] )); then
   eval "$(mise activate zsh)"
