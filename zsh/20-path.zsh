@@ -20,4 +20,8 @@ elif [[ -d "/usr/local/Homebrew" ]]; then
 fi
 
 # Google Cloud SDK
-[[ -d "$HOME/google-cloud-sdk/bin" ]] && path+=("$HOME/google-cloud-sdk/bin")
+if [[ -d "$HOMEBREW_PREFIX/share/google-cloud-sdk/bin" ]]; then
+    path+=("$HOMEBREW_PREFIX/share/google-cloud-sdk/bin")
+elif [[ -d "$HOME/google-cloud-sdk/bin" ]]; then
+    path+=("$HOME/google-cloud-sdk/bin")
+fi
