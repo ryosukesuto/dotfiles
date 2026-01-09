@@ -53,3 +53,4 @@ cask "obsidian"            # ノートアプリ
 cask "chatgpt"             # ChatGPTデスクトップ
 cask "figma"               # デザインツール
 cask "google-japanese-ime" # 日本語入力
+cask "alt-tab"             # ウィンドウスイッチャー
