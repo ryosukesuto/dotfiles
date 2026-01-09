@@ -111,7 +111,7 @@ gh pr checks
 - PR作成者が特に確認してほしい点
 - 既存のレビュー指摘と対応状況
 
-### ステップ2: Codex分析の実施（推奨）
+### ステップ2: Codex分析の実施（必須）
 
 Codex CLIを使用してPRの初期分析を取得。Codex自身がghコマンドを実行できるため、シンプルに依頼：
 
@@ -415,7 +415,7 @@ gh pr diff
 gh pr checks
 ```
 
-### 2. Codex分析の実施（推奨）
+### 2. Codex分析の実施（必須）
 ```bash
 # Codexに初期分析を依頼
 codex exec "このPRをレビューしてください。
