@@ -45,10 +45,13 @@
 - 理由: 意見が分かれるスタイルはメリデメあり、統一コストに見合わない。適切なファイル分割があれば、どんな書き方でも苦なく読める
 
 ### AWS CLI作業時
-1. プロファイル確認 → `~/.aws/config` で利用可能なプロファイルを確認
-2. SSOログイン → `aws sso login --profile <profile-name>` でログイン
-3. AWS操作実行 → `--profile <profile-name>` を指定してAWS CLIコマンド実行
-4. 利用可能なプロファイル: prod, sandbox, dev, prod-admin, sandbox-admin
+1. https://federation.perman.jp/#/ にログイン
+2. `aws-winticket` の `...` → `一時的な認証情報を取得`
+3. `環境変数の設定` の `コピー` をクリック
+4. ターミナルで貼り付けて実行（環境変数がセットされる）
+5. AWS CLIコマンドを実行（プロファイル指定不要）
+
+注意: 一時的な認証情報のため、有効期限切れ時は再取得が必要
 
 ### Codexとの協業
 
