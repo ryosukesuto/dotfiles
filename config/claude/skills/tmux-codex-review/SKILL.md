@@ -26,7 +26,8 @@ tmuxで右半分にCodexを開いて、インタラクティブにレビュー�
 | コマンド | 説明 |
 |----------|------|
 | `ensure` | Codexペインを作成（既存なら再利用） |
-| `send "msg"` | Codexにメッセージを送信 |
+| `send "msg"` | Codexにメッセージを送信（Enter自動送信） |
+| `wait_response [s]` | 応答完了を待機（デフォルト120秒） |
 | `capture [n]` | 出力をキャプチャ（デフォルト100行） |
 | `close` | Codexペインを閉じる |
 | `status` | ペインの状態を確認 |
@@ -61,10 +62,17 @@ git diffの内容をレビューしてもらう場合:
 
 ### ステップ3: 返答を待機してキャプチャ
 
-Codexの応答には時間がかかるため、少し待ってからキャプチャ:
+`wait_response`で応答完了を待機してからキャプチャ:
 
 ```bash
-sleep 10 && ~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh capture 100
+~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh wait_response && \
+~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh capture 200
+```
+
+または従来のsleep方式:
+
+```bash
+sleep 30 && ~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh capture 100
 ```
 
 ### ステップ4: 結果の報告
@@ -111,5 +119,5 @@ git diffを確認して、以下の観点でレビューしてください:
 
 - tmuxセッション外では動作しません
 - Codexの応答には数秒〜数十秒かかる場合があります
-- キャプチャのタイミングは応答内容に応じて調整してください
+- `wait_response`は「esc to interrupt」の消失と「›」プロンプトの出現で完了を検知します
 - Codexペインは明示的に`close`するまで開いたままです
