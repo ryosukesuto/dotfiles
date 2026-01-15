@@ -407,9 +407,6 @@ if [ ! -d "$HOME/.codex/prompts" ]; then
 fi
 create_symlink "$DOTFILES_DIR/config/codex/prompts/create-pr-pro.md" "$HOME/.codex/prompts/create-pr-pro.md"
 
-# AWS設定は手動でテンプレートからコピー
-# create_symlink "$DOTFILES_DIR/config/aws/config" "$HOME/.aws/config"
-
 # ============================================================================
 # binディレクトリのコマンドに実行権限を付与
 # ============================================================================
@@ -496,19 +493,8 @@ if [ ! -f "$HOME/.env.local" ]; then
     echo "  export DBT_DATA_POLICY_TAG_ID=your-tag-id"
 fi
 
-if [ ! -f "$HOME/.aws/config" ]; then
-    warn "重要: AWS設定ファイルを ~/.aws/config に作成してください"
-    echo "テンプレートファイルを参考にしてください:"
-    echo "  cp $DOTFILES_DIR/config/aws/config.template ~/.aws/config"
-    echo "  # その後、実際の値を入力してください"
-fi
-
-if [ ! -f "$HOME/.aws/credentials" ]; then
-    warn "重要: AWS認証情報を ~/.aws/credentials に設定してください"
-    echo "テンプレートファイルを参考にしてください:"
-    echo "  cp $DOTFILES_DIR/config/aws/credentials.template ~/.aws/credentials"
-    echo "  # その後、実際の認証情報を入力してください"
-fi
+# AWS認証はフェデレーション方式（環境変数）を使用
+# ~/.aws/config, ~/.aws/credentials は不要
 
 if [ ! -f "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" ]; then
     warn "重要: Claude MCP設定をカスタマイズする場合は claude_desktop_config.json.local を作成してください"
