@@ -68,7 +68,27 @@ EOF
 source ~/.zshrc
 ```
 
-### 8. 追加セットアップ（任意）
+### 8. AIツールのインストール
+
+```bash
+# Claude Code
+npm install -g @anthropic-ai/claude-code
+
+# Codex CLI
+npm install -g @openai/codex
+```
+
+初回起動時に認証:
+
+```bash
+# Claude Code（Anthropic APIキーまたはOAuth）
+claude
+
+# Codex（OpenAI APIキー）
+codex
+```
+
+### 9. 追加セットアップ（任意）
 
 ```bash
 # mise でツールをインストール
