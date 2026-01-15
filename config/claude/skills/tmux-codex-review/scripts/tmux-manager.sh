@@ -78,13 +78,14 @@ cmd_send() {
         exit 1
     fi
 
-    # メッセージを送信
-    tmux send-keys -t "$pane_id" "$message"
+    # メッセージを送信（リテラル文字列として送信）
+    tmux send-keys -t "$pane_id" -l "$message"
     echo "Sent command to pane: $pane_id"
 
-    # Enterを送信
-    tmux send-keys -t "$pane_id" Enter
-    echo "Sent Enter to pane: $pane_id"
+    # 少し待機してからEnterを送信（C-mを使用）
+    sleep 0.2
+    tmux send-keys -t "$pane_id" C-m
+    echo "Sent Enter (C-m) to pane: $pane_id"
 }
 
 # capture: 出力をキャプチャ
