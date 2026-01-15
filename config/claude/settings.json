@@ -1,10 +1,5 @@
 {
-  "language": "japanese",
   "cleanupPeriodDays": 7,
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/statusline.sh"
-  },
   "env": {
     "MAX_THINKING_TOKENS": "31999",
     "CLAUDE_CODE_PARALLEL_TOOL_CALLS": "true",
@@ -195,7 +190,6 @@
       "Write(~/.ssh/config)"
     ]
   },
-  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -240,5 +234,10 @@
       }
     ]
   },
-  "outputStyle": "Concise"
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  },
+  "outputStyle": "Concise",
+  "language": "japanese"
 }

@@ -1,10 +1,11 @@
 #!/bin/bash
 # tmux-manager.sh: Codexペインの管理スクリプト
 # Usage:
-#   tmux-manager.sh ensure    - Codexペインを作成/確認
-#   tmux-manager.sh send "msg" - メッセージを送信
+#   tmux-manager.sh ensure         - Codexペインを作成/確認
+#   tmux-manager.sh send "msg"     - メッセージを送信
+#   tmux-manager.sh wait_response  - 応答完了を待機
 #   tmux-manager.sh capture [lines] - 出力をキャプチャ
-#   tmux-manager.sh close     - Codexペインを閉じる
+#   tmux-manager.sh close          - Codexペインを閉じる
 
 set -e
 
@@ -130,6 +131,46 @@ cmd_status() {
     fi
 }
 
+# wait_response: 応答完了を待機
+cmd_wait_response() {
+    local timeout="${1:-120}"  # デフォルト120秒
+    local interval=3
+    local elapsed=0
+
+    local pane_id=$(find_codex_pane)
+
+    if ! pane_exists "$pane_id"; then
+        echo "Error: Codexペインが見つかりません。" >&2
+        exit 1
+    fi
+
+    echo "Waiting for Codex response (timeout: ${timeout}s)..." >&2
+
+    while [ $elapsed -lt $timeout ]; do
+        sleep $interval
+        elapsed=$((elapsed + interval))
+
+        # ペインの最新内容を取得
+        local content=$(tmux capture-pane -t "$pane_id" -p -S -50)
+
+        # 処理中かどうかを判定
+        # "Worked for XXs" や "• esc to interrupt" があれば処理中
+        if echo "$content" | grep -qE '(esc to interrupt|Thinking|Working)'; then
+            echo "Still processing... (${elapsed}s)" >&2
+            continue
+        fi
+
+        # "› " プロンプトが最終行付近にあれば完了
+        if echo "$content" | tail -5 | grep -qE '^›'; then
+            echo "Response complete (${elapsed}s)" >&2
+            return 0
+        fi
+    done
+
+    echo "Timeout waiting for response" >&2
+    return 1
+}
+
 # メインコマンド処理
 case "${1:-}" in
     ensure)
@@ -148,15 +189,19 @@ case "${1:-}" in
     status)
         cmd_status
         ;;
+    wait_response)
+        cmd_wait_response "${2:-120}"
+        ;;
     *)
-        echo "Usage: tmux-manager.sh {ensure|send|capture|close|status}" >&2
+        echo "Usage: tmux-manager.sh {ensure|send|capture|close|status|wait_response}" >&2
         echo ""
         echo "Commands:"
-        echo "  ensure        - Create/find Codex pane"
-        echo "  send \"msg\"    - Send message to Codex"
-        echo "  capture [n]   - Capture last n lines (default: 100)"
-        echo "  close         - Close Codex pane"
-        echo "  status        - Check pane status"
+        echo "  ensure           - Create/find Codex pane"
+        echo "  send \"msg\"       - Send message to Codex"
+        echo "  capture [n]      - Capture last n lines (default: 100)"
+        echo "  close            - Close Codex pane"
+        echo "  status           - Check pane status"
+        echo "  wait_response [s] - Wait for response completion (default: 120s)"
         exit 1
         ;;
 esac
