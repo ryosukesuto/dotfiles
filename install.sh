@@ -372,7 +372,12 @@ create_symlink "$DOTFILES_DIR/config/mise/config.toml" "$HOME/.config/mise/confi
 
 # direnv設定
 if [ ! -d "$HOME/.config/direnv" ]; then
-    mkdir -p "$HOME/.config/direnv"
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] direnv ディレクトリを作成: ~/.config/direnv"
+    else
+        mkdir -p "$HOME/.config/direnv"
+        info "direnv ディレクトリを作成: ~/.config/direnv"
+    fi
 fi
 create_symlink "$DOTFILES_DIR/config/direnv/direnvrc" "$HOME/.config/direnv/direnvrc"
 
@@ -408,11 +413,13 @@ create_symlink "$DOTFILES_DIR/config/codex/prompts/create-pr-pro.md" "$HOME/.cod
 # ============================================================================
 # binディレクトリのコマンドに実行権限を付与
 # ============================================================================
-info "binディレクトリのコマンドに実行権限を付与"
 if [ -d "$DOTFILES_DIR/bin" ]; then
     for cmd in "$DOTFILES_DIR/bin"/*; do
         if [ -f "$cmd" ]; then
-            if [ "$DRY_RUN" = true ]; then
+            if [ -x "$cmd" ]; then
+                # 既に実行権限がある場合はスキップ（冪等性）
+                :
+            elif [ "$DRY_RUN" = true ]; then
                 info "[DRY RUN] $(basename "$cmd") に実行権限を付与"
             else
                 chmod +x "$cmd"
@@ -527,8 +534,13 @@ if command -v claude &> /dev/null || command -v codex &> /dev/null; then
 fi
 
 # 補完用ディレクトリの作成
-if [ "$DRY_RUN" = false ]; then
-    mkdir -p "$HOME/.zsh/cache"
+if [ ! -d "$HOME/.zsh/cache" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] 補完キャッシュディレクトリを作成: ~/.zsh/cache"
+    else
+        mkdir -p "$HOME/.zsh/cache"
+        info "補完キャッシュディレクトリを作成: ~/.zsh/cache"
+    fi
 fi
 
 # バックアップファイルの削除（安全化版）
