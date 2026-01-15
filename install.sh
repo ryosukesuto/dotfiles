@@ -446,11 +446,9 @@ else
 fi
 
 # ============================================================================
-# AIツールのインストール（Claude Code, Codex CLI）
+# Claude Codeのインストール（ネイティブインストール）
 # ============================================================================
-info "AIツールをインストールしています..."
-
-# Claude Code（ネイティブインストール推奨）
+# Note: Codex CLIはmiseで管理（config/mise/config.toml）
 if ! command -v claude &> /dev/null; then
     if [ "$DRY_RUN" = true ]; then
         info "[DRY RUN] Claude Code をインストール（ネイティブ）"
@@ -462,25 +460,6 @@ if ! command -v claude &> /dev/null; then
     fi
 else
     info "Claude Code は既にインストールされています"
-fi
-
-# Codex CLI（npm）
-if ! command -v codex &> /dev/null; then
-    if command -v npm &> /dev/null; then
-        if [ "$DRY_RUN" = true ]; then
-            info "[DRY RUN] Codex CLI をインストール"
-        else
-            info "Codex CLI をインストール中..."
-            npm install -g @openai/codex 2>/dev/null && \
-                info "Codex CLI のインストール完了" || \
-                warn "Codex CLI のインストールに失敗しました"
-        fi
-    else
-        warn "npm が見つかりません。Codex CLI は手動でインストールしてください"
-        echo "  npm install -g @openai/codex"
-    fi
-else
-    info "Codex CLI は既にインストールされています"
 fi
 
 echo ""
