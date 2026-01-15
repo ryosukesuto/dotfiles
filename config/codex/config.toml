@@ -2,6 +2,16 @@
 # https://github.com/openai/codex
 
 # ==============================================================================
+# Sandbox & Approval Settings / サンドボックス・承認設定
+# ==============================================================================
+# sandbox_mode: read-only | workspace-write | full-access
+# approval_policy: on-request | never | untrusted
+#
+# full-autoプリセット相当（ワークスペース内は自動、外部アクセス時のみ確認）
+sandbox_mode = "full-access"
+approval_policy = "never"
+
+# ==============================================================================
 # Model Settings / モデル設定
 # ==============================================================================
 # モデル名（GPT-5 Codexを使用）
