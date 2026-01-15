@@ -34,6 +34,7 @@ brew "awscli"        # AWS CLI
 cask "google-cloud-sdk"  # gcloud CLI
 
 # ===== 開発環境 =====
+brew "node"          # Node.js（npm含む、Codex CLI用）
 brew "colima"        # Docker runtime (軽量・OSS)
 brew "docker"        # Docker CLI
 brew "docker-compose" # Docker Compose
