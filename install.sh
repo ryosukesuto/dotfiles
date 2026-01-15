@@ -425,25 +425,25 @@ fi
 # ============================================================================
 # AIツールのインストール（Claude Code, Codex CLI）
 # ============================================================================
-if command -v npm &> /dev/null; then
-    info "AIツールをインストールしています..."
+info "AIツールをインストールしています..."
 
-    # Claude Code
-    if ! command -v claude &> /dev/null; then
-        if [ "$DRY_RUN" = true ]; then
-            info "[DRY RUN] Claude Code をインストール"
-        else
-            info "Claude Code をインストール中..."
-            npm install -g @anthropic-ai/claude-code 2>/dev/null && \
-                info "Claude Code のインストール完了" || \
-                warn "Claude Code のインストールに失敗しました"
-        fi
+# Claude Code（ネイティブインストール推奨）
+if ! command -v claude &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Claude Code をインストール（ネイティブ）"
     else
-        info "Claude Code は既にインストールされています"
+        info "Claude Code をインストール中（ネイティブインストール）..."
+        curl -fsSL https://claude.ai/install.sh | bash 2>/dev/null && \
+            info "Claude Code のインストール完了" || \
+            warn "Claude Code のインストールに失敗しました"
     fi
+else
+    info "Claude Code は既にインストールされています"
+fi
 
-    # Codex CLI
-    if ! command -v codex &> /dev/null; then
+# Codex CLI（npm）
+if ! command -v codex &> /dev/null; then
+    if command -v npm &> /dev/null; then
         if [ "$DRY_RUN" = true ]; then
             info "[DRY RUN] Codex CLI をインストール"
         else
@@ -453,12 +453,11 @@ if command -v npm &> /dev/null; then
                 warn "Codex CLI のインストールに失敗しました"
         fi
     else
-        info "Codex CLI は既にインストールされています"
+        warn "npm が見つかりません。Codex CLI は手動でインストールしてください"
+        echo "  npm install -g @openai/codex"
     fi
 else
-    warn "npm が見つかりません。AIツール（Claude Code, Codex CLI）は手動でインストールしてください"
-    echo "  npm install -g @anthropic-ai/claude-code"
-    echo "  npm install -g @openai/codex"
+    info "Codex CLI は既にインストールされています"
 fi
 
 echo ""
