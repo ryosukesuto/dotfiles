@@ -422,6 +422,45 @@ if [ -d "$DOTFILES_DIR/bin" ]; then
     done
 fi
 
+# ============================================================================
+# AIツールのインストール（Claude Code, Codex CLI）
+# ============================================================================
+if command -v npm &> /dev/null; then
+    info "AIツールをインストールしています..."
+
+    # Claude Code
+    if ! command -v claude &> /dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] Claude Code をインストール"
+        else
+            info "Claude Code をインストール中..."
+            npm install -g @anthropic-ai/claude-code 2>/dev/null && \
+                info "Claude Code のインストール完了" || \
+                warn "Claude Code のインストールに失敗しました"
+        fi
+    else
+        info "Claude Code は既にインストールされています"
+    fi
+
+    # Codex CLI
+    if ! command -v codex &> /dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] Codex CLI をインストール"
+        else
+            info "Codex CLI をインストール中..."
+            npm install -g @openai/codex 2>/dev/null && \
+                info "Codex CLI のインストール完了" || \
+                warn "Codex CLI のインストールに失敗しました"
+        fi
+    else
+        info "Codex CLI は既にインストールされています"
+    fi
+else
+    warn "npm が見つかりません。AIツール（Claude Code, Codex CLI）は手動でインストールしてください"
+    echo "  npm install -g @anthropic-ai/claude-code"
+    echo "  npm install -g @openai/codex"
+fi
+
 echo ""
 if [ "$DRY_RUN" = true ]; then
     info "ドライランモードでの確認が完了しました！"
@@ -477,17 +516,15 @@ if [ ! -f "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" ]; then
     echo "  # その後、実際のAPIトークンを入力してください"
 fi
 
-if ! command -v codex &> /dev/null; then
-    info "ヒント: Codex CLIをインストールしてください"
-    echo "インストール方法:"
-    echo "  # npmを使用する場合"
-    echo "  npm install -g @openai/codex"
-    echo "  # またはHomebrewを使用する場合"
-    echo "  brew install codex"
-    echo ""
-    echo "設定ファイルは既に配置されています:"
-    echo "  - ~/.codex/config.toml (基本設定)"
-    echo "  - ~/.codex/AGENTS.md (カスタムインストラクション)"
+# AIツールの初回認証案内
+if command -v claude &> /dev/null || command -v codex &> /dev/null; then
+    info "ヒント: AIツールの初回起動時に認証が必要です"
+    if command -v claude &> /dev/null; then
+        echo "  claude  # Anthropic APIキーまたはOAuthで認証"
+    fi
+    if command -v codex &> /dev/null; then
+        echo "  codex   # OpenAI APIキーで認証"
+    fi
 fi
 
 # 補完用ディレクトリの作成
