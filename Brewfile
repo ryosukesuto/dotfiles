@@ -34,7 +34,7 @@ brew "awscli"        # AWS CLI
 cask "google-cloud-sdk"  # gcloud CLI
 
 # ===== 開発環境 =====
-brew "node"          # Node.js（npm含む、Codex CLI用）
+# Node.js / Codex CLIはmiseで管理（config/mise/config.toml）
 brew "docker"        # Docker CLI（Apple Container互換）
 brew "docker-compose" # Docker Compose
 cask "devpod"        # Dev Container管理

@@ -71,8 +71,8 @@ source ~/.zshrc
 ### 8. AIツールの認証
 
 install.shで自動インストールされます:
-- Claude Code: ネイティブインストール（推奨）
-- Codex CLI: npm
+- Claude Code: ネイティブインストール
+- Codex CLI: mise（config/mise/config.toml）
 
 初回起動時に認証:
 
