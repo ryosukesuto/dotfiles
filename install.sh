@@ -305,13 +305,6 @@ create_symlink "$DOTFILES_DIR/config/git/ignore" "$HOME/.config/git/ignore"
 # .configディレクトリの設定
 create_symlink "$DOTFILES_DIR/config/gh" "$HOME/.config/gh"
 
-# Claude設定
-if [ -f "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" ]; then
-    create_symlink "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" "$HOME/.config/claude/claude_desktop_config.json"
-else
-    create_symlink "$DOTFILES_DIR/config/claude/claude_desktop_config.json" "$HOME/.config/claude/claude_desktop_config.json"
-fi
-
 # tmux設定
 create_symlink "$DOTFILES_DIR/config/tmux/tmux.conf" "$HOME/.tmux.conf"
 
@@ -495,13 +488,6 @@ fi
 
 # AWS認証はフェデレーション方式（環境変数）を使用
 # ~/.aws/config, ~/.aws/credentials は不要
-
-if [ ! -f "$DOTFILES_DIR/config/claude/claude_desktop_config.json.local" ]; then
-    warn "重要: Claude MCP設定をカスタマイズする場合は claude_desktop_config.json.local を作成してください"
-    echo "テンプレートファイルを参考にしてください:"
-    echo "  cp $DOTFILES_DIR/config/claude/claude_desktop_config.json.local.example $DOTFILES_DIR/config/claude/claude_desktop_config.json.local"
-    echo "  # その後、実際のAPIトークンを入力してください"
-fi
 
 # AIツールの初回認証案内
 if command -v claude &> /dev/null || command -v codex &> /dev/null; then
