@@ -70,7 +70,11 @@ source ~/.zshrc
 
 ### 8. AIツールの認証
 
-Claude CodeとCodex CLIはinstall.shで自動インストールされます。初回起動時に認証:
+install.shで自動インストールされます:
+- Claude Code: ネイティブインストール（推奨）
+- Codex CLI: npm
+
+初回起動時に認証:
 
 ```bash
 # Claude Code（Anthropic APIキーまたはOAuth）
