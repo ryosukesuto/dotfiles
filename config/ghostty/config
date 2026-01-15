@@ -5,6 +5,16 @@ theme = TokyoNight Night
 font-family = "UDEV Gothic 35NF"
 font-size = 13
 adjust-cell-height = -2
+font-thicken = true
+
+# ウィンドウ
+window-padding-x = 10
+window-padding-y = 10
+
+# macOS
+macos-titlebar-style = transparent
+macos-option-as-alt = true
+mouse-hide-while-typing = true
 
 # 操作
 copy-on-select = true
