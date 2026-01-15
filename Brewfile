@@ -49,8 +49,12 @@ cask "ghostty"
 # ===== アプリケーション =====
 cask "1password"           # パスワード管理
 cask "arc"                 # ブラウザ
-cask "obsidian"            # ノートアプリ
+cask "bitwarden"           # パスワード管理（OSS）
 cask "chatgpt"             # ChatGPTデスクトップ
 cask "figma"               # デザインツール
+cask "keeper-password-manager"  # パスワード管理
+cask "meetingbar"          # カレンダー連携会議通知
+cask "microsoft-teams"     # コミュニケーション
+cask "obsidian"            # ノートアプリ
 cask "google-japanese-ime" # 日本語入力
 cask "alt-tab"             # ウィンドウスイッチャー

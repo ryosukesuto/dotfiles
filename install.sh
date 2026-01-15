@@ -347,6 +347,9 @@ create_symlink "$DOTFILES_DIR/config/claude/statusline.sh" "$HOME/.claude/status
 # Claude ユーザー固有コマンドのシンボリックリンク作成
 create_symlink "$DOTFILES_DIR/config/claude/commands" "$HOME/.claude/commands"
 
+# Claude Skills
+create_symlink "$DOTFILES_DIR/config/claude/skills" "$HOME/.claude/skills"
+
 # Claude グローバル設定
 create_symlink "$DOTFILES_DIR/config/claude/GLOBAL_SETTINGS.md" "$HOME/.claude/CLAUDE.md"
 
