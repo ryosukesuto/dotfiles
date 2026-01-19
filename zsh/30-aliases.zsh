@@ -16,6 +16,7 @@ alias gco='git checkout'
 alias t='tmux'
 alias ta='tmux attach'
 alias tl='tmux list-sessions'
+alias tc='tmux new-session \; split-window -v -p 30 \; select-pane -t 1 \; send-keys "claude" Enter'
 
 # エディタ
 alias v='vim'
