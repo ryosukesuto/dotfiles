@@ -27,10 +27,16 @@ tmuxで右半分にCodexを開いて、インタラクティブにレビュー�
 |----------|------|
 | `ensure` | Codexペインを作成（既存なら再利用） |
 | `send "msg"` | Codexにメッセージを送信（Enter自動送信） |
+| `send -` | stdinからメッセージを読み取って送信 |
 | `wait_response [s]` | 応答完了を待機（デフォルト120秒） |
 | `capture [n]` | 出力をキャプチャ（デフォルト100行） |
 | `close` | Codexペインを閉じる |
 | `status` | ペインの状態を確認 |
+
+## 前提条件
+
+- tmuxセッション内で実行すること
+- `codex`コマンドがインストールされていること（`npm install -g @openai/codex`）
 
 ## 実行手順
 

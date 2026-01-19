@@ -12,20 +12,29 @@ set -e
 PANE_TITLE="codex-review"
 PANE_BG="colour233"
 
-# ペインIDを保存するファイル
-PANE_ID_FILE="/tmp/tmux-codex-pane-$$"
+# ペインIDを保存するファイル（ユーザー単位で固定）
+PANE_ID_FILE="/tmp/tmux-codex-pane-${USER:-$(id -un)}"
 
-# 既存のCodexペインを探す
+# 既存のCodexペインを探す（pane_titleベースで検索）
 find_codex_pane() {
-    # 現在のウィンドウ内でcodexが動いているペインを探す
-    tmux list-panes -F '#{pane_id} #{pane_current_command}' 2>/dev/null | \
-        grep -E 'codex|node' | head -1 | awk '{print $1}'
+    # 保存されたペインIDが有効かチェック（セッション全体で検索）
+    if [ -f "$PANE_ID_FILE" ]; then
+        local saved_pane=$(cat "$PANE_ID_FILE" 2>/dev/null)
+        if [ -n "$saved_pane" ] && tmux list-panes -s -F '#{pane_id}' 2>/dev/null | grep -q "^${saved_pane}$"; then
+            echo "$saved_pane"
+            return 0
+        fi
+    fi
+
+    # pane_titleで検索（セッション全体から）
+    tmux list-panes -s -F '#{pane_id} #{pane_title}' 2>/dev/null | \
+        grep "$PANE_TITLE" | head -1 | awk '{print $1}'
 }
 
-# ペインが存在するか確認
+# ペインが存在するか確認（セッション全体で検索）
 pane_exists() {
     local pane_id="$1"
-    [ -n "$pane_id" ] && tmux list-panes -F '#{pane_id}' 2>/dev/null | grep -q "^${pane_id}$"
+    [ -n "$pane_id" ] && tmux list-panes -s -F '#{pane_id}' 2>/dev/null | grep -q "^${pane_id}$"
 }
 
 # ensure: Codexペインを作成/確認
@@ -33,6 +42,13 @@ cmd_ensure() {
     # tmuxセッション確認
     if [ -z "$TMUX" ]; then
         echo "Error: tmuxセッション外です" >&2
+        exit 1
+    fi
+
+    # codexコマンドの存在確認
+    if ! command -v codex &>/dev/null; then
+        echo "Error: codexコマンドが見つかりません。先にインストールしてください。" >&2
+        echo "  npm install -g @openai/codex" >&2
         exit 1
     fi
 
@@ -48,6 +64,9 @@ cmd_ensure() {
     # 新しいペインを作成してcodexを起動
     local new_pane=$(tmux split-window -h -p 50 -P -F '#{pane_id}' "codex")
 
+    # pane_titleを設定（検索用）
+    tmux select-pane -t "$new_pane" -T "$PANE_TITLE"
+
     # 背景色を設定
     tmux select-pane -t "$new_pane" -P "bg=$PANE_BG"
 
@@ -57,16 +76,32 @@ cmd_ensure() {
     # Codexの起動を待つ
     sleep 2
 
-    echo "Created new Codex pane: $new_pane (bg=$PANE_BG)"
+    echo "Created new Codex pane: $new_pane (title=$PANE_TITLE, bg=$PANE_BG)"
     echo "Auto-started Codex in pane"
 }
 
 # send: メッセージを送信
+# Usage: tmux-manager.sh send "message"
+#        tmux-manager.sh send -              (stdinから読み取り)
+#        echo "message" | tmux-manager.sh send -
 cmd_send() {
     local message="$1"
 
+    # "-" または空の場合はstdinから読み取り
+    if [ "$message" = "-" ] || [ -z "$message" ]; then
+        if [ -t 0 ]; then
+            # stdinがターミナルの場合（パイプでない）
+            if [ -z "$message" ]; then
+                echo "Usage: tmux-manager.sh send \"message\"" >&2
+                echo "       tmux-manager.sh send -  (read from stdin)" >&2
+                exit 1
+            fi
+        fi
+        message=$(cat)
+    fi
+
     if [ -z "$message" ]; then
-        echo "Usage: tmux-manager.sh send \"message\"" >&2
+        echo "Error: メッセージが空です" >&2
         exit 1
     fi
 
@@ -80,12 +115,12 @@ cmd_send() {
 
     # メッセージを送信（リテラル文字列として送信）
     tmux send-keys -t "$pane_id" -l "$message"
-    echo "Sent command to pane: $pane_id"
+    echo "Sent message to pane: $pane_id (${#message} chars)" >&2
 
     # 少し待機してからEnterを送信（C-mを使用）
     sleep 0.2
     tmux send-keys -t "$pane_id" C-m
-    echo "Sent Enter (C-m) to pane: $pane_id"
+    echo "Sent Enter to pane: $pane_id" >&2
 }
 
 # capture: 出力をキャプチャ

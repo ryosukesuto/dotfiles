@@ -92,4 +92,12 @@ git_info() {
 
 GIT_INFO=$(git_info)
 
-echo -e "${C_DIM}[${C_GREEN}${MODEL}${C_DIM}]${C_RESET} ${C_CYAN}${DIR_NAME}${C_RESET}${GIT_INFO}"
+# セッション経過時間（時:分:秒形式）
+DURATION_MS=$(echo "$input" | jq '.cost.total_duration_ms // 0')
+DURATION_SEC=$((DURATION_MS / 1000))
+DURATION_HOUR=$((DURATION_SEC / 3600))
+DURATION_MIN=$(((DURATION_SEC % 3600) / 60))
+DURATION_SEC_REM=$((DURATION_SEC % 60))
+DURATION_STR=$(printf "%d:%02d:%02d" $DURATION_HOUR $DURATION_MIN $DURATION_SEC_REM)
+
+echo -e "${C_DIM}[${C_GREEN}${MODEL}${C_DIM}]${C_RESET} ${C_CYAN}${DIR_NAME}${C_RESET}${GIT_INFO} ${C_DIM}${DURATION_STR}${C_RESET}"

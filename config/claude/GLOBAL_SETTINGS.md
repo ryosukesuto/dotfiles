@@ -65,61 +65,61 @@ Codexは専門的な調査・分析・検証タスクで活用し、Claude Code�
 - デバッグ支援: エラー原因の深掘り、ログ解析
 - 設計レビュー: アーキテクチャ妥当性確認、代替案の検討
 
+#### 前提条件
+- `codex`コマンドがインストールされていること（`npm install -g @openai/codex`）
+- tmux-codex-review使用時はtmuxセッション内で実行すること
+
 #### 基本的な使い方
 
-2つの方法があります:
+環境に応じて自動的に切り替え:
+- tmux内: tmux-codex-review（右ペインでインタラクティブに対話）
+- tmux外: codex exec（単発実行）
 
-1. tmux-codex-review Skill（推奨）: tmuxでCodexペインを開いてインタラクティブに対話
-2. codex exec: 単発のコマンド実行
-
-##### 方法1: tmux-codex-review Skill（推奨）
-
-tmux内でCodexペインを開いて、インタラクティブにレビューやセカンドオピニオンを取得:
+##### tmux内: tmux-codex-review
 
 ```bash
-# Codexペインを作成（右50%に開く）
-~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh ensure
+TMUX_MGR=~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh
 
-# メッセージを送信
-~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh send "git diffをレビューして"
+# 1. Codexペインを作成（右50%に開く）
+$TMUX_MGR ensure
 
-# 返答をキャプチャ（10秒待機後）
-sleep 10 && ~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh capture 100
+# 2. メッセージを送信（直接 or stdin経由）
+$TMUX_MGR send "git diffをレビューして"
+# または長いメッセージはstdinで
+cat << 'EOF' | $TMUX_MGR send -
+複数行の
+メッセージ
+EOF
 
-# ペインを閉じる
-~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh close
+# 3. 応答完了を待機してキャプチャ
+$TMUX_MGR wait_response 180 && $TMUX_MGR capture 200
+
+# 4. 完了後にペインを閉じる（任意）
+$TMUX_MGR close
 ```
 
 利点:
 - 左ペインで作業継続しながらCodexと対話可能
-- インタラクティブなセッションで追加質問可能
-- 「レビューして」等の発言でClaude Codeが自動的にSkillを起動
+- 追加質問でインタラクティブにやり取り
+- 「レビューして」等の発言でClaude Codeが自動起動
 
-##### 方法2: codex exec（単発実行）
+##### tmux外: codex exec
 
 ```bash
 # 短い依頼
 codex exec "このリポジトリのテスト戦略を分析してください"
 
-# 長い依頼
+# 長い依頼（タイムアウト5分）
 codex exec "gh pr diffを確認してP0-P3の観点でレビューしてください"
 ```
 
-タイムアウト設定:
-- デフォルト: 2分（120秒）
-- 大規模PR/複雑な分析: 5-10分に延長（Bashツールのtimeoutパラメータで指定）
-
 #### 協業ワークフロー: 3つのレビューフェーズ
-
-Claude CodeとCodexの協業は、3つのレビューフェーズを中心に行います：
 
 ```
 フェーズ1: 実装前レビュー（計画・TODO） → 設計の妥当性確認
 フェーズ2: コミット前レビュー（git diff） → ローカル変更の品質確認
 フェーズ3: PR作成前レビュー（gh pr diff） → マージ前の最終確認
 ```
-
-各フェーズの使い分け:
 
 | フェーズ | タイミング | 必須度 | 対象 |
 |---------|-----------|--------|------|
@@ -133,10 +133,6 @@ Claude CodeとCodexの協業は、3つのレビューフェーズを中心に行
 - 本番影響が大きい変更
 
 > 詳細テンプレート: [codex-templates.md](codex-templates.md) を参照
-> - 依頼標準テンプレート
-> - Codexへの指示と制約
-> - 期待する出力フォーマット
-> - 各フェーズの詳細テンプレート
 
 #### 役割分担の原則
 - Codex: "考える"、"調べる"、"評価する"
