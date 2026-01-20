@@ -35,13 +35,28 @@ design.md、plans.md、またはPRをCodexにレビュー依頼します。
 
 ## 実行手順
 
-### design.md レビュー
+### 共通: tmux-manager.sh の設定
 
 ```bash
-codex exec "design.mdをレビューしてください。
+TMUX_MGR=~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh
+```
+
+### design.md レビュー
+
+1. Codexペインを確保
+
+```bash
+$TMUX_MGR ensure
+```
+
+2. レビュー依頼を送信（stdinで複数行を送る）
+
+```bash
+cat << 'EOF' | $TMUX_MGR send -
+design.mdをレビューしてください。
 
 ## レビュー対象
-$(cat design.md)
+[ここにdesign.mdの内容を挿入]
 
 ## コンテキスト
 [ここにProject Contextを挿入]
@@ -63,19 +78,34 @@ $(cat design.md)
 - Major: n件
 - Minor: n件
 - Status: 'OK to proceed with minor fixes' または 'Not ready (Major issues present)'
-"
+EOF
+```
+
+3. 応答を待機してキャプチャ
+
+```bash
+$TMUX_MGR wait_response 180 && $TMUX_MGR capture 300
 ```
 
 ### plans.md レビュー
 
+1. Codexペインを確保
+
 ```bash
-codex exec "plans.mdをレビューしてください。
+$TMUX_MGR ensure
+```
+
+2. レビュー依頼を送信
+
+```bash
+cat << 'EOF' | $TMUX_MGR send -
+plans.mdをレビューしてください。
 
 ## レビュー対象
-$(cat plans.md)
+[ここにplans.mdの内容を挿入]
 
 ## 対応するdesign.md
-$(cat design.md)
+[ここにdesign.mdの内容を挿入]
 
 ## レビュー観点
 1. 設計（design.md）との整合性
@@ -94,7 +124,13 @@ $(cat design.md)
 - Major: n件
 - Minor: n件
 - Status: 'OK to proceed with minor fixes' または 'Not ready (Major issues present)'
-"
+EOF
+```
+
+3. 応答を待機してキャプチャ
+
+```bash
+$TMUX_MGR wait_response 180 && $TMUX_MGR capture 300
 ```
 
 ### PRレビュー

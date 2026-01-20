@@ -4,11 +4,11 @@
 # ==============================================================================
 # Sandbox & Approval Settings / サンドボックス・承認設定
 # ==============================================================================
-# sandbox_mode: read-only | workspace-write | full-access
+# sandbox_mode: read-only | workspace-write | danger-full-access
 # approval_policy: on-request | never | untrusted
 #
 # full-autoプリセット相当（ワークスペース内は自動、外部アクセス時のみ確認）
-sandbox_mode = "full-access"
+sandbox_mode = "danger-full-access"
 approval_policy = "never"
 
 # ==============================================================================
