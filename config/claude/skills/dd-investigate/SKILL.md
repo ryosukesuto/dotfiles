@@ -1,6 +1,6 @@
 ---
 name: dd-investigate
-description: Datadogでサービス状態を調査（トークン最適化済み）。「Datadogで調べて」「サービスの状態確認」「エラー調査」等で起動。
+description: Datadogでサービス状態を調査。「Datadogで調べて」「サービスの状態確認」「エラー調査」等で起動。
 user-invocable: true
 allowed-tools:
   - mcp__datadog-mcp__analyze_datadog_logs
@@ -15,19 +15,16 @@ allowed-tools:
 
 # dd-investigate
 
-Datadog調査のSubagent用テンプレート集。トークン消費を抑えながら効率的に調査する。
+Datadog調査のSubagent用テンプレート集。
 
 ## 基本原則
 
-Datadog MCPはレスポンスが大きい。以下を厳守：
-
-1. `max_tokens`を必ず指定（3000-5000）
-2. 集計 → パターン → 詳細の順でアプローチ
-3. 生データは最後の手段
+1. 集計 → パターン → 詳細の順でアプローチ
+2. 生データは最後の手段
 
 ## 使い方
 
-Taskツールで委譲。subagent内でトークンを消費し、メインには要約だけ返る：
+Taskツールで委譲。メインには要約だけ返る：
 
 ```
 Task:
@@ -184,15 +181,3 @@ Task:
     - 主なパターン
 ```
 
----
-
-## max_tokens早見表
-
-| ツール | 推奨値 |
-|--------|--------|
-| analyze_datadog_logs | 3000-5000 |
-| search_datadog_logs | 2000-3000 |
-| search_datadog_spans | 3000-5000 |
-| get_datadog_metric | 3000-5000 |
-| get_datadog_trace | 5000 |
-| その他 | 2000-3000 |
