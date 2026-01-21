@@ -26,7 +26,7 @@ fi
 # ============================================================================
 # 信頼できるディレクトリのホワイトリスト
 typeset -g _DOTFILES_TRUSTED_DIRS=(
-  "$HOME/src"
+  "$HOME/gh"
   "$HOME/work"
   "$HOME/projects"
   "$HOME/dev"

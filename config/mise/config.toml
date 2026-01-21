@@ -8,3 +8,4 @@ argocd = "latest"
 [settings]
 idiomatic_version_file_enable_tools = ["ruby"]
 experimental = true
+trusted_config_paths = ["/Users/s32943/gh"]
