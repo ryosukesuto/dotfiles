@@ -31,7 +31,7 @@ brew "kubeconform"   # K8sマニフェスト検証
 
 # ===== クラウドCLI =====
 brew "awscli"        # AWS CLI
-cask "google-cloud-sdk"  # gcloud CLI
+cask "gcloud-cli"        # gcloud CLI
 
 # ===== 開発環境 =====
 # Node.js / Codex CLIはmiseで管理（config/mise/config.toml）
@@ -59,3 +59,4 @@ cask "microsoft-teams"     # コミュニケーション
 cask "obsidian"            # ノートアプリ
 cask "google-japanese-ime" # 日本語入力
 cask "alt-tab"             # ウィンドウスイッチャー
+cask "cloudflare-warp"     # VPNクライアント
