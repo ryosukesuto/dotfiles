@@ -1,5 +1,9 @@
 ---
+name: undo
 description: 最後のGit操作（コミット、マージ、リベース等）を安全に取り消し
+user-invocable: true
+allowed-tools:
+  - Bash(git:*)
 ---
 
 # /undo - 最後のGit操作を取り消す
