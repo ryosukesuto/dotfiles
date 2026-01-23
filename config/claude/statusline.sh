@@ -8,6 +8,10 @@ MODEL=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
 DIR=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // "~"')
 DIR_NAME="${DIR##*/}"
 
+# コンテキスト使用率
+CONTEXT_PCT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' 2>/dev/null)
+CONTEXT_PCT=${CONTEXT_PCT%.*}  # 整数部分のみ
+
 # ANSIカラーコード
 C_RESET="\033[0m"
 C_GREEN="\033[32m"
@@ -100,4 +104,13 @@ DURATION_MIN=$(((DURATION_SEC % 3600) / 60))
 DURATION_SEC_REM=$((DURATION_SEC % 60))
 DURATION_STR=$(printf "%d:%02d:%02d" $DURATION_HOUR $DURATION_MIN $DURATION_SEC_REM)
 
-echo -e "${C_DIM}[${C_GREEN}${MODEL}${C_DIM}]${C_RESET} ${C_CYAN}${DIR_NAME}${C_RESET}${GIT_INFO} ${C_DIM}${DURATION_STR}${C_RESET}"
+# コンテキスト使用率の色分け（80%以上で黄色、90%以上で赤）
+if [ "$CONTEXT_PCT" -ge 90 ] 2>/dev/null; then
+    CONTEXT_COLOR="${C_RED}"
+elif [ "$CONTEXT_PCT" -ge 80 ] 2>/dev/null; then
+    CONTEXT_COLOR="${C_YELLOW}"
+else
+    CONTEXT_COLOR="${C_DIM}"
+fi
+
+echo -e "${C_DIM}[${C_GREEN}${MODEL}${C_DIM}]${C_RESET} ${C_CYAN}${DIR_NAME}${C_RESET}${GIT_INFO} ${C_DIM}${DURATION_STR}${C_RESET} ${CONTEXT_COLOR}ctx:${CONTEXT_PCT}%${C_RESET}"

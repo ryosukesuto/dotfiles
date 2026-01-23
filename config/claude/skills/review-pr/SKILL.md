@@ -1,12 +1,19 @@
 ---
+name: review-pr
 description: PRを体系的にレビューして実行可能なフィードバックを提供
+user-invocable: true
+allowed-tools:
+  - Bash(gh:*)
+  - Bash(git:*)
+  - Read
+  - Glob
+  - Grep
 ---
 
 # /review-pr - 体系的なPRレビュー
 
 このPRを体系的にレビューし、実行可能なフィードバックを提供してください。
 
-> 詳細ガイドライン: [review-pr-reference.md](review-pr-reference.md)
 > バイブコーディング用: `/vibe-review pr`
 
 ## 実行手順
@@ -44,8 +51,8 @@ Codex分析とあなた自身の評価を統合し、以下のフォーマット
 ```markdown
 ## レビュー結果
 
-**変更内容**: X files (+XXX/-XXX lines) | CI: Pass/Fail
-**総合評価**: X/10点
+変更内容: X files (+XXX/-XXX lines) | CI: Pass/Fail
+総合評価: X/10点
 
 ### 概要
 PRの目的と変更内容を1-2文で要約。
@@ -59,13 +66,13 @@ PRの目的と変更内容を1-2文で要約。
 
 ## P0: マージ前に必須
 ### [file:line] 問題の要約
-**問題**: 何が問題か
-**修正案**: 具体的な修正方法
+問題: 何が問題か
+修正案: 具体的な修正方法
 
 ## P1: 次のサイクルで対応
 ### [file:line] 問題の要約
-**問題**: 何が問題か
-**修正案**: 改善方法
+問題: 何が問題か
+修正案: 改善方法
 
 ## P2: いずれ修正
 - [file:line] 簡潔な提案

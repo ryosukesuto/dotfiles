@@ -27,7 +27,10 @@
     "CLAUDE_CODE_GIT_AUTO_STAGE": "false",
     "CLAUDE_CODE_TEST_BEFORE_COMMIT": "true"
   },
-  "includeCoAuthoredBy": false,
+  "attribution": {
+    "commit": false,
+    "pr": false
+  },
   "permissions": {
     "allow": [
       "Bash(npm:*)",
@@ -207,6 +210,17 @@
           {
             "type": "command",
             "command": "echo '🚨 タスク実行前に確認: 作業内容は明確ですか？'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then npm run lint --silent 2>/dev/null || true; fi"
           }
         ]
       }
