@@ -32,9 +32,9 @@
 
 ### Terraform作業時
 1. 変更ファイル確認 → 影響範囲の予測と文書化
-2. variables.tf更新 → README.md更新確認  
+2. variables.tf更新 → README.md更新確認
 3. IAM変更 → セキュリティレビュー必須
-4. PR作成前 → Sandboxブランチでローカルと同期（必須）
+4. PR作成前 → mainブランチ（デフォルトブランチ）でローカルと同期
 5. PR作成後 → CI/CDのterraform planで結果確認
 
 ### PR作成時

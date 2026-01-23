@@ -66,7 +66,7 @@ description: デフォルトブランチを最新化して不要なローカル�
 7. **削除対象ブランチの分析**
    ```bash
    # マージ済みブランチを確認
-   MERGED_BRANCHES=$(git branch --merged | grep -v "\*" | grep -v "^  main$" | grep -v "^  master$" | grep -v "^  sandbox$" | sed 's/^ *//')
+   MERGED_BRANCHES=$(git branch --merged | grep -v "\*" | grep -v "^  main$" | grep -v "^  master$" | sed 's/^ *//')
 
    # リモートで削除されたブランチを確認（gone）
    GONE_BRANCHES=$(git branch -vv | grep ': gone]' | awk '{print $1}')
@@ -109,7 +109,7 @@ description: デフォルトブランチを最新化して不要なローカル�
 
 ## 安全性の考慮
 
-- **保護されるブランチ**: main、master、sandbox、現在のブランチ
+- **保護されるブランチ**: main、master、現在のブランチ
 - **未コミット変更**: 実行前に警告を表示、続行確認
 - **削除方針**:
   - マージ済みブランチ: `-d` で安全に削除
