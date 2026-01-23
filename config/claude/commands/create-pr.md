@@ -167,98 +167,16 @@ for arg in "$@"; do
 done
 ```
 
-#### Terraformリポジトリの場合
-
 ```bash
-# Terraformリポジトリの判定
+# Terraformリポジトリの場合はフォーマット実行
 if [ -f "terraform.tf" ] || [ -f "main.tf" ] || [ -f "provider.tf" ] || [ -d ".terraform" ]; then
     echo "Terraformリポジトリを検出しました。"
-    
-    # 現在のブランチを確認
-    CURRENT_BRANCH=$(git branch --show-current)
-    
-    # Sandboxブランチ以外にいる場合
-    if [ "$CURRENT_BRANCH" != "sandbox" ]; then
-        echo "Sandboxブランチに切り替えます..."
-        
-        # リモートの最新情報を取得
-        git fetch origin
-        
-        # Sandboxブランチが存在するか確認
-        if git ls-remote --heads origin sandbox | grep -q sandbox; then
-            # ローカルにSandboxブランチがあるか確認
-            if git show-ref --verify --quiet refs/heads/sandbox; then
-                # 既存のSandboxブランチに切り替え
-                git checkout sandbox
-            else
-                # リモートのSandboxブランチをチェックアウト
-                git checkout -b sandbox origin/sandbox
-            fi
-            
-            # リモートのSandboxブランチと同期
-            echo "リモートのSandboxブランチと同期します..."
-            git pull --rebase origin sandbox || {
-                echo "リベースでコンフリクトが発生しました。解決してください。"
-                exit 1
-            }
-            
-            # featureブランチを作成して切り替え
-            FEATURE_BRANCH="feature/$(date +%Y%m%d-%H%M%S)"
-            echo "featureブランチ($FEATURE_BRANCH)を作成します..."
-            git checkout -b "$FEATURE_BRANCH"
-        else
-            echo "リモートにSandboxブランチが見つかりません。通常のPR作成を続行します。"
-        fi
-    else
-        # 既にSandboxブランチにいる場合
-        echo "既にSandboxブランチにいます。リモートと同期します..."
-        git pull --rebase origin sandbox || {
-            echo "リベースでコンフリクトが発生しました。解決してください。"
-            exit 1
-        }
-        
-        # featureブランチを作成して切り替え
-        FEATURE_BRANCH="feature/$(date +%Y%m%d-%H%M%S)"
-        echo "featureブランチ($FEATURE_BRANCH)を作成します..."
-        git checkout -b "$FEATURE_BRANCH"
-    fi
-    
-    # Terraformファイルをフォーマット
     echo "Terraformファイルをフォーマットします..."
     terraform fmt -recursive || {
         echo "警告: terraform fmtが失敗しました。Terraformがインストールされていない可能性があります。"
     }
 fi
 
-# 変更をコミット（まだの場合）
-git add -A
-git commit -m "feat: [簡潔な説明]
-
-[詳細な説明]
-
-🤖 Generated with [Claude Code](https://claude.ai/code)"
-
-# ブランチをプッシュ
-git push -u origin HEAD
-
-# GitHub CLIでPR作成
-PR_URL=$(gh pr create \
-    --title "[Type]: 簡潔なタイトル" \
-    --body "[生成されたPR本文]" \
-    --assignee @me \
-    $DRAFT_FLAG)
-
-# PR作成成功時にthコマンドで作業報告
-if [ -n "$PR_URL" ]; then
-    PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-    th "✅ PR #${PR_NUMBER} 作成完了: ${PR_URL}"
-    echo "✅ PR作成が完了し、Obsidianに記録しました: $PR_URL"
-fi
-```
-
-#### 通常のリポジトリの場合
-
-```bash
 # 変更をコミット（まだの場合）
 git add -A
 git commit -m "feat: [簡潔な説明]
