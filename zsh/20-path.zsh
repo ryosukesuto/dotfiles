@@ -25,3 +25,12 @@ if [[ -d "$HOMEBREW_PREFIX/share/google-cloud-sdk/bin" ]]; then
 elif [[ -d "$HOME/google-cloud-sdk/bin" ]]; then
     path+=("$HOME/google-cloud-sdk/bin")
 fi
+
+# Go
+export GOPRIVATE=github.com/WinTicket
+
+# Firebase
+export FIREBASE_CREDENTIALS=~/firebase_adminsdk_service_account.json
+
+# Docker (Colima)
+export DOCKER_HOST="unix://${HOME}/.config/colima/docker.sock"

@@ -35,11 +35,13 @@ cask "gcloud-cli"        # gcloud CLI
 
 # ===== 開発環境 =====
 # Node.js / Codex CLIはmiseで管理（config/mise/config.toml）
-brew "docker"        # Docker CLI（Apple Container互換）
+brew "docker"         # Docker CLI
 brew "docker-compose" # Docker Compose
+brew "colima"         # Docker API互換環境（Lima ベース）
 cask "devpod"        # Dev Container管理
 brew "go-task"       # タスクランナー
-# Note: Container runtimeはmacOS 26のApple Containerを使用
+brew "protobuf"      # Protocol Buffers
+brew "clang-format"  # C/C++フォーマッタ
 
 # ===== フォント =====
 cask "font-udev-gothic-nf"
@@ -60,3 +62,4 @@ cask "obsidian"            # ノートアプリ
 cask "google-japanese-ime" # 日本語入力
 cask "alt-tab"             # ウィンドウスイッチャー
 cask "cloudflare-warp"     # VPNクライアント
+cask "spotify"             # 音楽ストリーミング

@@ -1,40 +1,83 @@
 ---
 name: dd-investigate
-description: Datadogでサービス状態を調査。「Datadogで調べて」「サービスの状態確認」「エラー調査」等で起動。
+description: Datadogでサービス・アラート・モニターを調査。「アラートについて調査」「このアラート調べて」「Datadogで調べて」「モニター確認」「サービスの状態確認」「エラー調査」等で起動。
 user-invocable: true
 allowed-tools:
   - mcp__datadog-mcp__analyze_datadog_logs
   - mcp__datadog-mcp__search_datadog_logs
   - mcp__datadog-mcp__search_datadog_spans
   - mcp__datadog-mcp__get_datadog_metric
+  - mcp__datadog-mcp__get_datadog_metric_context
   - mcp__datadog-mcp__search_datadog_services
   - mcp__datadog-mcp__search_datadog_monitors
   - mcp__datadog-mcp__search_datadog_incidents
+  - mcp__datadog-mcp__search_datadog_events
+  - mcp__datadog-mcp__get_datadog_incident
   - mcp__datadog-mcp__get_datadog_trace
+  - Bash
 ---
 
 # dd-investigate
 
-Datadog調査のSubagent用テンプレート集。
+Datadogを起点としたアラート・サービス調査。
 
 ## 基本原則
 
-1. 集計 → パターン → 詳細の順でアプローチ
-2. 生データは最後の手段
+1. アラート調査: モニター詳細 → イベント履歴 → メトリクス/ログ
+2. サービス調査: 集計 → パターン → 詳細
+3. GCP系アラート: Datadog確認後、gcloudで補完調査
 
-## 使い方
+## 調査フロー
 
-Taskツールで委譲。メインには要約だけ返る：
+### アラート調査（優先）
 
-```
-Task:
-  subagent_type: "general-purpose"
-  prompt: "dd-investigateの「エラー調査」テンプレートで {service} を調査。結果を3行で要約。"
-```
+ユーザーがアラートについて質問した場合：
+
+1. **モニター特定**: `search_datadog_monitors` でタイトルキーワード検索
+2. **イベント履歴**: `search_datadog_events` で発火/復旧タイミング確認
+3. **メトリクス確認**: `get_datadog_metric` でモニターのクエリを実行
+4. **根本原因**: ログ/トレースで詳細確認
+
+GCP系（Cloud Armor, Cloud Run等）の場合：
+- Datadogで概要把握後、`gcloud logging read` で詳細ログ確認
+- 環境: REDACTED-dev, REDACTED-stg, REDACTED-prd(prd)
+
+### サービス調査
+
+特定サービスの状態を確認する場合：
+1. `analyze_datadog_logs` で集計
+2. `search_datadog_logs` でパターン確認
+3. 必要に応じてトレース/メトリクス
 
 ---
 
 ## テンプレート集
+
+### 0. アラート調査（推奨）
+
+対象: Slackに来たアラートを調査したい
+
+```
+手順:
+1. search_datadog_monitors でモニター特定
+   query: "title:{アラート名のキーワード}"
+
+2. search_datadog_events でイベント履歴
+   query: "*{モニター名}*"
+   from: "now-24h"
+
+3. get_datadog_metric でメトリクス確認
+   queries: [モニターのクエリ]
+   from: "now-2h"
+
+4. GCP系の場合、gcloudで補完:
+   gcloud logging read '<フィルタ>' --project=<project_id> --freshness=4h
+
+結果を要約:
+- 発火時刻と復旧時刻
+- 原因（ログ/メトリクスから特定）
+- 対応要否の判断
+```
 
 ### 1. エラー調査
 
