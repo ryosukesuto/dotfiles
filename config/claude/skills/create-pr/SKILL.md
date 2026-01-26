@@ -103,8 +103,28 @@ fi
 /create-pr --draft
 ```
 
+## worktree環境での動作
+
+worktree内でPR作成後、以下を案内:
+
+```bash
+# 現在のディレクトリがworktreeか確認
+current_dir=$(pwd)
+wt_info=$(git worktree list | grep "^$current_dir ")
+
+if [[ -n "$wt_info" ]]; then
+    wt_name=$(basename $current_dir)
+    echo ""
+    echo "PRがマージされたら以下でworktreeを削除できます:"
+    echo "  git-wt remove $wt_name"
+    echo ""
+    echo "または /sync-default-branch-and-clean で一括クリーンアップ"
+fi
+```
+
 ## 注意事項
 
 1. コミット前の確認: 機密情報が含まれていないか確認
 2. テスト実行: PR作成前に必ずテストを実行
 3. ブランチ名: 意味のある名前を使用
+4. worktree環境: PRマージ後はworktreeの削除を忘れずに
