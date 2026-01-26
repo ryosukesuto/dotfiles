@@ -22,6 +22,20 @@ git remote -v
 
 ## 実行プロセス
 
+### フェーズ0: worktree 内で実行時の安全対策
+
+worktree 内で実行された場合、メインリポジトリに移動してから処理を行う:
+
+```bash
+# worktree 内かどうかを判定（.git がファイルの場合は worktree）
+if [ -f ".git" ]; then
+    # メインリポジトリのパスを取得
+    MAIN_REPO=$(git rev-parse --git-common-dir | sed 's|/.git$||')
+    echo "worktree 内で実行されました。メインリポジトリに移動します: $MAIN_REPO"
+    cd "$MAIN_REPO"
+fi
+```
+
 ### フェーズ1: デフォルトブランチの同期
 
 1. デフォルトブランチを検出
@@ -69,7 +83,8 @@ done
 
 削除実行:
 ```bash
-git-wt remove <worktree-name>
+git wt -d <branch|worktree>   # 安全な削除（マージ済みの場合のみ）
+git wt -D <branch|worktree>   # 強制削除
 ```
 
 ### フェーズ3: 不要なローカルブランチの削除
@@ -115,16 +130,17 @@ worktree使用時は追加の確認が必要:
 
 ```bash
 # worktree一覧を確認
-git worktree list
+git wt
 
 # 別のworktreeでチェックアウト中のブランチは削除不可
 # → 先にworktreeを削除する必要がある
-git-wt remove <worktree-name>
+git wt -d <branch|worktree>   # 安全な削除
+git wt -D <branch|worktree>   # 強制削除
 ```
 
 削除できないブランチがある場合:
-1. `git worktree list` でどのworktreeが使用中か確認
-2. 不要なworktreeを `git-wt remove` で削除
+1. `git wt` でどのworktreeが使用中か確認
+2. 不要なworktreeを `git wt -d` で削除
 3. その後ブランチを削除
 
 ## 注意事項
@@ -132,4 +148,5 @@ git-wt remove <worktree-name>
 - デフォルトブランチが検出できない場合はエラーを表示
 - 未コミット変更がある場合は、事前にコミットまたはstash推奨
 - gone ブランチは `-D` で強制削除されるため、未push のコミットがある場合は注意
-- worktree使用中のブランチは削除できない（先にworktreeを削除）
+- worktree使用中のブランチは削除できない（先に `git wt -d` でworktreeを削除）
+- worktree 内で実行した場合、自動的にメインリポジトリに移動してから処理を行う
