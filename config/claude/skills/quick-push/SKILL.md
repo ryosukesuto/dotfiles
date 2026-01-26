@@ -67,7 +67,23 @@ fi
 /quick-push
 ```
 
+## worktree環境での動作
+
+worktree内で実行した場合、PRマージ済みチェック後に以下を提案:
+
+```bash
+# 現在のディレクトリがworktreeか確認
+current_dir=$(pwd)
+wt_info=$(git worktree list | grep "^$current_dir ")
+
+if [[ -n "$wt_info" ]] && [[ "$pr_state" == "MERGED" ]]; then
+    echo "このworktreeを削除しますか？"
+    echo "  git-wt remove $(basename $current_dir)"
+fi
+```
+
 ## 注意事項
 PRマージ後にエラーが発生した場合:
 - マージ済みのブランチにはpushしない
 - 新しいブランチを作成して、そこで修正を行う
+- worktree環境の場合は、worktreeを削除してから新しいworktreeを作成

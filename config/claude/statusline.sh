@@ -76,7 +76,7 @@ git_info() {
     [ "$stashed" -gt 0 ] && markers+="${C_MAGENTA}\$${stashed}${C_RESET}"
 
     # Git状態（rebase/merge等）
-    local git_dir state=""
+    local git_dir state="" worktree=""
     git_dir=$(git rev-parse --git-dir 2>/dev/null)
     if [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; then
         state="${C_YELLOW}|REBASING${C_RESET}"
@@ -86,8 +86,14 @@ git_info() {
         state="${C_YELLOW}|PICKING${C_RESET}"
     fi
 
+    # Worktree検出（.gitがファイルの場合はworktree）
+    if [ -f ".git" ]; then
+        worktree="${C_BLUE}[wt]${C_RESET}"
+    fi
+
     # 出力構築
     local status_line=" ${C_MAGENTA}${branch}${C_RESET}${state}"
+    [ -n "$worktree" ] && status_line+=" ${worktree}"
     [ -n "$sync" ] && status_line+=" ${sync}"
     [ -n "$markers" ] && status_line+=" [${markers}]"
 

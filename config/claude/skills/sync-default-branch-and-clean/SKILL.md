@@ -4,11 +4,13 @@ description: デフォルトブランチを最新化して不要なローカル�
 user-invocable: true
 allowed-tools:
   - Bash(git:*)
+  - Bash(gh:*)
+  - Bash(git-wt:*)
 ---
 
 # /sync-default-branch-and-clean - デフォルトブランチの同期とクリーニング
 
-デフォルトブランチ（main/master）に切り替えて最新状態に同期し、不要なローカルブランチを安全に削除します。
+デフォルトブランチ（main/master）に切り替えて最新状態に同期し、マージ済みのworktreeとローカルブランチを安全に削除します。
 
 ## 現在の状態確認
 ```bash
@@ -45,7 +47,32 @@ REMOTE=$(git remote | grep -E '^origin$' || git remote | head -n1)
 5. リモートから最新の変更を取得: `git fetch $REMOTE --prune`
 6. 最新状態に更新: `git pull --rebase $REMOTE $DEFAULT_BRANCH`
 
-### フェーズ2: 不要なローカルブランチの削除
+### フェーズ2: 不要なworktreeの削除
+
+worktree環境の場合、マージ済みPRに対応するworktreeを削除:
+
+```bash
+# worktree一覧を取得（メインworktree以外）
+git worktree list | tail -n +2 | while read wt_path wt_commit wt_branch; do
+    # ブランチ名を抽出（[branch-name] 形式）
+    branch=$(echo "$wt_branch" | tr -d '[]')
+
+    # PRの状態を確認
+    pr_state=$(gh pr list --head "$branch" --state all --json state -q '.[0].state' 2>/dev/null)
+
+    if [[ "$pr_state" == "MERGED" ]]; then
+        echo "マージ済み: $wt_path ($branch)"
+        # 削除候補としてリストアップ
+    fi
+done
+```
+
+削除実行:
+```bash
+git-wt remove <worktree-name>
+```
+
+### フェーズ3: 不要なローカルブランチの削除
 
 7. 削除対象ブランチの分析
 ```bash
@@ -59,7 +86,7 @@ GONE_BRANCHES=$(git branch -vv | grep ': gone]' | awk '{print $1}')
 8. 削除候補の分類と表示
    - 安全に削除可能: マージ済みまたはリモートで削除済み（gone）
    - 注意が必要: 未マージだがリモートに存在しないブランチ
-   - 保持: デフォルトブランチ、現在のブランチ
+   - 保持: デフォルトブランチ、現在のブランチ、worktree使用中のブランチ
 
 9. 段階的な削除実行
 ```bash
@@ -82,8 +109,27 @@ done
   - マージ済みブランチ: `-d` で安全に削除
   - gone ブランチ: `-D` で強制削除
 
+## worktree環境での注意
+
+worktree使用時は追加の確認が必要:
+
+```bash
+# worktree一覧を確認
+git worktree list
+
+# 別のworktreeでチェックアウト中のブランチは削除不可
+# → 先にworktreeを削除する必要がある
+git-wt remove <worktree-name>
+```
+
+削除できないブランチがある場合:
+1. `git worktree list` でどのworktreeが使用中か確認
+2. 不要なworktreeを `git-wt remove` で削除
+3. その後ブランチを削除
+
 ## 注意事項
 
 - デフォルトブランチが検出できない場合はエラーを表示
 - 未コミット変更がある場合は、事前にコミットまたはstash推奨
 - gone ブランチは `-D` で強制削除されるため、未push のコミットがある場合は注意
+- worktree使用中のブランチは削除できない（先にworktreeを削除）

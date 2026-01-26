@@ -40,10 +40,41 @@ bin/           - カスタムスクリプト
 ## 主要ツール
 
 - ターミナル: Ghostty (UDEV Gothic 35NF)
-- シェル: Zsh + ghq/fzf (Ctrl+])
+- シェル: Zsh + ghq/fzf (Ctrl+]) + git-wt/fzf (Ctrl+\)
 - バージョン管理: mise
 - AI: Claude Code, Codex CLI
 - クラウド: AWS (SSM Session Manager)
+
+## 開発フロー（ghq + git worktree）
+
+リポジトリ管理はghq、ブランチ作業はgit worktreeで分離。
+
+### 基本フロー
+```bash
+# 1. リポジトリをclone（ghq）
+ghq get github.com/org/repo
+cd $(ghq root)/github.com/org/repo
+
+# 2. 機能開発時はworktreeを作成（git-wt）
+git-wt add feature/xxx    # .worktrees/feature/xxx に作成
+cd .worktrees/feature/xxx
+
+# 3. 作業完了後はworktreeを削除
+git-wt remove feature/xxx
+```
+
+### キーバインド
+- `Ctrl+]`: ghqリポジトリ選択（fzf）
+- `Ctrl+\`: worktree選択（fzf）
+
+### エイリアス
+- `wt`: git-wt
+- `wta`: git-wt add（worktree作成）
+- `wtl`: git-wt list（一覧）
+- `wtr`: git-wt remove（削除）
+
+### 設定
+gitconfigで `.worktrees` をbasedirに設定済み。
 
 ## IaC運用
 

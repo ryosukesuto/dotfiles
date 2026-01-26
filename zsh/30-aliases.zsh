@@ -12,6 +12,14 @@ alias gd='git diff'
 alias gb='git branch'
 alias gco='git checkout'
 
+# git-wt (git worktree管理)
+(( $+commands[git-wt] )) && {
+    alias wt='git-wt'
+    alias wta='git-wt add'      # worktree作成
+    alias wtl='git-wt list'     # worktree一覧
+    alias wtr='git-wt remove'   # worktree削除
+}
+
 # tmux
 alias t='tmux'
 alias ta='tmux attach'

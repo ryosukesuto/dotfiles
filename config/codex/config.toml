@@ -15,7 +15,7 @@ approval_policy = "never"
 # Model Settings / モデル設定
 # ==============================================================================
 # モデル名（GPT-5 Codexを使用）
-model = "gpt-5-codex"
+model = "gpt-5.2-codex"
 
 # 推論努力レベル（low, medium, high）
 # PRレビューなど実用的なタスクには "medium" が最適（速度と品質のバランス）
@@ -173,3 +173,6 @@ trust_level = "trusted"
 
 [projects."/Users/ryosukesuto/src/github.com/ryosukesuto/dotfiles"]
 trust_level = "trusted"
+
+[notice.model_migrations]
+gpt-5-codex = "gpt-5.2-codex"

@@ -34,6 +34,7 @@
 ワークフロー: @rules/workflow.md
 Codexとの協業・バイブコーディング: @rules/codex-collaboration.md
 自動化サジェスト: @rules/automation.md
+Linearタスク管理: @rules/linear-workflow.md
 
 ## 参考リンク
 

@@ -64,6 +64,9 @@
 [ghq]
 	root = ~/gh
 
+[wt]
+	basedir = ".worktrees"
+
 # ユーザー情報は.gitconfig.localに記載してください
 # 例:
 # [user]

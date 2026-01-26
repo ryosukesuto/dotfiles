@@ -340,6 +340,9 @@ create_symlink "$DOTFILES_DIR/config/claude/statusline.sh" "$HOME/.claude/status
 # Claude Skills
 create_symlink "$DOTFILES_DIR/config/claude/skills" "$HOME/.claude/skills"
 
+# Claude Rules（ワークフロー・協業ルール）
+create_symlink "$DOTFILES_DIR/config/claude/rules" "$HOME/.claude/rules"
+
 # Claude グローバル設定
 create_symlink "$DOTFILES_DIR/config/claude/GLOBAL_SETTINGS.md" "$HOME/.claude/CLAUDE.md"
 
