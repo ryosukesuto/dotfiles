@@ -4,6 +4,7 @@ description: git diffを分析して包括的なPull Requestを自動作成
 user-invocable: true
 allowed-tools:
   - Bash(git:*)
+  - Bash(git-wt:*)
   - Bash(gh:*)
   - Read
   - Glob
@@ -15,6 +16,20 @@ allowed-tools:
 git diffを分析して、Mermaid図やテスト結果を含む包括的なPull Requestを自動作成します。
 
 ## 実行手順
+
+### 0. ブランチ状態の確認と worktree 作成
+
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | cut -d' ' -f5)
+
+# デフォルトブランチで作業中の場合は worktree を作成
+if [[ "$CURRENT_BRANCH" == "$DEFAULT_BRANCH" ]]; then
+    echo "デフォルトブランチで作業中です。worktree を作成します。"
+    # ユーザーにブランチ名を確認
+    # git wt <branch-name> で worktree を作成して移動
+fi
+```
 
 ### 1. 変更内容の分析
 
@@ -89,6 +104,16 @@ if [ -n "$PR_URL" ]; then
     PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
     th "PR #${PR_NUMBER} 作成完了: ${PR_URL}"
 fi
+
+# worktree内の場合は削除方法を案内
+if [ -f ".git" ]; then
+    BRANCH=$(git branch --show-current)
+    echo ""
+    echo "PRがマージされたら以下でworktreeを削除できます:"
+    echo "  git wt -d $BRANCH"
+    echo ""
+    echo "または /sync-default-branch-and-clean で一括クリーンアップ"
+fi
 ```
 
 ## オプション
@@ -105,26 +130,28 @@ fi
 
 ## worktree環境での動作
 
-worktree内でPR作成後、以下を案内:
+### デフォルトブランチで作業開始した場合
+
+1. 変更内容を stash
+2. `git wt <branch-name>` で worktree を作成
+3. worktree 内で stash を適用: `git stash pop`
+4. 作業を続行
+
+### worktree内でPR作成後
+
+PRがマージされたら以下で削除:
 
 ```bash
-# 現在のディレクトリがworktreeか確認
-current_dir=$(pwd)
-wt_info=$(git worktree list | grep "^$current_dir ")
-
-if [[ -n "$wt_info" ]]; then
-    wt_name=$(basename $current_dir)
-    echo ""
-    echo "PRがマージされたら以下でworktreeを削除できます:"
-    echo "  git-wt remove $wt_name"
-    echo ""
-    echo "または /sync-default-branch-and-clean で一括クリーンアップ"
-fi
+git wt -d <branch-name>   # 安全な削除
+git wt -D <branch-name>   # 強制削除
 ```
+
+または `/sync-default-branch-and-clean` で一括クリーンアップ
 
 ## 注意事項
 
 1. コミット前の確認: 機密情報が含まれていないか確認
 2. テスト実行: PR作成前に必ずテストを実行
 3. ブランチ名: 意味のある名前を使用
-4. worktree環境: PRマージ後はworktreeの削除を忘れずに
+4. worktree優先: デフォルトブランチでの作業は worktree を使用
+5. worktree削除: PRマージ後は worktree の削除を忘れずに
