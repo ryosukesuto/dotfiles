@@ -67,6 +67,13 @@
 [wt]
 	basedir = ".worktrees"
 
+# worktree環境でのlock競合を軽減
+[gc]
+	auto = 0
+
+[maintenance]
+	auto = false
+
 # ユーザー情報は.gitconfig.localに記載してください
 # 例:
 # [user]

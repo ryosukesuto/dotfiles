@@ -22,7 +22,36 @@ git remote -v
 
 ## 実行プロセス
 
-### フェーズ0: worktree 内で実行時の安全対策
+### フェーズ0: lock待機とworktree安全対策
+
+#### lock待機関数
+
+worktree環境では複数の場所でlockが発生するため、git操作前にlockを確認・待機する:
+
+```bash
+wait_git_lock() {
+  local git_dir git_common_dir count=0
+  git_dir="$(git rev-parse --git-dir 2>/dev/null)" || return 1
+  git_common_dir="$(git rev-parse --git-common-dir 2>/dev/null)" || return 1
+
+  while [ "$count" -lt 20 ]; do
+    # worktree固有dir + 共通dirの両方で *.lock を確認
+    if find "$git_dir" "$git_common_dir" -maxdepth 2 -name '*.lock' -print -quit 2>/dev/null | grep -q .; then
+      echo "Git lock detected, waiting... ($count)"
+      sleep 0.5
+      count=$((count + 1))
+    else
+      return 0
+    fi
+  done
+  echo "Warning: Git lock timeout after 10 seconds"
+  return 1
+}
+```
+
+以降の各gitコマンド（checkout, fetch, pull等）の前に `wait_git_lock` を呼び出す。
+
+#### worktree 内で実行時の安全対策
 
 worktree 内で実行された場合、メインリポジトリに移動してから処理を行う:
 
@@ -57,9 +86,9 @@ REMOTE=$(git remote | grep -E '^origin$' || git remote | head -n1)
 ```
 
 3. 未コミットの変更を確認
-4. デフォルトブランチに切り替え: `git checkout $DEFAULT_BRANCH`
-5. リモートから最新の変更を取得: `git fetch $REMOTE --prune`
-6. 最新状態に更新: `git pull --rebase $REMOTE $DEFAULT_BRANCH`
+4. デフォルトブランチに切り替え: `wait_git_lock && git checkout $DEFAULT_BRANCH`
+5. リモートから最新の変更を取得: `wait_git_lock && git fetch $REMOTE --prune`
+6. 最新状態に更新: `wait_git_lock && git pull --rebase $REMOTE $DEFAULT_BRANCH`
 
 ### フェーズ2: 不要なworktreeの削除
 
