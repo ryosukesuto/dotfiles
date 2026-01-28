@@ -47,8 +47,10 @@ _prompt_env_info() {
 # precmdでvcs_infoを更新（プロンプト表示前に1回だけ実行）
 precmd() { vcs_info; __update_tab_title }
 
-# タブタイトル設定（OSC 2でターミナル/tmuxに送信）
+# タブタイトル設定
 # 形式: repo:branch* または repo@wt:branch* (worktree内)
+# tmux内: rename-windowでウィンドウ名を直接設定（OSC 2を無視する設定のため）
+# tmux外: OSC 2でターミナルタイトルを設定
 __update_tab_title() {
   local title repo branch dirty wt
   if git rev-parse --is-inside-work-tree &>/dev/null; then
@@ -63,8 +65,13 @@ __update_tab_title() {
   else
     title="${PWD:t}"
   fi
-  # OSC 2: ターミナルタイトルを設定
-  print -Pn "\e]2;${title}\a"
+  # tmux内: ウィンドウ名を直接設定
+  # tmux外: OSC 2でタイトル設定
+  if [[ -n "$TMUX" ]]; then
+    tmux rename-window "$title"
+  else
+    print -Pn "\e]2;${title}\a"
+  fi
 }
 
 # プロンプト設定
