@@ -45,7 +45,27 @@ _prompt_env_info() {
 }
 
 # precmdでvcs_infoを更新（プロンプト表示前に1回だけ実行）
-precmd() { vcs_info }
+precmd() { vcs_info; __update_tab_title }
+
+# タブタイトル設定（OSC 2でターミナル/tmuxに送信）
+# 形式: repo:branch* または repo@wt:branch* (worktree内)
+__update_tab_title() {
+  local title repo branch dirty wt
+  if git rev-parse --is-inside-work-tree &>/dev/null; then
+    repo=$(basename "$(git rev-parse --show-toplevel)")
+    branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+    # worktree内ならディレクトリ名を追加
+    wt=${PWD:t}
+    [[ "$wt" != "$repo" ]] && repo="${repo}@${wt}"
+    # 未コミット変更があれば*を追加
+    git diff --quiet --ignore-submodules -- 2>/dev/null || dirty="*"
+    title="${repo}:${branch}${dirty}"
+  else
+    title="${PWD:t}"
+  fi
+  # OSC 2: ターミナルタイトルを設定
+  print -Pn "\e]2;${title}\a"
+}
 
 # プロンプト設定
 PROMPT='$(_prompt_env_info)%F{cyan}%~%f${vcs_info_msg_0_}
