@@ -56,6 +56,14 @@ __update_tab_title() {
   if git rev-parse --is-inside-work-tree &>/dev/null; then
     repo=$(basename "$(git rev-parse --show-toplevel)")
     branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+    # ブランチ名を短縮: "username/xxx" → "xxx", "feature/xxx" → "f/xxx"
+    case "$branch" in
+      feature/*) branch="f/${branch#feature/}" ;;
+      fix/*) branch="x/${branch#fix/}" ;;
+      bugfix/*) branch="b/${branch#bugfix/}" ;;
+      hotfix/*) branch="h/${branch#hotfix/}" ;;
+      */*) branch="${branch##*/}" ;;  # その他のprefix（ユーザー名等）は除去
+    esac
     # worktree内ならディレクトリ名を追加
     wt=${PWD:t}
     [[ "$wt" != "$repo" ]] && repo="${repo}@${wt}"
