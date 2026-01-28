@@ -436,6 +436,24 @@ else
 fi
 
 # ============================================================================
+# Claude Desktopのインストール（Homebrew cask）
+# ============================================================================
+if [ -d "/Applications/Claude.app" ]; then
+    info "Claude Desktop は既にインストールされています"
+elif command -v brew &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Claude Desktop をインストール（brew cask）"
+    else
+        info "Claude Desktop をインストール中..."
+        brew install --cask claude 2>/dev/null && \
+            info "Claude Desktop のインストール完了" || \
+            warn "Claude Desktop のインストールに失敗しました"
+    fi
+else
+    warn "Claude Desktop のインストールにはHomebrewが必要です"
+fi
+
+# ============================================================================
 # Claude Codeのインストール（ネイティブインストール）
 # ============================================================================
 # Note: Codex CLIはmiseで管理（config/mise/config.toml）
