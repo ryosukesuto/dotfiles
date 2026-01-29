@@ -470,6 +470,24 @@ else
     info "Claude Code は既にインストールされています"
 fi
 
+# ============================================================================
+# Notionのインストール（Homebrew cask）
+# ============================================================================
+if [ -d "/Applications/Notion.app" ]; then
+    info "Notion は既にインストールされています"
+elif command -v brew &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Notion をインストール（brew cask）"
+    else
+        info "Notion をインストール中..."
+        brew install --cask notion 2>/dev/null && \
+            info "Notion のインストール完了" || \
+            warn "Notion のインストールに失敗しました"
+    fi
+else
+    warn "Notion のインストールにはHomebrewが必要です"
+fi
+
 echo ""
 if [ "$DRY_RUN" = true ]; then
     info "ドライランモードでの確認が完了しました！"

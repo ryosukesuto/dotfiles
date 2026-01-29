@@ -5,6 +5,10 @@ user-invocable: true
 allowed-tools:
   - Bash(gh:*)
   - Bash(git:*)
+  - Bash(TMUX_MGR:*)
+  - Bash($TMUX_MGR:*)
+  - Bash(codex:*)
+  - Bash(echo:*)
   - Read
   - Glob
   - Grep
@@ -33,11 +37,10 @@ gh pr checks
 
 tmux内の場合:
 ```bash
-TMUX_MGR=~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh
-$TMUX_MGR ensure
-$TMUX_MGR send "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
-$TMUX_MGR wait_response 180
-$TMUX_MGR capture 300
+~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh ensure
+~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh send "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
+~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh wait_response 180
+~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh capture 300
 ```
 
 tmux外の場合:
