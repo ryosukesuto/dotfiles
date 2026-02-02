@@ -257,5 +257,8 @@
     "command": "~/.claude/statusline.sh"
   },
   "outputStyle": "Concise",
-  "language": "japanese"
+  "language": "japanese",
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true
+  }
 }
