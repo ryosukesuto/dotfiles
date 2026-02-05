@@ -20,6 +20,7 @@ model = "gpt-5.2-codex"
 # 推論努力レベル（low, medium, high）
 # PRレビューなど実用的なタスクには "medium" が最適（速度と品質のバランス）
 model_reasoning_effort = "medium"
+personality = "pragmatic"
 
 # レスポンスの最大トークン数（デフォルト: 4096）
 # max_tokens = 4096
