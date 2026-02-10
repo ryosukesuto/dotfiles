@@ -73,8 +73,8 @@ cmd_ensure() {
     # ペインIDを保存
     echo "$new_pane" > "$PANE_ID_FILE"
 
-    # Codexの起動を待つ
-    sleep 2
+    # Codexの起動を待つ（プロンプト検出は send 側で行う）
+    sleep 3
 
     echo "Created new Codex pane: $new_pane (title=$PANE_TITLE, bg=$PANE_BG)"
     echo "Auto-started Codex in pane"
@@ -84,6 +84,11 @@ cmd_ensure() {
 # Usage: tmux-manager.sh send "message"
 #        tmux-manager.sh send -              (stdinから読み取り)
 #        echo "message" | tmux-manager.sh send -
+#
+# プロンプト（›）の出現をポーリングしてから paste-buffer -p で送信する。
+# send-keys -l はバースト送信のため、Codex TUI が起動中（アップデート通知等）だと
+# 先頭の文字が欠落する問題がある。paste-buffer -p はブラケットペーストモードで
+# アトミックに配信するため、この問題を回避できる。
 cmd_send() {
     local message="$1"
 
@@ -113,13 +118,35 @@ cmd_send() {
         exit 1
     fi
 
-    # メッセージを送信（リテラル文字列として送信）
-    tmux send-keys -t "$pane_id" -l "$message"
-    echo "Sent message to pane: $pane_id (${#message} chars)" >&2
+    # プロンプト出現を待機してから送信
+    local wait_timeout=30
+    local wait_elapsed=0
+    echo "Waiting for Codex prompt..." >&2
+    while [ $wait_elapsed -lt $wait_timeout ]; do
+        local content=$(tmux capture-pane -t "$pane_id" -p -S -10 2>/dev/null)
+        if echo "$content" | tail -5 | grep -qE '^[>›]'; then
+            echo "Codex prompt detected (${wait_elapsed}s)" >&2
+            break
+        fi
+        sleep 1
+        wait_elapsed=$((wait_elapsed + 1))
+    done
 
-    # 少し待機してからEnterを送信（C-mを使用）
-    sleep 0.2
-    tmux send-keys -t "$pane_id" C-m
+    if [ $wait_elapsed -ge $wait_timeout ]; then
+        echo "Warning: prompt not detected after ${wait_timeout}s, sending anyway..." >&2
+    fi
+
+    sleep 0.5
+
+    # paste-buffer -p でブラケットペーストとして配信
+    local buf_name="codex-send-$$"
+    tmux set-buffer -b "$buf_name" "$message"
+    tmux paste-buffer -b "$buf_name" -t "$pane_id" -d -p
+    echo "Sent message via paste-buffer to pane: $pane_id (${#message} chars)" >&2
+
+    # Enterを送信して実行
+    sleep 0.3
+    tmux send-keys -t "$pane_id" Enter
     echo "Sent Enter to pane: $pane_id" >&2
 }
 

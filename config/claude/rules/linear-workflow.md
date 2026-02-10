@@ -101,6 +101,29 @@ Impact: [止めたProject名] の Issue #xxx を後ろ倒し
 - 兼務などで稼働が少ない週は上限をよしなに調整
 - 工数はブレる想定なので、取り組む前の体感で決めてOK
 
+## Linear MCP API の注意点
+
+サイクルやチームの指定には、名前やキーワードではなくIDを使う。
+
+### サイクル操作の手順
+1. `list_cycles(teamId, type="current")` でサイクルIDを取得
+2. `list_issues` でサイクル指定する場合は、取得したIDを使う（`current` 等の文字列は効かない）
+3. issueのサイクル移動も同様にIDを直接指定（`next` 等の文字列は効かない）
+
+```
+# 正しい手順
+cycles = list_cycles(teamId="01826a20-...", type="current")
+cycle_id = cycles[0].id
+list_issues(assignee="me", cycle=cycle_id)
+
+# 間違い（効かない）
+list_issues(assignee="me", cycle="current")
+update_issue(id="PF-xxx", cycle="next")
+```
+
+### チームID
+- Platform: `01826a20-6bbd-4135-b732-2d789b98f7e8`
+
 ## やらないこと
 
 運用が目的化するのを防ぐため、以下は意図的に入れない：
