@@ -472,6 +472,24 @@ else
 fi
 
 # ============================================================================
+# Docker Desktopのインストール（Homebrew cask）
+# ============================================================================
+if [ -d "/Applications/Docker.app" ]; then
+    info "Docker Desktop は既にインストールされています"
+elif command -v brew &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Docker Desktop をインストール（brew cask）"
+    else
+        info "Docker Desktop をインストール中..."
+        brew install --cask docker 2>/dev/null && \
+            info "Docker Desktop のインストール完了" || \
+            warn "Docker Desktop のインストールに失敗しました"
+    fi
+else
+    warn "Docker Desktop のインストールにはHomebrewが必要です"
+fi
+
+# ============================================================================
 # Notionのインストール（Homebrew cask）
 # ============================================================================
 if [ -d "/Applications/Notion.app" ]; then

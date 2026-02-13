@@ -44,9 +44,7 @@ brew "poppler"       # PDF処理（pdftotext等）
 
 # ===== 開発環境 =====
 # Node.js / Codex CLIはmiseで管理（config/mise/config.toml）
-brew "docker"         # Docker CLI
-brew "docker-compose" # Docker Compose
-brew "colima"         # Docker API互換環境（Lima ベース）
+cask "docker"        # Docker Desktop（CLI + Compose V2 + GUI）
 cask "devpod"        # Dev Container管理
 brew "go-task"       # タスクランナー
 brew "protobuf"      # Protocol Buffers
