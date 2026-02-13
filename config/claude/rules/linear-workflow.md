@@ -1,6 +1,6 @@
 # Linearタスク管理ワークフロー
 
-WinTicket Platformチームのタスク管理ガイドライン。
+チームのタスク管理ガイドライン。
 Linearを「タスク管理ツール」から「意思決定ログ」に変える。
 
 ## タスク・プロジェクトの作成
@@ -89,7 +89,7 @@ Impact: [止めたProject名] の Issue #xxx を後ろ倒し
 - チケット切ってアサインしていく
 
 ### 目指す状態
-今週やることは https://linear.app/winticket/team/PF/cycle/active を見ればわかる状態
+今週やることはLinearのactive cycleを見ればわかる状態
 
 ## ポイント見積もり
 
@@ -112,7 +112,7 @@ Impact: [止めたProject名] の Issue #xxx を後ろ倒し
 
 ```
 # 正しい手順
-cycles = list_cycles(teamId="01826a20-...", type="current")
+cycles = list_cycles(teamId="<TEAM_ID>", type="current")
 cycle_id = cycles[0].id
 list_issues(assignee="me", cycle=cycle_id)
 
@@ -122,7 +122,7 @@ update_issue(id="PF-xxx", cycle="next")
 ```
 
 ### チームID
-- Platform: `01826a20-6bbd-4135-b732-2d789b98f7e8`
+- `~/.claude/rules/service-environments.local.md` を参照
 
 ## やらないこと
 

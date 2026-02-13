@@ -27,7 +27,7 @@ elif [[ -d "$HOME/google-cloud-sdk/bin" ]]; then
 fi
 
 # Go
-export GOPRIVATE=github.com/WinTicket
+# GOPRIVATE は ~/.zshrc.local で設定
 
 # Firebase
 export FIREBASE_CREDENTIALS=~/firebase_adminsdk_service_account.json

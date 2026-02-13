@@ -80,19 +80,19 @@
 #til/fastly #til/terraform
 
 ### 事象
-`stg.winticket.bet` にアクセスすると以下のエラー:
-> Fastly error: unknown domain: stg.winticket.bet
+`stg.example.com` にアクセスすると以下のエラー:
+> Fastly error: unknown domain: stg.example.com
 
 ### 調査
 1. [[Terraform]]の設定ファイルを確認
-2. 動作している `api-stg.winticket.bet` と比較
+2. 動作している `api-stg.example.com` と比較
 3. `activate` 変数のデフォルト値確認
 
 ### 発見
 | サービス | activate設定 | 状態 |
 |----------|-------------|------|
-| api-stg.winticket.bet | `true` | 動作 |
-| stg.winticket.bet | 未設定 | 停止 |
+| api-stg.example.com | `true` | 動作 |
+| stg.example.com | 未設定 | 停止 |
 
 ### 学び
 - [[Fastly]]の `activate = false` はサービスをドラフト状態にする

@@ -27,7 +27,6 @@ TMUX_MGR=~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh
 $TMUX_MGR ensure                           # Codexペインを作成
 $TMUX_MGR send "git diffをレビューして"     # メッセージ送信
 $TMUX_MGR wait_response 180 && $TMUX_MGR capture 200  # 応答待機とキャプチャ
-$TMUX_MGR close                            # ペインを閉じる
 ```
 
 ### tmux外: codex exec

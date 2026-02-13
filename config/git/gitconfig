@@ -82,5 +82,3 @@
 
 [include]
 	path = ~/.gitconfig.local
-[url "git@github.com:WinTicket/"]
-	insteadOf = https://github.com/WinTicket/

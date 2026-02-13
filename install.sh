@@ -127,6 +127,7 @@ check_dependencies() {
         "gh"
         "aws"
         "mise"
+        "git-filter-repo"
     )
     
     local missing_recommended=()

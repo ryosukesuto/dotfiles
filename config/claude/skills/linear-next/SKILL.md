@@ -31,7 +31,7 @@ Task(
 Linearから自分のタスク一覧を取得し、整形して返してください。
 
 ## 設定
-- TEAM_ID: 01826a20-6bbd-4135-b732-2d789b98f7e8 (Platform)
+- TEAM_ID: ~/.claude/rules/service-environments.local.md を参照
 
 ## 手順
 

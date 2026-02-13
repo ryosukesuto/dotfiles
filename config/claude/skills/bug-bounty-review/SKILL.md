@@ -62,7 +62,7 @@ After reviewing your submission, we have determined that this does not constitut
 While we appreciate your interest in our security, this report does not qualify for a bounty reward as it describes intended platform functionality rather than a vulnerability.
 
 Best regards,
-WinTicket Security Team
+Security Team
 ```
 
 #### 修正対応する場合（To Fix）
@@ -77,7 +77,7 @@ We have reviewed your submission and confirmed the vulnerability. We are current
 We will update you once the fix has been deployed.
 
 Best regards,
-WinTicket Security Team
+Security Team
 ```
 
 ### 5. 返信文のCodexレビュー

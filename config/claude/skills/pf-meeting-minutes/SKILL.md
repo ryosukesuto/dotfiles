@@ -53,7 +53,8 @@ ToolSearch(query: "+linear projects cycles issues")
 
 **current cycleの全Issue**:
 ```
-mcp__linear-server__list_cycles(teamId: "01826a20-6bbd-4135-b732-2d789b98f7e8", type: "current")
+mcp__linear-server__list_cycles(teamId: "<TEAM_ID>", type: "current")
+# TEAM_IDは ~/.claude/rules/service-environments.local.md を参照
 mcp__linear-server__list_issues(team: "Platform", cycle: "<取得したcycle_id>", limit: 250)
 ```
 ※ `assignee: "me"` は付けない。チーム全体のIssueが必要
@@ -100,12 +101,12 @@ tags: [meeting, Platform, ...]
 ## 議題・進捗報告
 
 ### 1. プロジェクト名
-**Linear**: [プロジェクト名](https://linear.app/winticket/project/...)
+**Linear**: [プロジェクト名](https://linear.app/<org>/project/...)
 
 （議論内容を箇条書きで整理）
 
 **関連Issue**:
-- [PF-XXX](https://linear.app/winticket/issue/PF-XXX) タイトル [Xpt]
+- [PF-XXX](https://linear.app/<org>/issue/PF-XXX) タイトル [Xpt]
 
 ---
 
@@ -117,7 +118,7 @@ tags: [meeting, Platform, ...]
 ```
 
 **関連IssueのURL形式**:
-- 必ず `[PF-XXX](https://linear.app/winticket/issue/PF-XXX)` 形式でLinearリンクを付与
+- 必ず `[PF-XXX](https://linear.app/<org>/issue/PF-XXX)` 形式でLinearリンクを付与
 - estimateがあれば末尾に `[Xpt]` を記載
 
 **省略する項目**（不要なセクション）:

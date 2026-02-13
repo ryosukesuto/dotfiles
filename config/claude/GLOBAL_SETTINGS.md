@@ -61,3 +61,7 @@ Linearタスク管理: @rules/linear-workflow.md
 - パスワードや秘密鍵はハードコードしない（コミット前に必ず確認）
 - 環境固有の情報は `.env.local` で管理、gitignore設定必須
 - APIキーや認証情報は環境変数経由でのみ使用
+- サービス固有の知識（環境名、プロジェクトID、内部URL等）はpublicリポジトリに含めない
+  - 配置先: `~/.claude/rules/*.local.md`（`.gitignore`の`*.local.*`パターンで除外）
+  - skill/rulesファイルからは汎用ファイル名で参照する（サービス名をファイル名に含めない）
+  - git履歴にも残さない。誤ってコミットした場合は`git filter-repo`で除去する
