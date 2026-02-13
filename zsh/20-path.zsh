@@ -32,5 +32,4 @@ fi
 # Firebase
 export FIREBASE_CREDENTIALS=~/firebase_adminsdk_service_account.json
 
-# Docker (Colima)
-export DOCKER_HOST="unix://${HOME}/.config/colima/docker.sock"
+# Docker Desktop はデフォルトソケット（/var/run/docker.sock）を使用
