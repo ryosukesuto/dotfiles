@@ -71,6 +71,7 @@ aws/config
 
 # ローカル設定
 *.local
+*.local.*
 .zshrc.local
 .env.local
 .gitconfig.local
