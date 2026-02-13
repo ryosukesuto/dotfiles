@@ -40,7 +40,7 @@ Datadogを起点としたアラート・サービス調査。
 
 GCP系（Cloud Armor, Cloud Run等）の場合：
 - Datadogで概要把握後、`gcloud logging read` で詳細ログ確認
-- 環境: REDACTED-dev, REDACTED-stg, REDACTED-prd(prd)
+- 環境情報は `~/.claude/rules/service-environments.local.md` を参照
 
 ### サービス調査
 
