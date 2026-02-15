@@ -1,3 +1,9 @@
+---
+name: service-debug
+description: kubectlでのサービス調査・ボトルネック調査のガイドライン。「サービス調査」「kubectl」「ボトルネック」「Spanner」等で起動。
+user-invocable: false
+---
+
 ## デバッグ & 調査
 
 ### 調査開始時のコンテキスト取得

@@ -4,9 +4,27 @@
 # ============================================================================
 # スタンドアロン版のth関数。source ~/.zshrcなしで実行可能。
 
+# オプション解析
+section="📝 メモ"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -s|--section)
+            section="$2"
+            shift 2
+            ;;
+        -*)
+            echo "不明なオプション: $1" >&2
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
 # 使用方法の確認
 if [[ -z "$1" ]]; then
-    echo "使用方法: th <メモ内容>"
+    echo "使用方法: th [-s セクション] <メモ内容>"
     exit 1
 fi
 
@@ -15,6 +33,7 @@ vault_path="$HOME/gh/github.com/ryosukesuto/obsidian-notes"
 today=$(date +%Y-%m-%d)
 daily_note="$vault_path/01_Daily/${today}.md"
 timestamp=$(date "+%Y/%m/%d %H:%M:%S")
+section_header="## ${section}"
 
 # Vaultディレクトリの存在確認
 if [[ ! -d "$vault_path" ]]; then
@@ -31,50 +50,41 @@ fi
 if [[ ! -f "$daily_note" ]]; then
     echo "# ${today}" > "$daily_note"
     echo "" >> "$daily_note"
-    echo "## 📝 メモ" >> "$daily_note"
+    echo "${section_header}" >> "$daily_note"
 fi
 
-# メモセクションが存在しない場合は追加
-if ! command -v rg &> /dev/null; then
-    # rgが利用できない場合はgrepを使用
-    if ! grep -q "^## 📝 メモ" "$daily_note"; then
-        echo "" >> "$daily_note"
-        echo "## 📝 メモ" >> "$daily_note"
-    fi
-else
-    if ! rg -q "^## 📝 メモ" "$daily_note"; then
-        echo "" >> "$daily_note"
-        echo "## 📝 メモ" >> "$daily_note"
-    fi
+# 指定セクションが存在しない場合は追加
+if ! grep -qF "${section_header}" "$daily_note"; then
+    echo "" >> "$daily_note"
+    echo "${section_header}" >> "$daily_note"
 fi
 
 # 新しいメモを追加
 new_memo="- ${timestamp}: $*"
 temp_file="${daily_note}.tmp"
-in_memo_section=0
-memo_added=0
-last_memo_line=0
+last_entry_line=0
 line_num=0
+in_section=0
 
-# メモセクションの最後を見つける
+# 指定セクションの最後のエントリ行を見つける
 while IFS= read -r line; do
     ((line_num++))
-    if [[ "$line" == "## 📝 メモ" ]]; then
-        in_memo_section=1
-    elif [[ $in_memo_section -eq 1 ]]; then
+    if [[ "$line" == "${section_header}" ]]; then
+        in_section=1
+    elif [[ $in_section -eq 1 ]]; then
         if [[ "$line" =~ ^-[[:space:]] ]]; then
-            last_memo_line=$line_num
-        elif [[ "$line" =~ ^##[[:space:]] ]] || [[ -z "$line" && $last_memo_line -gt 0 ]]; then
-            in_memo_section=0
+            last_entry_line=$line_num
+        elif [[ "$line" =~ ^##[[:space:]] ]] || [[ "$line" == "---" ]]; then
+            in_section=0
         fi
     fi
 done < "$daily_note"
 
 # メモを適切な位置に挿入
-if [[ $last_memo_line -gt 0 ]]; then
-    awk -v line="$last_memo_line" -v memo="$new_memo" 'NR==line{print; print memo; next} 1' "$daily_note" > "$temp_file"
+if [[ $last_entry_line -gt 0 ]]; then
+    awk -v line="$last_entry_line" -v memo="$new_memo" 'NR==line{print; print memo; next} 1' "$daily_note" > "$temp_file"
 else
-    awk -v memo="$new_memo" '/^## 📝 メモ$/{print; print memo; next} 1' "$daily_note" > "$temp_file"
+    awk -v header="${section_header}" -v memo="$new_memo" '$0==header{print; print memo; next} 1' "$daily_note" > "$temp_file"
 fi
 
 /bin/mv -f "$temp_file" "$daily_note"

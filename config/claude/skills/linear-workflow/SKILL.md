@@ -1,3 +1,9 @@
+---
+name: linear-workflow
+description: Linearでのissue作成・ポイント見積もり・サイクル管理のガイドライン。「issueを作って」「ポイント見積もり」「サイクル確認」「Linear MCP」等で起動。
+user-invocable: false
+---
+
 # Linearタスク管理ワークフロー
 
 チームのタスク管理ガイドライン。

@@ -2,30 +2,10 @@
   "cleanupPeriodDays": 7,
   "env": {
     "MAX_THINKING_TOKENS": "31999",
-    "CLAUDE_CODE_PARALLEL_TOOL_CALLS": "true",
-    "CLAUDE_CODE_BATCH_OPERATIONS": "true",
-    "CLAUDE_CODE_CACHE_DURATION": "900",
-    "CLAUDE_CODE_MAX_CONCURRENT_TASKS": "5",
-    "CLAUDE_CODE_AUTO_CONNECT_IDE": "false",
-    "CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL": "true",
-    "CLAUDE_CODE_IDE_SKIP_VALID_CHECK": "true",
-    "CLAUDE_CODE_IDE_DEFAULT": "code",
-    "CLAUDE_CODE_ENABLE_TELEMETRY": "false",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "true",
     "DISABLE_TELEMETRY": "true",
     "DISABLE_ERROR_REPORTING": "true",
-    "DISABLE_AUTOUPDATER": "false",
-    "CLAUDE_CODE_AUTO_FORMAT": "true",
-    "CLAUDE_CODE_AUTO_LINT": "true",
-    "CLAUDE_CODE_SHOW_PROGRESS": "true",
-    "CLAUDE_CODE_VERBOSE_ERRORS": "true",
-    "CLAUDE_CODE_COLOR_OUTPUT": "true",
-    "CLAUDE_CODE_SANITIZE_OUTPUTS": "true",
-    "CLAUDE_CODE_MASK_SECRETS": "true",
-    "CLAUDE_CODE_SECURE_MODE": "false",
-    "CLAUDE_CODE_DEFAULT_BRANCH": "main",
-    "CLAUDE_CODE_GIT_AUTO_STAGE": "false",
-    "CLAUDE_CODE_TEST_BEFORE_COMMIT": "true"
+    "DISABLE_BUG_COMMAND": "true",
+    "DISABLE_AUTOUPDATER": "false"
   },
   "attribution": {
     "commit": "",
@@ -218,15 +198,6 @@
             "command": "echo '⚠️ 新規作成前に確認: 既存ファイルの編集ではダメですか？'"
           }
         ]
-      },
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '🚨 タスク実行前に確認: 作業内容は明確ですか？'"
-          }
-        ]
       }
     ],
     "PostToolUse": [
@@ -235,7 +206,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then npm run lint --silent 2>/dev/null || true; fi"
+            "command": "if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then npm run lint --silent 2>/dev/null || true; fi",
+            "async": true,
+            "timeout": 120
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/s32943/gh/github.com/ryosukesuto/dotfiles/bin/claude-commit-log"
           }
         ]
       }

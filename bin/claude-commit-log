@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# ============================================================================
+# claude-commit-log - Claude Code PostToolUse hook for git commit logging
+# ============================================================================
+# stdinからPostToolUseのJSONを読み取り、git commitを検出して
+# Obsidianデイリーノートの🤖 Commitsセクションに記録する。
+
+set -euo pipefail
+
+TH="/Users/s32943/gh/github.com/ryosukesuto/dotfiles/bin/th"
+
+# stdinからJSON読み取り
+input=$(cat)
+
+# git commitコマンドか判定（高速フィルタ）
+command=$(echo "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)
+if [[ -z "$command" ]] || [[ "$command" != *"git commit"* ]]; then
+    exit 0
+fi
+
+# tool_responseから成功パターンを検出
+# tool_responseは文字列またはオブジェクト（stdout/stderrフィールド）の場合がある
+response=$(echo "$input" | jq -r '
+    if (.tool_response | type) == "string" then
+        .tool_response
+    elif (.tool_response | type) == "object" then
+        [.tool_response.stdout // "", .tool_response.stderr // ""] | join("\n")
+    else
+        ""
+    end
+' 2>/dev/null)
+
+if [[ -z "$response" ]]; then
+    exit 0
+fi
+
+# 成功パターン: [branch hash] commit message
+# 例: [main abc1234] feat: add feature
+if ! echo "$response" | grep -qE '^\[.+ [0-9a-f]+\]'; then
+    exit 0
+fi
+
+# ブランチ名とコミットメッセージを抽出
+branch=$(echo "$response" | grep -oE '^\[[^ ]+ ' | head -1 | tr -d '[ ')
+commit_line=$(echo "$response" | grep -E '^\[.+ [0-9a-f]+\]' | head -1)
+commit_msg=$(echo "$commit_line" | sed -E 's/^\[[^]]+\] //')
+
+# 変更ファイル数を抽出（"N files changed" or "N file changed"）
+file_count=$(echo "$response" | grep -oE '[0-9]+ files? changed' | grep -oE '[0-9]+' || echo "")
+
+# ログエントリを構築
+if [[ -n "$file_count" ]]; then
+    entry="[${branch}] ${commit_msg} (${file_count} files)"
+else
+    entry="[${branch}] ${commit_msg}"
+fi
+
+# デイリーノートに記録
+"$TH" -s "🤖 Commits" "$entry" || true
