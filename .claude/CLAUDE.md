@@ -8,4 +8,10 @@
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #793 | 4:00 PM | 🔵 | Claude permissions configured in dotfiles/.claude/settings.local.json | ~337 |
+
+### Feb 15, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #1939 | 1:44 PM | 🔵 | Dotfiles repo uses local .claude/settings.json for project-specific configuration | ~291 |
 </claude-mem-context>
