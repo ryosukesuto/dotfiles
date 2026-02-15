@@ -5,7 +5,7 @@
     "DISABLE_TELEMETRY": "true",
     "DISABLE_ERROR_REPORTING": "true",
     "DISABLE_BUG_COMMAND": "true",
-    "DISABLE_AUTOUPDATER": "false"
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"
   },
   "attribution": {
     "commit": "",
@@ -25,7 +25,6 @@
       "Bash(git diff:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push)",
       "Bash(git pull:*)",
       "Bash(git fetch:*)",
       "Bash(git branch:*)",
@@ -34,8 +33,6 @@
       "Bash(git log:*)",
       "Bash(git show:*)",
       "Bash(git rev-parse:*)",
-      "Bash(git merge:*)",
-      "Bash(git rebase:*)",
       "Bash(git stash:*)",
       "Bash(git tag -l:*)",
       "Bash(git tag --list:*)",
@@ -115,6 +112,12 @@
       "WebFetch(domain:zenn.dev)",
       "WebFetch(domain:qiita.com)",
       "WebFetch(domain:note.com)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -222,6 +225,17 @@
         ]
       }
     ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "terminal-notifier -title 'Claude Code' -subtitle 'ツール失敗' -message 'ツール実行に失敗しました' -sound Basso"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
@@ -253,5 +267,6 @@
     "claude-mem@thedotmack": true
   },
   "outputStyle": "Concise",
+  "showTurnDuration": true,
   "language": "japanese"
 }
