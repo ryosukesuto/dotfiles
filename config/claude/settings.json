@@ -12,6 +12,9 @@
     "pr": ""
   },
   "permissions": {
+    "additionalDirectories": [
+      "~/gh/github.com/ryosukesuto/obsidian-notes"
+    ],
     "allow": [
       "Bash(npm:*)",
       "Bash(yarn:*)",
