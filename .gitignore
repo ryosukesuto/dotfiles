@@ -88,3 +88,7 @@ backups/
 # モダンツールの設定
 .cargo/
 .rustup/
+
+# claude-mem自動生成コンテキスト（.claude/CLAUDE.mdはリポジトリ管理対象のため除外しない）
+config/**/CLAUDE.md
+zsh/CLAUDE.md
