@@ -12,9 +12,6 @@
     "pr": ""
   },
   "permissions": {
-    "additionalDirectories": [
-      "~/gh/github.com/ryosukesuto/obsidian-notes"
-    ],
     "allow": [
       "Bash(npm:*)",
       "Bash(yarn:*)",
@@ -116,12 +113,6 @@
       "WebFetch(domain:qiita.com)",
       "WebFetch(domain:note.com)"
     ],
-    "ask": [
-      "Bash(git push:*)",
-      "Bash(git push)",
-      "Bash(git merge:*)",
-      "Bash(git rebase:*)"
-    ],
     "deny": [
       "Bash(rm -rf /)",
       "Bash(rm -rf ~)",
@@ -181,6 +172,15 @@
       "Write(~/.bashrc)",
       "Write(~/.gitconfig)",
       "Write(~/.ssh/config)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)"
+    ],
+    "additionalDirectories": [
+      "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
   "hooks": {
@@ -213,8 +213,8 @@
           {
             "type": "command",
             "command": "if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then npm run lint --silent 2>/dev/null || true; fi",
-            "async": true,
-            "timeout": 120
+            "timeout": 120,
+            "async": true
           }
         ]
       },
@@ -270,6 +270,7 @@
     "claude-mem@thedotmack": true
   },
   "outputStyle": "Concise",
+  "language": "japanese",
   "showTurnDuration": true,
-  "language": "japanese"
+  "effortLevel": "medium"
 }
