@@ -51,12 +51,6 @@
 - 日時確認: 日時関連作業では必ず `date "+%Y-%m-%d (%a) %H:%M"` で現在時刻を確認
 - 作業報告: `th "作業内容"`でObsidianデイリーノートに自動記録
 
-## 詳細設定
-
-ワークフロー: @rules/workflow.md
-Codexとの協業・バイブコーディング: @rules/codex-collaboration.md
-自動化サジェスト: @rules/automation.md
-
 ## 参考リンク
 
 - [Codexテンプレート集](codex-templates.md) - Codex依頼の詳細テンプレートと使用例

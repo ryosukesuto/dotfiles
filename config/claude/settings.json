@@ -5,7 +5,8 @@
     "DISABLE_TELEMETRY": "true",
     "DISABLE_ERROR_REPORTING": "true",
     "DISABLE_BUG_COMMAND": "true",
-    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "attribution": {
     "commit": "",
@@ -271,6 +272,7 @@
   },
   "outputStyle": "Concise",
   "language": "japanese",
+  "skipDangerousModePermissionPrompt": true,
   "showTurnDuration": true,
   "effortLevel": "medium"
 }
