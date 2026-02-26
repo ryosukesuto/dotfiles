@@ -70,6 +70,9 @@ cmd_ensure() {
     # 背景色を設定
     tmux select-pane -t "$new_pane" -P "bg=$PANE_BG"
 
+    # scrollback historyを拡大（長文レスポンスのキャプチャ用）
+    tmux set-option -t "$new_pane" history-limit 10000
+
     # ペインIDを保存
     echo "$new_pane" > "$PANE_ID_FILE"
 
@@ -151,6 +154,10 @@ cmd_send() {
 }
 
 # capture: 出力をキャプチャ
+# scrollback全体を取得し、最後のN行を返す。
+# tmux capture-pane -S "-N" は visible + scrollback の末尾N行しか取れないため、
+# 長文レスポンスが画面外にスクロールした場合に途切れる問題があった。
+# -S - で scrollback の先頭から全取得し、tail で必要行数に切る。
 cmd_capture() {
     local lines="${1:-100}"
 
@@ -162,8 +169,8 @@ cmd_capture() {
         exit 1
     fi
 
-    # ペインの内容をキャプチャ
-    tmux capture-pane -t "$pane_id" -p -S "-$lines"
+    # scrollback全体をキャプチャして末尾N行を返す
+    tmux capture-pane -t "$pane_id" -p -S - | tail -n "$lines"
 }
 
 # close: Codexペインを閉じる
