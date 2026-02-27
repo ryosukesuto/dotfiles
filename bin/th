@@ -31,7 +31,7 @@ fi
 # 設定
 vault_path="$HOME/gh/github.com/ryosukesuto/obsidian-notes"
 today=$(date +%Y-%m-%d)
-daily_note="$vault_path/01_Daily/${today}.md"
+daily_note="$vault_path/${today}_daily.md"
 timestamp=$(date "+%Y/%m/%d %H:%M:%S")
 section_header="## ${section}"
 
@@ -39,11 +39,6 @@ section_header="## ${section}"
 if [[ ! -d "$vault_path" ]]; then
     echo "エラー: Obsidian vaultが見つかりません: $vault_path"
     exit 1
-fi
-
-# 01_Dailyディレクトリの作成（存在しない場合）
-if [[ ! -d "$vault_path/01_Daily" ]]; then
-    mkdir -p "$vault_path/01_Daily"
 fi
 
 # デイリーノートが存在しない場合は作成

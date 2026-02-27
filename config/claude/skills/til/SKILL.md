@@ -42,15 +42,11 @@ allowed-tools:
 
 ### 3. ファイル書き込み
 
-保存先: `~/gh/github.com/ryosukesuto/obsidian-notes/01_Daily/YYYY-MM-DD.md`
+保存先: `~/gh/github.com/ryosukesuto/obsidian-notes/YYYY-MM-DD_daily.md`
 
 ```bash
-DAILY_DIR="$HOME/gh/github.com/ryosukesuto/obsidian-notes/01_Daily"
-DAILY_NOTE="$DAILY_DIR/$(date '+%Y-%m-%d').md"
-
-if [ ! -d "$DAILY_DIR" ]; then
-    mkdir -p "$DAILY_DIR"
-fi
+VAULT_DIR="$HOME/gh/github.com/ryosukesuto/obsidian-notes"
+DAILY_NOTE="$VAULT_DIR/$(date '+%Y-%m-%d')_daily.md"
 
 NEW_FILE=false
 if [ ! -f "$DAILY_NOTE" ]; then
