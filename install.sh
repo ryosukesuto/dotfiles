@@ -488,6 +488,26 @@ else
 fi
 
 # ============================================================================
+# Biomeのインストール（Homebrew）
+# ============================================================================
+if ! command -v biome &> /dev/null; then
+    if command -v brew &> /dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] Biome をインストール（brew）"
+        else
+            info "Biome をインストール中..."
+            brew install biome 2>/dev/null && \
+                info "Biome のインストール完了" || \
+                warn "Biome のインストールに失敗しました"
+        fi
+    else
+        warn "Biome のインストールにはHomebrewが必要です"
+    fi
+else
+    info "Biome は既にインストールされています"
+fi
+
+# ============================================================================
 # Docker Desktopのインストール（Homebrew cask）
 # ============================================================================
 if [ -d "/Applications/Docker.app" ]; then
