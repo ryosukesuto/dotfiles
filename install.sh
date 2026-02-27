@@ -472,6 +472,22 @@ else
 fi
 
 # ============================================================================
+# Denoのインストール
+# ============================================================================
+if ! command -v deno &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Deno をインストール"
+    else
+        info "Deno をインストール中..."
+        curl -fsSL https://deno.land/install.sh | bash 2>/dev/null && \
+            info "Deno のインストール完了" || \
+            warn "Deno のインストールに失敗しました"
+    fi
+else
+    info "Deno は既にインストールされています"
+fi
+
+# ============================================================================
 # Docker Desktopのインストール（Homebrew cask）
 # ============================================================================
 if [ -d "/Applications/Docker.app" ]; then

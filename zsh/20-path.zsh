@@ -26,6 +26,9 @@ elif [[ -d "$HOME/google-cloud-sdk/bin" ]]; then
     path+=("$HOME/google-cloud-sdk/bin")
 fi
 
+# Deno
+[[ -d "$HOME/.deno/bin" ]] && path=("$HOME/.deno/bin" $path)
+
 # Go
 # GOPRIVATE は ~/.zshrc.local で設定
 
