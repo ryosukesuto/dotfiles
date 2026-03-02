@@ -508,6 +508,27 @@ else
 fi
 
 # ============================================================================
+# pupのインストール（Homebrew tap: datadog-labs/pack）
+# ============================================================================
+if ! command -v pup &> /dev/null; then
+    if command -v brew &> /dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] pup をインストール（brew tap datadog-labs/pack）"
+        else
+            info "pup をインストール中..."
+            brew tap datadog-labs/pack 2>/dev/null && \
+                brew install datadog-labs/pack/pup 2>/dev/null && \
+                info "pup のインストール完了" || \
+                warn "pup のインストールに失敗しました"
+        fi
+    else
+        warn "pup のインストールにはHomebrewが必要です"
+    fi
+else
+    info "pup は既にインストールされています"
+fi
+
+# ============================================================================
 # Docker Desktopのインストール（Homebrew cask）
 # ============================================================================
 if [ -d "/Applications/Docker.app" ]; then
