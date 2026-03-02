@@ -30,5 +30,3 @@ fi
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
-
-alias claude-mem='/Users/s32943/.bun/bin/bun "/Users/s32943/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs"'

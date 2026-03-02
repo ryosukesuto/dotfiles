@@ -185,17 +185,6 @@
     ]
   },
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/s32943/gh/github.com/ryosukesuto/dotfiles/bin/claude-mem-maintenance 2>/dev/null || true"
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Write",
@@ -266,9 +255,6 @@
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"
-  },
-  "enabledPlugins": {
-    "claude-mem@thedotmack": true
   },
   "outputStyle": "Concise",
   "language": "japanese",

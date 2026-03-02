@@ -82,7 +82,7 @@ mcp__linear-server__list_issues(team: "Platform", cycle: "<取得したcycle_id>
 
 ### 4. 議事録作成
 
-**出力先**: `00_Inbox/YYYY-MM-DD_<会議名>.md`
+**出力先**: `YYYY-MM-DD_<会議名>.md`
 - 会議名は引数で指定された件名を使用（PF定例、PFプランニング等）
 
 **フォーマット**:
@@ -133,7 +133,7 @@ tags: [meeting, Platform, ...]
 ```bash
 # 同じ会議の過去の議事録を検索（最新3件程度）
 - 04_Docs/*PF定例*.md
-- 00_Inbox/*PF定例*.md
+- *PF定例*.md
 ```
 
 - タイトル形式を過去の議事録と統一
