@@ -254,7 +254,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh"
+    "command": "bunx --bun @owloops/claude-powerline@latest --theme=tokyo-night --style=powerline"
   },
   "outputStyle": "Concise",
   "language": "japanese",
