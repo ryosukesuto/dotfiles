@@ -202,10 +202,14 @@ cmd_status() {
 }
 
 # wait_response: 応答完了を待機
+# デバウンス方式: 完了条件を検知後、追加待機して内容が安定していることを確認。
+# Codexが長文出力中にステップ切り替わりで一瞬プロンプトが見える誤検知を防ぐ。
 cmd_wait_response() {
     local timeout="${1:-120}"  # デフォルト120秒
     local interval=3
+    local debounce=5           # 完了検知後の追加待機秒数
     local elapsed=0
+    local candidate_content="" # 完了候補時の内容を保持
 
     local pane_id=$(find_codex_pane)
 
@@ -224,16 +228,43 @@ cmd_wait_response() {
         local content=$(tmux capture-pane -t "$pane_id" -p -S -50)
 
         # 処理中かどうかを判定
-        # "Worked for XXs" や "• esc to interrupt" があれば処理中
         if echo "$content" | grep -qE '(esc to interrupt|Thinking|Working)'; then
             echo "Still processing... (${elapsed}s)" >&2
+            candidate_content=""
             continue
         fi
 
-        # "› " プロンプトが最終行付近にあれば完了
+        # "› " プロンプトが最終行付近にあれば完了候補
         if echo "$content" | tail -5 | grep -qE '^›'; then
-            echo "Response complete (${elapsed}s)" >&2
-            return 0
+            if [ -z "$candidate_content" ]; then
+                # 初回検知: デバウンス開始
+                candidate_content="$content"
+                echo "Completion candidate detected, debouncing... (${elapsed}s)" >&2
+                sleep $debounce
+                elapsed=$((elapsed + debounce))
+
+                # デバウンス後に再取得して比較
+                local recheck=$(tmux capture-pane -t "$pane_id" -p -S -50)
+
+                # まだ処理中なら候補リセット
+                if echo "$recheck" | grep -qE '(esc to interrupt|Thinking|Working)'; then
+                    echo "Still processing after debounce... (${elapsed}s)" >&2
+                    candidate_content=""
+                    continue
+                fi
+
+                # 内容が変化していなければ本当に完了
+                if [ "$candidate_content" = "$recheck" ]; then
+                    echo "Response complete (${elapsed}s)" >&2
+                    return 0
+                fi
+
+                # 内容が変化 → まだ出力中
+                echo "Content still changing, continuing... (${elapsed}s)" >&2
+                candidate_content=""
+            fi
+        else
+            candidate_content=""
         fi
     done
 

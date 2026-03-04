@@ -1,0 +1,58 @@
+#!/bin/bash
+# Claude Codeの応答完了時にSlack timesへ投稿するhookスクリプト
+# Stop hookから呼ばれ、stdinでJSONペイロードを受け取る
+#
+# 必要な環境変数:
+#   SLACK_TIMES_WEBHOOK_URL - Slack Workflow BuilderのWebhook URL
+#
+# 設定: ~/.config/claude-times/config （オプション）
+
+set -euo pipefail
+
+# Webhook URL（未設定なら何もしない）
+WEBHOOK_URL="${SLACK_TIMES_WEBHOOK_URL:-}"
+if [[ -z "$WEBHOOK_URL" ]]; then
+  exit 0
+fi
+
+# stdinからペイロードを読む
+INPUT=$(cat)
+
+# 無限ループ防止
+if [[ "$(echo "$INPUT" | jq -r '.stop_hook_active // false')" == "true" ]]; then
+  exit 0
+fi
+
+# 最終応答を取得
+MESSAGE=$(echo "$INPUT" | jq -r '.last_assistant_message // empty')
+if [[ -z "$MESSAGE" ]]; then
+  exit 0
+fi
+
+# 作業ディレクトリからリポジトリ名を取得
+CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+REPO=""
+if [[ -n "$CWD" ]]; then
+  REPO=$(basename "$CWD")
+fi
+
+# メッセージを3000文字に切り詰め（Slack制限対策）
+TRUNCATED="${MESSAGE:0:3000}"
+if [[ ${#MESSAGE} -gt 3000 ]]; then
+  TRUNCATED="${TRUNCATED}…（省略）"
+fi
+
+# 投稿テキスト組み立て
+if [[ -n "$REPO" ]]; then
+  TEXT=":claude: \`${REPO}\`\n${TRUNCATED}"
+else
+  TEXT=":claude:\n${TRUNCATED}"
+fi
+
+# バックグラウンドで投稿（hookのブロッキングを避ける）
+curl -s -X POST "$WEBHOOK_URL" \
+  -H 'Content-type: application/json' \
+  -d "$(jq -n --arg text "$TEXT" '{text: $text}')" \
+  >/dev/null 2>&1 &
+
+exit 0

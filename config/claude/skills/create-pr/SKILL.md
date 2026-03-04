@@ -73,6 +73,9 @@ git branch --show-current
 - [ ] Lintエラーなし
 - [ ] 型チェック通過
 
+## Test plan
+- [ ] POST-MERGE: [マージ後に確認する項目]
+
 ## テスト結果
 [テスト実行結果を挿入]
 
@@ -155,3 +158,4 @@ git wt -D <branch-name>   # 強制削除
 3. ブランチ名: 意味のある名前を使用
 4. worktree優先: デフォルトブランチでの作業は worktree を使用
 5. worktree削除: PRマージ後は worktree の削除を忘れずに
+6. checklist completion: リポジトリで task-list-checker が有効な場合、PR body 内の未チェックのチェックボックス（`- [ ]`）があると CI が通らない。マージ後に確認する項目には `POST-MERGE:` プレフィックスを付けること（例: `- [ ] POST-MERGE: Pod が正常起動することを確認`）。`POST-MERGE:` または `N/A` タグ付きの項目はスキップされる
