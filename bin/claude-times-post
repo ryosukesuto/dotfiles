@@ -2,20 +2,18 @@
 # Claude Codeの応答完了時にSlack timesへ投稿するhookスクリプト
 # Stop hookから呼ばれ、stdinでJSONペイロードを受け取る
 #
+# 投稿判定: 成果物のある応答のみ投稿、会話の途中経過はスキップ
+#
 # 必要な環境変数:
 #   SLACK_TIMES_WEBHOOK_URL - Slack Workflow BuilderのWebhook URL
-#
-# 設定: ~/.config/claude-times/config （オプション）
 
 set -euo pipefail
 
-# Webhook URL（未設定なら何もしない）
 WEBHOOK_URL="${SLACK_TIMES_WEBHOOK_URL:-}"
 if [[ -z "$WEBHOOK_URL" ]]; then
   exit 0
 fi
 
-# stdinからペイロードを読む
 INPUT=$(cat)
 
 # 無限ループ防止
@@ -23,33 +21,82 @@ if [[ "$(echo "$INPUT" | jq -r '.stop_hook_active // false')" == "true" ]]; then
   exit 0
 fi
 
-# 最終応答を取得
 MESSAGE=$(echo "$INPUT" | jq -r '.last_assistant_message // empty')
 if [[ -z "$MESSAGE" ]]; then
   exit 0
 fi
 
-# 作業ディレクトリからリポジトリ名を取得
+# --- 投稿判定 ---
+
+# スキップ: 短すぎる応答（確認・相槌の類）
+if [[ ${#MESSAGE} -lt 80 ]]; then
+  exit 0
+fi
+
+# スキップ: ユーザーへの質問で終わっている（会話の途中）
+LAST_LINE=$(echo "$MESSAGE" | tail -n 3)
+if echo "$LAST_LINE" | grep -qE '(か？|してくれ|教えてくれ|確認してくれ|どうする？|把握しているか)'; then
+  exit 0
+fi
+
+# 投稿: 成果物シグナルがあるか判定
+SHOULD_POST=false
+
+# コミット・PR・デプロイ関連
+if echo "$MESSAGE" | grep -qiE '(コミット|commit|PR|pull request|マージ|merge|push|デプロイ|deploy)'; then
+  SHOULD_POST=true
+fi
+
+# ファイル作成・実装完了
+if echo "$MESSAGE" | grep -qiE '(作成した|実装した|追加した|修正した|削除した|完了|実装完了|リファクタ)'; then
+  SHOULD_POST=true
+fi
+
+# 調査・分析結果
+if echo "$MESSAGE" | grep -qiE '(原因|調査結果|分析|ボトルネック|根本原因|解決策|まとめ)'; then
+  SHOULD_POST=true
+fi
+
+# 構造化された出力（見出し・リスト・コードブロック）が多い = レポート的
+HEADING_COUNT=$(echo "$MESSAGE" | grep -cE '^#{1,3} ' || true)
+if [[ "$HEADING_COUNT" -ge 2 ]]; then
+  SHOULD_POST=true
+fi
+
+if [[ "$SHOULD_POST" != "true" ]]; then
+  exit 0
+fi
+
+# --- 投稿内容の組み立て ---
+
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 REPO=""
 if [[ -n "$CWD" ]]; then
   REPO=$(basename "$CWD")
 fi
 
-# メッセージを3000文字に切り詰め（Slack制限対策）
-TRUNCATED="${MESSAGE:0:3000}"
-if [[ ${#MESSAGE} -gt 3000 ]]; then
-  TRUNCATED="${TRUNCATED}…（省略）"
+# 先頭5行を抽出
+SUMMARY=$(echo "$MESSAGE" | head -n 5)
+LINECOUNT=$(echo "$MESSAGE" | wc -l | tr -d ' ')
+if [[ "$LINECOUNT" -gt 5 ]]; then
+  SUMMARY="${SUMMARY}
+…（全${LINECOUNT}行）"
 fi
 
-# 投稿テキスト組み立て
+# 280文字で切り詰め
+if [[ ${#SUMMARY} -gt 280 ]]; then
+  SUMMARY="${SUMMARY:0:280}…"
+fi
+
 if [[ -n "$REPO" ]]; then
-  TEXT=":claude: \`${REPO}\`\n${TRUNCATED}"
+  TEXT=":claude: \`${REPO}\`
+${SUMMARY}"
 else
-  TEXT=":claude:\n${TRUNCATED}"
+  TEXT=":claude:
+${SUMMARY}"
 fi
 
-# バックグラウンドで投稿（hookのブロッキングを避ける）
+# バックグラウンドで投稿
 curl -s -X POST "$WEBHOOK_URL" \
   -H 'Content-type: application/json' \
   -d "$(jq -n --arg text "$TEXT" '{text: $text}')" \
