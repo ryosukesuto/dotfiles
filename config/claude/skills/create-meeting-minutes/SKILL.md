@@ -1,5 +1,5 @@
 ---
-name: pf-meeting-minutes
+name: create-meeting-minutes
 description: PF定例の議事録を作成。文字起こしとLinearプロジェクトを照合してプロジェクトベースで構成。「PF定例の議事録」「PF定例まとめて」等で起動。
 user-invocable: true
 allowed-tools:
@@ -15,18 +15,35 @@ allowed-tools:
   - mcp__linear-server__list_projects
 ---
 
-# /pf-meeting-minutes - PF定例議事録作成
+# /create-meeting-minutes - 議事録作成
 
 ## 目的
-PF定例の文字起こしから、Linearプロジェクトベースで構成された議事録を作成する。
+会議の文字起こしから、Linearプロジェクトベースで構成された議事録を作成する。
 
 ## 前提条件
 - 引数で文字起こしテキストが渡されること
 - Linearにアクセス可能であること
 
+## テンプレート
+
+会議名からテンプレートを選択し、構成を決定する:
+
+| 会議名 | テンプレート | 特徴 |
+|--------|------------|------|
+| PF定例 | `templates/pf-teirei.md` | 全プロジェクト進捗報告 |
+| PF施策共有会 | `templates/pf-shisaku-kyouyukai.md` | 技術的深掘り・共有会 |
+| PFプランニング | `templates/pf-planning.md` | スプリント計画・タスク選定 |
+
+該当テンプレートがない場合は PF定例テンプレートをベースに調整する。
+
 ## 実行手順
 
-### 1. 日付確認と必要情報の並列取得
+### 1. テンプレート選択と必要情報の並列取得
+
+会議名に基づいてテンプレートを読み込む:
+```
+Read(file_path: "<skill_base_dir>/templates/<対応テンプレート>.md")
+```
 
 ```bash
 date "+%Y-%m-%d (%a) %H:%M"
@@ -34,32 +51,41 @@ date "+%Y-%m-%d (%a) %H:%M"
 
 以下を並列で取得:
 
-**人名対応表**:
+**人名対応表**（Globで最新ファイルを検索）:
 ```
-Read(file_path: "04_Docs/人名対応表.md")
+Glob(pattern: "*人名対応表*", path: "<obsidian-notes>")
+Read(file_path: "<見つかったファイル>")
 ```
 
-**ドメイン用語対応表**:
+**ドメイン用語対応表**（Globで最新ファイルを検索）:
 ```
-Read(file_path: "04_Docs/ドメイン用語対応表.md")
+Glob(pattern: "*ドメイン用語対応表*", path: "<obsidian-notes>")
+Read(file_path: "<見つかったファイル>")
 ```
 
 **Linearプロジェクト一覧**:
 ```
 ToolSearch(query: "+linear projects cycles issues")
 ```
-→ mcp__linear-server__list_projects(team: "Platform")
+→ mcp__linear-server__list_projects(team: "<チーム名>")
 ※ プロジェクトのLeadが各プロジェクトの担当者を示す
+※ チーム名は引数の会議情報から推定（PF定例→Platform等）
 
 **current cycleの全Issue**:
 ```
 mcp__linear-server__list_cycles(teamId: "<TEAM_ID>", type: "current")
 # TEAM_IDは ~/.claude/rules/service-environments.local.md を参照
-mcp__linear-server__list_issues(team: "Platform", cycle: "<取得したcycle_id>", limit: 250)
+mcp__linear-server__list_issues(team: "<チーム名>", cycle: "<取得したcycle_id>", limit: 250)
 ```
 ※ `assignee: "me"` は付けない。チーム全体のIssueが必要
 
-### 3. プロジェクト照合（逆引き方式）
+**過去の同じ会議の議事録**:
+```
+Glob(pattern: "*<会議名>*", path: "<obsidian-notes>")
+```
+→ 最新2-3件を読んで表記ルールを確認
+
+### 2. プロジェクト照合（逆引き方式）
 
 文字起こしのプロジェクト名は音声認識でガーブルされることが多いため、以下の手順で照合する:
 
@@ -80,10 +106,10 @@ mcp__linear-server__list_issues(team: "Platform", cycle: "<取得したcycle_id>
 - 各セクションにLinearプロジェクトリンクと関連Issueを記載
 - プロジェクトに紐付かない話題は「その他」セクションに
 
-### 4. 議事録作成
+### 3. 議事録作成
 
 **出力先**: `YYYY-MM-DD_<会議名>.md`
-- 会議名は引数で指定された件名を使用（PF定例、PFプランニング等）
+- 会議名は引数で指定された件名を使用（PF定例、PF施策共有会、PFプランニング等）
 
 **フォーマット**:
 ```markdown
@@ -126,31 +152,32 @@ tags: [meeting, Platform, ...]
 - 決定事項
 - ネクストアクション
 
-### 5. 過去の議事録参照と表記ゆれ修正
+### 4. 過去の議事録参照と表記ゆれ修正
 
 議事録作成後、過去の同じ会議の議事録を参照して用語の表記を統一:
-
-```bash
-# 同じ会議の過去の議事録を検索（最新3件程度）
-- 04_Docs/*PF定例*.md
-- *PF定例*.md
-```
 
 - タイトル形式を過去の議事録と統一
 - 技術用語の英語表記（カタカナ→英語）
 - プロジェクト固有用語の統一
 
+### 5. ガーブル確認フェーズ
+
+議事録作成後、以下の確認を須藤に求める:
+- 意味不明な音声ガーブルを箇条書きで提示
+- 推測で埋めた箇所を明示
+- 人名対応表にない人物名を列挙
+
 ## 表記ルール
 
-- 人名は `04_Docs/人名対応表.md` の「議事録表記」を使用
-- サービス名・競合名・社内用語は `04_Docs/ドメイン用語対応表.md` の「正式表記」を使用
+- 人名は人名対応表の「議事録表記」を使用
+- サービス名・競合名・社内用語はドメイン用語対応表の「正式表記」を使用
 - ASICSチームメンバーは `（ASICS）` を付記
 - 技術用語はカタカナではなく正式名称（例: ワーカー→Worker）
 - Linearリンクは日本語プロジェクト名でも動作する
 
 ## 音声認識のガーブル対応
 
-`04_Docs/ドメイン用語対応表.md` を参照し、サービス名・競合名・社内用語の正式表記に変換する。
+ドメイン用語対応表を参照し、サービス名・競合名・社内用語の正式表記に変換する。
 加えて、以下のような技術用語のガーブルも頻出する。Issue内容との照合で正式名称に変換すること:
 
 | ガーブル例 | 正式名称 | 解読のヒント |
@@ -159,6 +186,13 @@ tags: [meeting, Platform, ...]
 | Auto-esth | autorace | 「オートレース」の音声誤認 |
 | 白リック | Public (Registry) | 「パブリック」の音声誤認 |
 | メジャム | メジャー | 「メジャー」の音声誤認 |
+| オープンゲア | Go アップグレード | 「ゴーアップグレード」の音声誤認 |
+| スパージュ | キャッシュパージ | 「キャッシュパージ」の音声誤認 |
+| ゲートウィーザー | gateway-user等 | 「ゲートウェイユーザー」の音声誤認 |
+| クリスト | CREST | 「クレスト」の音声誤認 |
+| ロクト | Rokt | 広告配信最適化ツール |
+| アストラリア | Fastly | 「ファストリー」の音声誤認 |
+| デジタルアドレス | テストアドレス | 「テストアドレス」の音声誤認 |
 
 原則: ガーブルされた名称をそのまま使わず、ドメイン用語対応表・Linearプロジェクト名・Issueタイトルから正式名称を特定する。
 不明な場合は須藤に確認。
