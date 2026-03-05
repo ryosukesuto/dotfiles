@@ -260,7 +260,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v cmux &>/dev/null && cmux rename-tab \"$(basename \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\")\" 2>/dev/null || true"
+            "command": "[ -S \"${CMUX_SOCKET_PATH:-/tmp/cmux.sock}\" ] && [ -n \"$CMUX_WORKSPACE_ID\" ] && echo \"{\\\"method\\\":\\\"workspace.rename\\\",\\\"params\\\":{\\\"title\\\":\\\"$(basename \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\")\\\",\\\"workspace_id\\\":\\\"$CMUX_WORKSPACE_ID\\\"}}\" | nc -U \"$CMUX_SOCKET_PATH\" 2>/dev/null || true"
           }
         ]
       }
