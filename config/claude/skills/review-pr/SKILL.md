@@ -5,8 +5,8 @@ user-invocable: true
 allowed-tools:
   - Bash(gh:*)
   - Bash(git:*)
-  - Bash(TMUX_MGR:*)
-  - Bash($TMUX_MGR:*)
+  - Bash(PANE_MGR:*)
+  - Bash($PANE_MGR:*)
   - Bash(codex:*)
   - Bash(echo:*)
   - Read
@@ -35,15 +35,15 @@ gh pr checks
 既存のレビューコメントや承認状況に関わらず、必ずCodex分析を実行すること。
 スキップは禁止。独自の視点を得るため、他のレビュー結果に依存しない。
 
-tmux内の場合:
+tmux/cmux内の場合:
 ```bash
-~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh ensure
-~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh send "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
-~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh wait_response 180
-~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh capture 300
+~/.claude/skills/codex-review/scripts/pane-manager.sh ensure
+~/.claude/skills/codex-review/scripts/pane-manager.sh send "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
+~/.claude/skills/codex-review/scripts/pane-manager.sh wait_response 180
+~/.claude/skills/codex-review/scripts/pane-manager.sh capture 300
 ```
 
-tmux外の場合:
+それ以外の場合:
 ```bash
 codex exec "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
 ```

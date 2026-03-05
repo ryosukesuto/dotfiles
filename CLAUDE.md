@@ -33,7 +33,6 @@ config/        - アプリ設定
   mise/            - mise設定
 bin/           - カスタムスクリプト
   ctx-iac          - PR情報/planコメント収集（AI連携用）
-  tmux-iac         - IaC用3ペインレイアウト起動
   th               - Obsidianデイリーノート記録
 ```
 
@@ -102,15 +101,6 @@ ctx-iac -c | pbcopy  # AI用にコピー
 ctx-iac -p           # planコメントのみ
 ctx-iac -l           # ローカルlintも実行
 ```
-
-### tmuxレイアウト
-
-```bash
-tmux-iac              # 3ペインセッション起動
-# または既存セッション内で Ctrl-a I
-```
-
-レイアウト: 左=作業、右上=PR監視、右下=Lint
 
 ## タスク
 

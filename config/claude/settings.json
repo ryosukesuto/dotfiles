@@ -6,7 +6,7 @@
     "DISABLE_ERROR_REPORTING": "true",
     "DISABLE_BUG_COMMAND": "true",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85",
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": "1"
   },
   "attribution": {
     "commit": "",
@@ -18,6 +18,7 @@
       "Bash(yarn:*)",
       "Bash(pnpm:*)",
       "Bash(python:*)",
+      "Bash(python3:*)",
       "Bash(pip:*)",
       "Bash(go:*)",
       "Bash(cargo:*)",
@@ -43,11 +44,18 @@
       "Bash(git remote -v)",
       "Bash(git remote show:*)",
       "Bash(git remote get-url:*)",
+      "Bash(git wt:*)",
+      "Bash(git worktree:*)",
+      "Bash(git revert:*)",
+      "Bash(git -C:*)",
       "Bash(gh pr view:*)",
       "Bash(gh pr list:*)",
       "Bash(gh pr diff:*)",
       "Bash(gh pr checks:*)",
       "Bash(gh pr create:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr review:*)",
       "Bash(gh issue view:*)",
       "Bash(gh issue list:*)",
       "Bash(gh repo view:*)",
@@ -55,17 +63,21 @@
       "Bash(gh run view:*)",
       "Bash(gh run list:*)",
       "Bash(gh api:*)",
-      "Bash(gh pr review:*)",
       "Bash(codex:*)",
-      "Bash(~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh:*)",
-      "Bash(TMUX_MGR=:*)",
+      "Bash(~/.claude/skills/codex-review/scripts/pane-manager.sh:*)",
+      "Bash(PANE_MGR=:*)",
+      "Bash($PANE_MGR:*)",
+      "Bash([ -n \"$TMUX\" ])",
+      "Bash([ -n \"$CMUX_SOCKET_PATH\" ])",
       "Bash(ls:*)",
       "Bash(cat:*)",
+      "Bash(head:*)",
       "Bash(grep:*)",
       "Bash(rg:*)",
       "Bash(find:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
+      "Bash(ln:*)",
       "Bash(pwd)",
       "Bash(date:*)",
       "Bash(whoami)",
@@ -73,6 +85,12 @@
       "Bash(env)",
       "Bash(echo:*)",
       "Bash(command -v:*)",
+      "Bash(test:*)",
+      "Bash(xargs:*)",
+      "Bash(ps:*)",
+      "Bash(du:*)",
+      "Bash(chmod:*)",
+      "Bash(tar:*)",
       "Bash(npm test)",
       "Bash(npm run:*)",
       "Bash(yarn test)",
@@ -90,6 +108,13 @@
       "Bash(aws ec2 describe-:*)",
       "Bash(aws iam list-:*)",
       "Bash(aws-bastion:*)",
+      "Bash(gcloud:*)",
+      "Bash(bq:*)",
+      "Bash(kubectl:*)",
+      "Bash(terraform fmt:*)",
+      "Bash(pup:*)",
+      "Bash(sqlite3:*)",
+      "Bash(pdftotext:*)",
       "Bash(docker ps:*)",
       "Bash(docker images:*)",
       "Bash(docker logs:*)",
@@ -109,10 +134,54 @@
       "Bash(gnews:*)",
       "Bash(reload)",
       "Bash(exec zsh)",
+      "WebSearch",
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:zenn.dev)",
       "WebFetch(domain:qiita.com)",
-      "WebFetch(domain:note.com)"
+      "WebFetch(domain:note.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:developer.hashicorp.com)",
+      "WebFetch(domain:www.terraform-best-practices.com)",
+      "WebFetch(domain:docs.cloud.google.com)",
+      "WebFetch(domain:docs.datadoghq.com)",
+      "WebFetch(domain:datadoghq.dev)",
+      "WebFetch(domain:app.datadoghq.com)",
+      "WebFetch(domain:docs.wiz.io)",
+      "Skill(codex-review)",
+      "mcp__datadog-mcp__search_datadog_services",
+      "mcp__datadog-mcp__search_datadog_logs",
+      "mcp__datadog-mcp__analyze_datadog_logs",
+      "mcp__datadog-mcp__search_datadog_spans",
+      "mcp__datadog-mcp__search_datadog_events",
+      "mcp__datadog-mcp__search_datadog_metrics",
+      "mcp__datadog-mcp__search_datadog_monitors",
+      "mcp__datadog-mcp__search_datadog_hosts",
+      "mcp__datadog-mcp__search_datadog_incidents",
+      "mcp__datadog-mcp__search_datadog_docs",
+      "mcp__datadog-mcp__search_datadog_service_dependencies",
+      "mcp__datadog-mcp__get_datadog_metric",
+      "mcp__datadog-mcp__get_datadog_metric_context",
+      "mcp__datadog-mcp__get_datadog_trace",
+      "mcp__datadog-mcp__get_datadog_notebook",
+      "mcp__datadog-mcp__edit_datadog_notebook",
+      "mcp__linear-server__list_issues",
+      "mcp__linear-server__list_cycles",
+      "mcp__linear-server__list_teams",
+      "mcp__linear-server__list_projects",
+      "mcp__linear-server__get_issue",
+      "mcp__linear-server__get_project",
+      "mcp__linear-server__get_user",
+      "mcp__linear-server__get_status_updates",
+      "mcp__linear-server__save_issue",
+      "mcp__linear-server__save_project",
+      "mcp__linear-server__save_status_update",
+      "mcp__linear-server__create_issue",
+      "mcp__linear-server__create_comment",
+      "mcp__linear-server__update_issue",
+      "mcp__linear-server__update_project",
+      "mcp__pagerduty__get_incident",
+      "mcp__ragent__hybrid_search"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -213,7 +282,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/s32943/gh/github.com/ryosukesuto/dotfiles/bin/claude-commit-log"
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-commit-log"
           }
         ]
       }
@@ -224,7 +293,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title 'Claude Code' -subtitle 'ツール失敗' -message 'ツール実行に失敗しました' -sound Basso"
+            "command": "cmux notify --title 'Claude Code' --subtitle 'ツール失敗' --body 'ツール実行に失敗しました' || true"
           }
         ]
       }
@@ -235,7 +304,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title 'Claude Code' -subtitle '処理終了' -message 'タスクが完了しました' -sound Hero"
+            "command": "cmux notify --title 'Claude Code' --subtitle '処理終了' --body 'タスクが完了しました' || true"
           }
         ]
       }
@@ -246,7 +315,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title 'Claude Code' -subtitle '確認待ち' -message '許可を求めています' -sound Glass"
+            "command": "cmux notify --title 'Claude Code' --subtitle '確認待ち' --body '許可を求めています' || true"
           }
         ]
       }
@@ -256,9 +325,11 @@
     "type": "command",
     "command": "bunx --bun @owloops/claude-powerline@latest --theme=tokyo-night --style=powerline"
   },
+  "sandbox": {
+    "excludedCommands": ["cmux"]
+  },
   "outputStyle": "Concise",
   "language": "japanese",
   "skipDangerousModePermissionPrompt": true,
-  "showTurnDuration": true,
-  "effortLevel": "medium"
+  "showTurnDuration": true
 }
