@@ -42,10 +42,10 @@ design.md、plans.md、またはPRをCodexにレビュー依頼します。
 
 ## 実行手順
 
-### 共通: tmux-manager.sh の設定
+### 共通: pane-manager.sh の設定
 
 ```bash
-TMUX_MGR=~/.claude/skills/tmux-codex-review/scripts/tmux-manager.sh
+TMUX_MGR=~/.claude/skills/codex-review/scripts/pane-manager.sh
 ```
 
 ### design.md レビュー
