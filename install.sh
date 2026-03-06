@@ -547,6 +547,24 @@ else
 fi
 
 # ============================================================================
+# Figmaのインストール（Homebrew cask）
+# ============================================================================
+if [ -d "/Applications/Figma.app" ]; then
+    info "Figma は既にインストールされています"
+elif command -v brew &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Figma をインストール（brew cask）"
+    else
+        info "Figma をインストール中..."
+        brew install --cask figma 2>/dev/null && \
+            info "Figma のインストール完了" || \
+            warn "Figma のインストールに失敗しました"
+    fi
+else
+    warn "Figma のインストールにはHomebrewが必要です"
+fi
+
+# ============================================================================
 # Notionのインストール（Homebrew cask）
 # ============================================================================
 if [ -d "/Applications/Notion.app" ]; then
