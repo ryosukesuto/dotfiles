@@ -44,7 +44,7 @@ tmux/cmuxで右半分にCodexを開いて、インタラクティブにレビュ
 
 - tmuxセッション内またはcmuxターミナル内で実行すること
 - `codex`コマンドがインストールされていること（`npm install -g @openai/codex`）
-- cmux使用時は`cmux` CLIにPATHが通っていること
+- cmux使用時はソケットAPI（`nc -U`）で直接通信するため、cmux CLIは不要
 
 ## 実行手順
 
@@ -62,7 +62,7 @@ Auto-started Codex in pane
 
 出力例（cmux）:
 ```
-Created new Codex surface: surface:6 (backend=cmux)
+Created new Codex surface: D409399D-EF29-469D-8177-8DFB33F5735A (backend=cmux-socket)
 Auto-started Codex in surface
 ```
 

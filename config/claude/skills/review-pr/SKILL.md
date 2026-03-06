@@ -3,12 +3,7 @@ name: review-pr
 description: PRを体系的にレビューして実行可能なフィードバックを提供
 user-invocable: true
 allowed-tools:
-  - Bash(gh:*)
-  - Bash(git:*)
-  - Bash(PANE_MGR:*)
-  - Bash($PANE_MGR:*)
-  - Bash(codex:*)
-  - Bash(echo:*)
+  - Bash
   - Read
   - Glob
   - Grep
@@ -35,7 +30,9 @@ gh pr checks
 既存のレビューコメントや承認状況に関わらず、必ずCodex分析を実行すること。
 スキップは禁止。独自の視点を得るため、他のレビュー結果に依存しない。
 
-tmux/cmux内の場合:
+まず `pane-manager.sh ensure` を実行する。バックエンドは `$CMUX_SOCKET_PATH` → `$TMUX` の順で自動検出される。
+環境判定を自前で行わないこと（`echo $TMUX` 等は禁止）。
+
 ```bash
 ~/.claude/skills/codex-review/scripts/pane-manager.sh ensure
 ~/.claude/skills/codex-review/scripts/pane-manager.sh send "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
@@ -43,7 +40,8 @@ tmux/cmux内の場合:
 ~/.claude/skills/codex-review/scripts/pane-manager.sh capture 300
 ```
 
-それ以外の場合:
+`pane-manager.sh ensure` が失敗した場合（tmux/cmux外）のみ `codex exec` にフォールバック:
+
 ```bash
 codex exec "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
 ```
