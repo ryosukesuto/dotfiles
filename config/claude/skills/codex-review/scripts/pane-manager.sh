@@ -8,7 +8,8 @@
 #   pane-manager.sh close          - Codexペインを閉じる
 #
 # バックエンド自動検出:
-#   $CMUX_SOCKET_PATH が設定されていれば cmux、$TMUX が設定されていれば tmux を使用。
+#   $CMUX_SOCKET_PATH のソケットが存在すれば cmux、$TMUX が設定されていれば tmux を使用。
+#   cmux バックエンドはソケットAPI（nc -U）で直接通信する（cmux CLIはハングするため使用しない）。
 
 set -e
 
@@ -23,7 +24,8 @@ PANE_ID_FILE="/tmp/codex-review-pane-${USER:-$(id -un)}"
 # =============================================================================
 
 detect_backend() {
-    if [ -n "$CMUX_SOCKET_PATH" ] && command -v cmux &>/dev/null; then
+    local sock="${CMUX_SOCKET_PATH:-/tmp/cmux.sock}"
+    if [ -S "$sock" ]; then
         echo "cmux"
     elif [ -n "$TMUX" ]; then
         echo "tmux"
@@ -213,17 +215,63 @@ tmux_wait_response() {
 }
 
 # =============================================================================
-# cmux バックエンド
+# cmux バックエンド（ソケットAPI直接通信）
 # =============================================================================
+# cmux CLI はハングする問題があるため、nc -U でソケットAPIに直接通信する。
 
-# cmux では surface ref をペインIDとして使う
+CMUX_SOCK="${CMUX_SOCKET_PATH:-/tmp/cmux.sock}"
+
+# ソケットAPIにJSON-RPCリクエストを送信し、レスポンスを返す
+cmux_api() {
+    local method="$1"
+    local params="${2:-"{}"}"
+    local id="${3:-req-$$}"
+    printf '{"id":"%s","method":"%s","params":%s}\n' "$id" "$method" "$params" \
+        | nc -U "$CMUX_SOCK" -w 3 2>/dev/null
+}
+
+# レスポンスからresult内のフィールドを抽出（jqなしで動作）
+cmux_extract() {
+    local json="$1"
+    local field="$2"
+    # "field":"value" or "field": "value" を抽出
+    echo "$json" | grep -o "\"${field}\" *: *\"[^\"]*\"" | head -1 | sed 's/.*: *"\([^"]*\)"/\1/'
+}
+
+# surface.read_text の結果をデコードして返す（text/base64両対応）
+cmux_read_screen() {
+    local surface_id="$1"
+    local scrollback="${2:-false}"
+    local response
+    response=$(cmux_api "surface.read_text" "{\"surface_id\":\"${surface_id}\",\"scrollback\":${scrollback}}")
+
+    # python3でJSONをパース（base64/text両対応、grepでの不正マッチを回避）
+    echo "$response" | python3 -c "
+import sys,json,base64
+try:
+    r=json.load(sys.stdin)
+    result=r.get('result',{})
+    if 'base64' in result:
+        print(base64.b64decode(result['base64']).decode(),end='')
+    elif 'text' in result:
+        print(result['text'],end='')
+    else:
+        print('Error: read_text response has no base64/text field',file=sys.stderr)
+except Exception as e:
+    print(f'Error: read_text parse failed: {e}',file=sys.stderr)
+"
+}
+
 cmux_find_codex_pane() {
     if [ -f "$PANE_ID_FILE" ]; then
-        local saved_ref=$(cat "$PANE_ID_FILE" 2>/dev/null)
-        if [ -n "$saved_ref" ]; then
-            # surface が存在するか確認（read-screen が成功するかで判定）
-            if cmux read-screen --surface "$saved_ref" --lines 1 &>/dev/null; then
-                echo "$saved_ref"
+        local saved_id
+        saved_id=$(cat "$PANE_ID_FILE" 2>/dev/null)
+        if [ -n "$saved_id" ]; then
+            # surface.list で存在確認
+            local list_response
+            list_response=$(cmux_api "surface.list" "{}")
+            if echo "$list_response" | grep -q "\"$saved_id\""; then
+                echo "$saved_id"
                 return 0
             fi
         fi
@@ -232,8 +280,11 @@ cmux_find_codex_pane() {
 }
 
 cmux_pane_exists() {
-    local surface_ref="$1"
-    [ -n "$surface_ref" ] && cmux read-screen --surface "$surface_ref" --lines 1 &>/dev/null
+    local surface_id="$1"
+    [ -n "$surface_id" ] || return 1
+    local list_response
+    list_response=$(cmux_api "surface.list" "{}")
+    echo "$list_response" | grep -q "\"$surface_id\""
 }
 
 cmux_ensure() {
@@ -243,48 +294,48 @@ cmux_ensure() {
     fi
 
     # 既存のCodexペインを探す
-    local existing_ref
-    existing_ref=$(cmux_find_codex_pane 2>/dev/null) || true
-    if [ -n "$existing_ref" ] && cmux_pane_exists "$existing_ref"; then
-        echo "Using existing Codex surface: $existing_ref"
+    local existing_id
+    existing_id=$(cmux_find_codex_pane 2>/dev/null) || true
+    if [ -n "$existing_id" ] && cmux_pane_exists "$existing_id"; then
+        echo "Using existing Codex surface: $existing_id"
         return 0
     fi
 
-    # 右にsplitして新しいsurfaceを作成
-    local split_output
-    split_output=$(cmux --json new-split right 2>&1)
-
-    # 新しいsurface refを取得（"surface_ref" : "surface:N" 形式）
-    local new_ref
-    new_ref=$(echo "$split_output" | grep -o '"surface_ref" *: *"surface:[0-9]*"' | grep -o 'surface:[0-9]*')
-
-    if [ -z "$new_ref" ]; then
-        # フォールバック: list-pane-surfacesから最新を取得
-        new_ref=$(cmux --json list-pane-surfaces 2>/dev/null | grep -o '"ref" *: *"surface:[0-9]*"' | tail -1 | grep -o 'surface:[0-9]*')
+    # 自身のsurfaceの右にsplitして新しいsurfaceを作成
+    local my_surface="${CMUX_SURFACE_ID:-${CMUX_PANEL_ID:-}}"
+    local split_params='{"direction":"right"}'
+    if [ -n "$my_surface" ]; then
+        split_params="{\"direction\":\"right\",\"surface_id\":\"${my_surface}\"}"
     fi
+    local split_response
+    split_response=$(cmux_api "surface.split" "$split_params")
 
-    if [ -z "$new_ref" ]; then
+    local new_id
+    new_id=$(cmux_extract "$split_response" "surface_id")
+
+    if [ -z "$new_id" ]; then
         echo "Error: 新しいsurfaceの作成に失敗した" >&2
+        echo "Response: $split_response" >&2
         exit 1
     fi
 
-    echo "$new_ref" > "$PANE_ID_FILE"
+    echo "$new_id" > "$PANE_ID_FILE"
 
-    # codexを起動（send でコマンドを送信してEnter）
+    # codexを起動
     sleep 1
-    cmux send --surface "$new_ref" "codex\n"
+    cmux_api "surface.send_text" "{\"surface_id\":\"${new_id}\",\"text\":\"codex\\n\"}" > /dev/null
     sleep 3
 
-    echo "Created new Codex surface: $new_ref (backend=cmux)"
+    echo "Created new Codex surface: $new_id (backend=cmux-socket)"
     echo "Auto-started Codex in surface"
 }
 
 cmux_send() {
     local message="$1"
-    local surface_ref
-    surface_ref=$(cmux_find_codex_pane 2>/dev/null) || true
+    local surface_id
+    surface_id=$(cmux_find_codex_pane 2>/dev/null) || true
 
-    if [ -z "$surface_ref" ] || ! cmux_pane_exists "$surface_ref"; then
+    if [ -z "$surface_id" ] || ! cmux_pane_exists "$surface_id"; then
         echo "Error: Codex surfaceが見つかりません。先に 'ensure' を実行してください。" >&2
         exit 1
     fi
@@ -295,7 +346,7 @@ cmux_send() {
     echo "Waiting for Codex prompt..." >&2
     while [ $wait_elapsed -lt $wait_timeout ]; do
         local content
-        content=$(cmux read-screen --surface "$surface_ref" --lines 10 2>/dev/null)
+        content=$(cmux_read_screen "$surface_id" false)
         if echo "$content" | tail -5 | grep -qE '^[>›]'; then
             echo "Codex prompt detected (${wait_elapsed}s)" >&2
             break
@@ -310,37 +361,38 @@ cmux_send() {
 
     sleep 0.5
 
-    # cmux set-buffer + paste-buffer でブラケットペーストとして配信
-    local buf_name="codex-send-$$"
-    cmux set-buffer --name "$buf_name" "$message"
-    cmux paste-buffer --name "$buf_name" --surface "$surface_ref"
-    echo "Sent message via paste-buffer to surface: $surface_ref (${#message} chars)" >&2
+    # メッセージ内のダブルクォートとバックスラッシュをエスケープ（macOS sed互換）
+    local escaped_message
+    escaped_message=$(printf '%s' "$message" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read())[1:-1],end='')")
+
+    cmux_api "surface.send_text" "{\"surface_id\":\"${surface_id}\",\"text\":\"${escaped_message}\"}" > /dev/null
+    echo "Sent message to surface: $surface_id (${#message} chars)" >&2
 
     sleep 0.3
-    cmux send-key --surface "$surface_ref" Return
-    echo "Sent Enter to surface: $surface_ref" >&2
+    cmux_api "surface.send_key" "{\"surface_id\":\"${surface_id}\",\"key\":\"enter\"}" > /dev/null
+    echo "Sent Enter to surface: $surface_id" >&2
 }
 
 cmux_capture() {
     local lines="$1"
-    local surface_ref
-    surface_ref=$(cmux_find_codex_pane 2>/dev/null) || true
+    local surface_id
+    surface_id=$(cmux_find_codex_pane 2>/dev/null) || true
 
-    if [ -z "$surface_ref" ] || ! cmux_pane_exists "$surface_ref"; then
+    if [ -z "$surface_id" ] || ! cmux_pane_exists "$surface_id"; then
         echo "Error: Codex surfaceが見つかりません。" >&2
         exit 1
     fi
 
-    cmux read-screen --surface "$surface_ref" --scrollback --lines "$lines"
+    cmux_read_screen "$surface_id" true | tail -n "$lines"
 }
 
 cmux_close() {
-    local surface_ref
-    surface_ref=$(cmux_find_codex_pane 2>/dev/null) || true
+    local surface_id
+    surface_id=$(cmux_find_codex_pane 2>/dev/null) || true
 
-    if [ -n "$surface_ref" ] && cmux_pane_exists "$surface_ref"; then
-        cmux close-surface --surface "$surface_ref"
-        echo "Closed Codex surface: $surface_ref"
+    if [ -n "$surface_id" ] && cmux_pane_exists "$surface_id"; then
+        cmux_api "surface.close" "{\"surface_id\":\"${surface_id}\"}" > /dev/null
+        echo "Closed Codex surface: $surface_id"
     else
         echo "No Codex surface found"
     fi
@@ -348,11 +400,11 @@ cmux_close() {
 }
 
 cmux_status() {
-    local surface_ref
-    surface_ref=$(cmux_find_codex_pane 2>/dev/null) || true
+    local surface_id
+    surface_id=$(cmux_find_codex_pane 2>/dev/null) || true
 
-    if [ -n "$surface_ref" ] && cmux_pane_exists "$surface_ref"; then
-        echo "Codex surface active: $surface_ref (backend=cmux)"
+    if [ -n "$surface_id" ] && cmux_pane_exists "$surface_id"; then
+        echo "Codex surface active: $surface_id (backend=cmux-socket)"
         return 0
     else
         echo "No Codex surface found"
@@ -367,10 +419,10 @@ cmux_wait_response() {
     local elapsed=0
     local candidate_content=""
 
-    local surface_ref
-    surface_ref=$(cmux_find_codex_pane 2>/dev/null) || true
+    local surface_id
+    surface_id=$(cmux_find_codex_pane 2>/dev/null) || true
 
-    if [ -z "$surface_ref" ] || ! cmux_pane_exists "$surface_ref"; then
+    if [ -z "$surface_id" ] || ! cmux_pane_exists "$surface_id"; then
         echo "Error: Codex surfaceが見つかりません。" >&2
         exit 1
     fi
@@ -382,7 +434,7 @@ cmux_wait_response() {
         elapsed=$((elapsed + interval))
 
         local content
-        content=$(cmux read-screen --surface "$surface_ref" --scrollback --lines 50 2>/dev/null)
+        content=$(cmux_read_screen "$surface_id" true | tail -50)
 
         if echo "$content" | grep -qE '(esc to interrupt|Thinking|Working)'; then
             echo "Still processing... (${elapsed}s)" >&2
@@ -398,7 +450,7 @@ cmux_wait_response() {
                 elapsed=$((elapsed + debounce))
 
                 local recheck
-                recheck=$(cmux read-screen --surface "$surface_ref" --scrollback --lines 50 2>/dev/null)
+                recheck=$(cmux_read_screen "$surface_id" true | tail -50)
 
                 if echo "$recheck" | grep -qE '(esc to interrupt|Thinking|Working)'; then
                     echo "Still processing after debounce... (${elapsed}s)" >&2
