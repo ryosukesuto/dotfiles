@@ -334,7 +334,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bunx --bun @owloops/claude-powerline@latest --theme=tokyo-night --style=powerline"
+    "command": "bash ~/.claude/statusline.sh"
   },
   "sandbox": {
     "excludedCommands": ["cmux"]
