@@ -263,19 +263,42 @@ except Exception as e:
 }
 
 cmux_find_codex_pane() {
+    # surface.list を1回だけ取得して使い回す
+    local list_response
+    list_response=$(cmux_api "surface.list" "{}")
+
+    # 1. 保存済みIDがまだ存在するか確認
     if [ -f "$PANE_ID_FILE" ]; then
         local saved_id
         saved_id=$(cat "$PANE_ID_FILE" 2>/dev/null)
-        if [ -n "$saved_id" ]; then
-            # surface.list で存在確認
-            local list_response
-            list_response=$(cmux_api "surface.list" "{}")
-            if echo "$list_response" | grep -q "\"$saved_id\""; then
-                echo "$saved_id"
-                return 0
-            fi
+        if [ -n "$saved_id" ] && echo "$list_response" | grep -q "\"$saved_id\""; then
+            echo "$saved_id"
+            return 0
         fi
     fi
+
+    # 2. フォールバック: codexが動いているsurfaceをscreen内容から探す
+    local surface_ids
+    surface_ids=$(echo "$list_response" | python3 -c "
+import sys,json
+try:
+    r=json.load(sys.stdin)
+    for s in r.get('result',{}).get('surfaces',[]):
+        print(s.get('surface_id',''))
+except: pass
+" 2>/dev/null)
+
+    for sid in $surface_ids; do
+        [ -n "$sid" ] || continue
+        local screen
+        screen=$(cmux_read_screen "$sid" false 2>/dev/null)
+        if echo "$screen" | grep -qE '(OpenAI Codex|codex>|^› .*(Codex|codex))'; then
+            echo "$sid" > "$PANE_ID_FILE"
+            echo "$sid"
+            return 0
+        fi
+    done
+
     return 1
 }
 
@@ -293,11 +316,43 @@ cmux_ensure() {
         exit 1
     fi
 
-    # 既存のCodexペインを探す
+    # 排他ロック: 並行呼び出しによる重複surface作成を防止（macOS互換）
+    local lock_file="/tmp/codex-review-lock-${USER:-$(id -un)}"
+    local lock_acquired=false
+    for _i in $(seq 1 10); do
+        if ( set -o noclobber; echo $$ > "$lock_file" ) 2>/dev/null; then
+            lock_acquired=true
+            break
+        fi
+        # 既存ロックが古すぎる場合（30秒以上）は強制解除
+        local lock_age
+        lock_age=$(( $(date +%s) - $(stat -f %m "$lock_file" 2>/dev/null || echo 0) ))
+        if [ "$lock_age" -gt 30 ]; then
+            rm -f "$lock_file"
+            continue
+        fi
+        echo "Another ensure is in progress, waiting... (attempt $_i)" >&2
+        sleep 1
+    done
+    if [ "$lock_acquired" = false ]; then
+        echo "Warning: Could not acquire lock after 10 attempts, checking for existing surface" >&2
+        # ロック未取得時は作成を試みず、既存surfaceの確認のみ行う
+        local fallback_id
+        fallback_id=$(cmux_find_codex_pane 2>/dev/null) || true
+        if [ -n "$fallback_id" ] && cmux_pane_exists "$fallback_id"; then
+            echo "Using existing Codex surface: $fallback_id"
+            return 0
+        fi
+        echo "Error: ロックを取得できず、既存surfaceも見つからない" >&2
+        exit 1
+    fi
+
+    # ロック取得後、先行プロセスが作成済みかもしれないので再確認
     local existing_id
     existing_id=$(cmux_find_codex_pane 2>/dev/null) || true
     if [ -n "$existing_id" ] && cmux_pane_exists "$existing_id"; then
         echo "Using existing Codex surface: $existing_id"
+        rm -f "$lock_file"
         return 0
     fi
 
@@ -316,6 +371,7 @@ cmux_ensure() {
     if [ -z "$new_id" ]; then
         echo "Error: 新しいsurfaceの作成に失敗した" >&2
         echo "Response: $split_response" >&2
+        rm -f "$lock_file"
         exit 1
     fi
 
@@ -328,6 +384,7 @@ cmux_ensure() {
 
     echo "Created new Codex surface: $new_id (backend=cmux-socket)"
     echo "Auto-started Codex in surface"
+    rm -f "$lock_file"
 }
 
 cmux_send() {
