@@ -1,11 +1,13 @@
 ---
 name: create-pr
-description: git diffを分析して包括的なPull Requestを自動作成
+description: git diffを分析して包括的なPull Requestを自動作成。「PR作って」「PR作成」「PRお願い」「プルリク」等で起動。
 user-invocable: true
 allowed-tools:
   - Bash(git:*)
   - Bash(git-wt:*)
   - Bash(gh:*)
+  - Bash(~/.claude/skills/codex-review/scripts/pane-manager.sh:*)
+  - Bash(codex:*)
   - Read
   - Glob
   - Grep
@@ -85,7 +87,37 @@ git branch --show-current
 - 削除行数: -XXX
 ```
 
-### 6. PRの作成
+### 6. Codex Review（必須）
+
+PR作成前にCodexによるレビューを実施する。tmux/cmux環境かどうかで実行方法を切り替える。
+
+```bash
+PANE_MGR=~/.claude/skills/codex-review/scripts/pane-manager.sh
+
+# tmux/cmux環境の判定
+if [ -n "$CMUX_SOCKET_PATH" ] || [ -n "$TMUX" ]; then
+    # pane-manager経由でインタラクティブレビュー
+    $PANE_MGR ensure
+    $PANE_MGR send "git diffを確認して、以下の観点でレビューしてください:
+- P0: セキュリティ脆弱性、データ損失リスク
+- P1: パフォーマンス問題、エラーハンドリング不足
+- P2: 設計改善、保守性向上"
+    $PANE_MGR wait_response 180 && $PANE_MGR capture 200
+else
+    # codex exec で単発レビュー
+    codex exec "git diffを確認して、以下の観点でレビューしてください:
+- P0: セキュリティ脆弱性、データ損失リスク
+- P1: パフォーマンス問題、エラーハンドリング不足
+- P2: 設計改善、保守性向上"
+fi
+```
+
+レビュー結果をユーザーに報告し、以下を判断する:
+- P0/P1の指摘がある場合: 修正してから次のステップへ進む
+- P2以下のみ: ユーザーに報告し、対応要否を確認してから次のステップへ進む
+- 指摘なし: そのまま次のステップへ進む
+
+### 7. PRの作成
 
 ```bash
 # Terraformリポジトリの場合はフォーマット実行
