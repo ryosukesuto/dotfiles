@@ -144,7 +144,7 @@ PR_URL=$(gh pr create \
 # 作業報告
 if [ -n "$PR_URL" ]; then
     PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-    th "PR #${PR_NUMBER} 作成完了: ${PR_URL}"
+    Obsidian daily:append vault=obsidian-notes content="- $(date '+%Y/%m/%d %H:%M:%S'): PR #${PR_NUMBER} 作成完了: ${PR_URL}"
 fi
 
 # worktree内の場合は削除方法を案内

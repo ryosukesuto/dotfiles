@@ -42,24 +42,19 @@ allowed-tools:
 
 ### 3. ファイル書き込み
 
-保存先: `~/gh/github.com/ryosukesuto/obsidian-notes/YYYY-MM-DD_daily.md`
+Obsidian CLIでデイリーノートに追記する。
 
 ```bash
-VAULT_DIR="$HOME/gh/github.com/ryosukesuto/obsidian-notes"
-DAILY_NOTE="$VAULT_DIR/$(date '+%Y-%m-%d')_daily.md"
+# デイリーノートが存在しない場合は自動作成される
+# content内の改行は \n で表現
+Obsidian daily:append vault=obsidian-notes content="$CONTENT"
+```
 
-NEW_FILE=false
-if [ ! -f "$DAILY_NOTE" ]; then
-    echo "# $(date '+%Y-%m-%d')" > "$DAILY_NOTE"
-    echo "" >> "$DAILY_NOTE"
-    NEW_FILE=true
-fi
+`$CONTENT` は抽出した知識をマークダウン形式で組み立てたもの。セパレータ `---` を先頭に付けて既存内容と区切る。
 
-if [ "$NEW_FILE" = false ]; then
-    echo "" >> "$DAILY_NOTE"
-    echo "---" >> "$DAILY_NOTE"
-    echo "" >> "$DAILY_NOTE"
-fi
+```bash
+CONTENT="---\n\n${MARKDOWN_BODY}"
+Obsidian daily:append vault=obsidian-notes content="$CONTENT"
 ```
 
 ## 出力形式テンプレート
