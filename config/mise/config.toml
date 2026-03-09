@@ -1,6 +1,7 @@
 [tools]
 node = "lts"
 "npm:@openai/codex" = "latest"
+"npm:@googleworkspace/cli" = "latest"
 uv = "latest"
 kubectl = "latest"
 argocd = "latest"
