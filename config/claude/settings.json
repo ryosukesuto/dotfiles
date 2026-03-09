@@ -78,7 +78,7 @@
       "Bash(pdftotext:*)",
       "Bash(ghq:*)",
       "Bash(fzf:*)",
-      "Bash(th:*)",
+      "Bash(Obsidian:*)",
       "Bash(gnews:*)",
       "Bash(reload)",
       "Bash(exec zsh)",
