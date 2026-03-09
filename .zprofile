@@ -25,3 +25,6 @@ export LESSCHARSET='utf-8'
 
 # GPGの設定（ターミナルでの入力用）
 export GPG_TTY=$(tty)
+
+# Added by Obsidian
+export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"

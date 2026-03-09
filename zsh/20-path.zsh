@@ -35,4 +35,7 @@ fi
 # Firebase
 export FIREBASE_CREDENTIALS=~/firebase_adminsdk_service_account.json
 
+# Obsidian CLI
+[[ -x "/Applications/Obsidian.app/Contents/MacOS/Obsidian" ]] && path+=("/Applications/Obsidian.app/Contents/MacOS")
+
 # Docker Desktop はデフォルトソケット（/var/run/docker.sock）を使用

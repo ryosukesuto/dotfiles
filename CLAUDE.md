@@ -33,7 +33,6 @@ config/        - アプリ設定
   mise/            - mise設定
 bin/           - カスタムスクリプト
   ctx-iac          - PR情報/planコメント収集（AI連携用）
-  th               - Obsidianデイリーノート記録
 ```
 
 ## 主要ツール
