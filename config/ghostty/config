@@ -2,7 +2,7 @@
 theme = TokyoNight Night
 
 # フォント
-font-family = "UDEV Gothic 35NF"
+font-family = "Osaka−等幅"
 font-size = 13
 adjust-cell-height = -2
 font-thicken = true
