@@ -14,6 +14,9 @@
   },
   "permissions": {
     "allow": [
+      "Bash(git:*)",
+      "Bash(git-wt:*)",
+      "Bash(gh:*)",
       "Bash(npm:*)",
       "Bash(yarn:*)",
       "Bash(pnpm:*)",
@@ -23,46 +26,8 @@
       "Bash(go:*)",
       "Bash(cargo:*)",
       "Bash(mise:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git pull:*)",
-      "Bash(git fetch:*)",
-      "Bash(git branch:*)",
-      "Bash(git checkout:*)",
-      "Bash(git switch:*)",
-      "Bash(git log:*)",
-      "Bash(git show:*)",
-      "Bash(git rev-parse:*)",
-      "Bash(git stash:*)",
-      "Bash(git tag -l:*)",
-      "Bash(git tag --list:*)",
-      "Bash(git config --get:*)",
-      "Bash(git config --list:*)",
-      "Bash(git config -l)",
-      "Bash(git remote -v)",
-      "Bash(git remote show:*)",
-      "Bash(git remote get-url:*)",
-      "Bash(git wt:*)",
-      "Bash(git worktree:*)",
-      "Bash(git revert:*)",
-      "Bash(git -C:*)",
-      "Bash(gh pr view:*)",
-      "Bash(gh pr list:*)",
-      "Bash(gh pr diff:*)",
-      "Bash(gh pr checks:*)",
-      "Bash(gh pr create:*)",
-      "Bash(gh pr edit:*)",
-      "Bash(gh pr comment:*)",
-      "Bash(gh pr review:*)",
-      "Bash(gh issue view:*)",
-      "Bash(gh issue list:*)",
-      "Bash(gh repo view:*)",
-      "Bash(gh status:*)",
-      "Bash(gh run view:*)",
-      "Bash(gh run list:*)",
-      "Bash(gh api:*)",
+      "Bash(make:*)",
+      "Bash(pytest:*)",
       "Bash(codex:*)",
       "Bash(~/.claude/skills/codex-review/scripts/pane-manager.sh:*)",
       "Bash(PANE_MGR=:*)",
@@ -91,19 +56,6 @@
       "Bash(du:*)",
       "Bash(chmod:*)",
       "Bash(tar:*)",
-      "Bash(npm test)",
-      "Bash(npm run:*)",
-      "Bash(yarn test)",
-      "Bash(yarn run:*)",
-      "Bash(pytest:*)",
-      "Bash(go test:*)",
-      "Bash(cargo test:*)",
-      "Bash(make test)",
-      "Bash(make build)",
-      "Bash(make lint)",
-      "Bash(make clean)",
-      "Bash(make fmt)",
-      "Bash(make check)",
       "Bash(aws s3 ls:*)",
       "Bash(aws ec2 describe-:*)",
       "Bash(aws iam list-:*)",
@@ -112,23 +64,19 @@
       "Bash(bq:*)",
       "Bash(kubectl:*)",
       "Bash(terraform fmt:*)",
-      "Bash(pup:*)",
-      "Bash(sqlite3:*)",
-      "Bash(pdftotext:*)",
       "Bash(docker ps:*)",
       "Bash(docker images:*)",
       "Bash(docker logs:*)",
       "Bash(docker inspect:*)",
       "Bash(docker version)",
       "Bash(docker info)",
-      "Bash(code:*)",
-      "Bash(vim:*)",
-      "Bash(nano:*)",
       "Bash(jq:*)",
       "Bash(curl:*)",
       "Bash(wget:*)",
+      "Bash(pup:*)",
+      "Bash(sqlite3:*)",
+      "Bash(pdftotext:*)",
       "Bash(ghq:*)",
-      "Bash(peco-src)",
       "Bash(fzf:*)",
       "Bash(th:*)",
       "Bash(gnews:*)",
@@ -136,6 +84,7 @@
       "Bash(exec zsh)",
       "WebSearch",
       "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:code.claude.com)",
       "WebFetch(domain:zenn.dev)",
       "WebFetch(domain:qiita.com)",
       "WebFetch(domain:note.com)",
@@ -271,7 +220,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '⚠️ 新規作成前に確認: 既存ファイルの編集ではダメですか？'"
+            "command": "FILE_PATH=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; if [ -n \"$FILE_PATH\" ] && [ -f \"$FILE_PATH\" ]; then exit 0; fi; echo 'BLOCK: 新規ファイル作成を検出。既存ファイルの編集で対応できないか再検討してください。本当に新規作成が必要な場合は理由を説明してから再実行。' >&2; exit 2"
           }
         ]
       }
@@ -282,9 +231,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then npm run lint --silent 2>/dev/null || true; fi",
-            "timeout": 120,
-            "async": true
+            "command": "FILE=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then npm run lint --silent 2>&1 | tail -20; elif command -v golangci-lint >/dev/null 2>&1 && [ -f go.mod ]; then golangci-lint run \"$FILE\" 2>&1 | tail -20; fi",
+            "timeout": 30
           }
         ]
       },
@@ -315,7 +263,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmux notify --title 'Claude Code' --subtitle '処理終了' --body 'タスクが完了しました' || true"
+            "command": "cmux notify --title 'Claude Code' --subtitle '処理終了' --body 'タスクが完了しました' || true; HAS_COMMITS=$(git log --oneline --since='1 hour ago' --author=\"$(git config user.name)\" 2>/dev/null | head -1); if [ -n \"$HAS_COMMITS\" ]; then echo 'Tip: /times-post でtimesに投稿、/til で学びを記録できます'; fi"
           }
         ]
       }
