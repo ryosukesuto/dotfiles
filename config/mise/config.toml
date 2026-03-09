@@ -1,6 +1,7 @@
 [tools]
 node = "lts"
 "npm:@openai/codex" = "latest"
+"npm:@google/clasp" = "latest"
 "npm:@googleworkspace/cli" = "latest"
 uv = "latest"
 kubectl = "latest"
