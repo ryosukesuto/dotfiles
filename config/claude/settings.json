@@ -220,7 +220,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE_PATH=\"$CLAUDE_TOOL_INPUT_file_path\"; if [ -n \"$FILE_PATH\" ] && [ -f \"$FILE_PATH\" ]; then exit 0; fi; echo 'BLOCK: 新規ファイル作成を検出。既存ファイルの編集で対応できないか再検討してください。本当に新規作成が必要な場合は理由を説明してから再実行。' >&2; exit 2"
+            "command": "FILE_PATH=\"$CLAUDE_TOOL_INPUT_file_path\"; FILE_PATH=\"${FILE_PATH/#\\~/$HOME}\"; if [ -n \"$FILE_PATH\" ] && [ -f \"$FILE_PATH\" ]; then exit 0; fi; case \"$FILE_PATH\" in $HOME/.claude/projects/*/memory/*|$HOME/gh/github.com/ryosukesuto/obsidian-notes/*|*/docs/*) exit 0 ;; esac; echo 'BLOCK: 新規ファイル作成を検出。既存ファイルの編集で対応できないか再検討してください。本当に新規作成が必要な場合は理由を説明してから再実行。' >&2; exit 2"
           }
         ]
       }
