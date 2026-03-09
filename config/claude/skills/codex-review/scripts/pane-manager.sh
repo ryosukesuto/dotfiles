@@ -220,14 +220,35 @@ tmux_wait_response() {
 # cmux CLI はハングする問題があるため、nc -U でソケットAPIに直接通信する。
 
 CMUX_SOCK="${CMUX_SOCKET_PATH:-/tmp/cmux.sock}"
+CMUX_WS_ID="${CMUX_WORKSPACE_ID:-}"
 
-# ソケットAPIにJSON-RPCリクエストを送信し、レスポンスを返す
+# ソケットAPIにJSON-RPCリクエストを送信し、レスポンスを返す（リトライ付き）
 cmux_api() {
     local method="$1"
     local params="${2:-"{}"}"
     local id="${3:-req-$$}"
-    printf '{"id":"%s","method":"%s","params":%s}\n' "$id" "$method" "$params" \
-        | nc -U "$CMUX_SOCK" -w 3 2>/dev/null
+    local response=""
+    local attempt
+    for attempt in 1 2 3; do
+        response=$(printf '{"id":"%s","method":"%s","params":%s}\n' "$id" "$method" "$params" \
+            | nc -U "$CMUX_SOCK" -w 3 2>/dev/null) || true
+        if [ -n "$response" ]; then
+            echo "$response"
+            return 0
+        fi
+        sleep 0.5
+    done
+    # 3回リトライしても空の場合は失敗を返す
+    return 1
+}
+
+# surface.listをworkspace_id付きで取得
+cmux_list_surfaces() {
+    if [ -n "$CMUX_WS_ID" ]; then
+        cmux_api "surface.list" "{\"workspace_id\":\"${CMUX_WS_ID}\"}"
+    else
+        cmux_api "surface.list" "{}"
+    fi
 }
 
 # レスポンスからresult内のフィールドを抽出（jqなしで動作）
@@ -263,28 +284,35 @@ except Exception as e:
 }
 
 cmux_find_codex_pane() {
-    # surface.list を1回だけ取得して使い回す
-    local list_response
-    list_response=$(cmux_api "surface.list" "{}")
-
-    # 1. 保存済みIDがまだ存在するか確認
+    # 1. 保存済みIDがあればsurface.listで存在確認（リトライ付き）
     if [ -f "$PANE_ID_FILE" ]; then
         local saved_id
         saved_id=$(cat "$PANE_ID_FILE" 2>/dev/null)
-        if [ -n "$saved_id" ] && echo "$list_response" | grep -q "\"$saved_id\""; then
-            echo "$saved_id"
-            return 0
+        if [ -n "$saved_id" ]; then
+            local verify_attempt
+            for verify_attempt in 1 2 3; do
+                local list_response
+                list_response=$(cmux_list_surfaces) || true
+                if [ -n "$list_response" ] && echo "$list_response" | grep -q "\"$saved_id\""; then
+                    echo "$saved_id"
+                    return 0
+                fi
+                # ensure直後はsurfaceが未反映の場合があるので常にリトライ
+                sleep 1
+            done
         fi
     fi
 
-    # 2. フォールバック: codexが動いているsurfaceをscreen内容から探す
+    # 2. フォールバック: surface.listからcodexが動いているsurfaceをscreen内容から探す
+    local list_response
+    list_response=$(cmux_list_surfaces) || true
     local surface_ids
     surface_ids=$(echo "$list_response" | python3 -c "
 import sys,json
 try:
     r=json.load(sys.stdin)
     for s in r.get('result',{}).get('surfaces',[]):
-        print(s.get('surface_id',''))
+        print(s.get('surface_id','') or s.get('id',''))
 except: pass
 " 2>/dev/null)
 
@@ -306,8 +334,8 @@ cmux_pane_exists() {
     local surface_id="$1"
     [ -n "$surface_id" ] || return 1
     local list_response
-    list_response=$(cmux_api "surface.list" "{}")
-    echo "$list_response" | grep -q "\"$surface_id\""
+    list_response=$(cmux_list_surfaces) || true
+    [ -n "$list_response" ] && echo "$list_response" | grep -q "\"$surface_id\""
 }
 
 cmux_ensure() {
