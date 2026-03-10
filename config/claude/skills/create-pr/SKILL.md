@@ -1,7 +1,9 @@
 ---
 name: create-pr
 description: git diffを分析して包括的なPull Requestを自動作成。「PR作って」「PR作成」「PRお願い」「プルリク」等で起動。
+argument-hint: "[title] [--draft]"
 user-invocable: true
+disable-model-invocation: true
 allowed-tools:
   - Bash(git:*)
   - Bash(git-wt:*)

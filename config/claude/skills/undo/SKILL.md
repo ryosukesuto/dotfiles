@@ -2,6 +2,7 @@
 name: undo
 description: 最後のGit操作（コミット、マージ、リベース等）を安全に取り消し
 user-invocable: true
+disable-model-invocation: true
 allowed-tools:
   - Bash(git:*)
 ---

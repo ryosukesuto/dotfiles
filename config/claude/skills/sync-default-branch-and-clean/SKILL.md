@@ -2,6 +2,7 @@
 name: sync-default-branch-and-clean
 description: デフォルトブランチを最新化して不要なローカルブランチを削除
 user-invocable: true
+disable-model-invocation: true
 allowed-tools:
   - Bash(git:*)
   - Bash(gh:*)

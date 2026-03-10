@@ -2,6 +2,7 @@
 name: times-post
 description: セッションの作業内容をサマリーしてSlack timesに投稿
 user-invocable: true
+disable-model-invocation: true
 allowed-tools:
   - Bash
   - AskUserQuestion

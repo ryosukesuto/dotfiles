@@ -2,6 +2,7 @@
 name: quick-push
 description: 変更を素早くコミット＆プッシュして日常作業を効率化。「push」「プッシュ」「コミットして」「上げといて」「反映して」「pushして」等で起動。
 user-invocable: true
+disable-model-invocation: true
 allowed-tools:
   - Bash(git:*)
   - Bash(gh:*)
