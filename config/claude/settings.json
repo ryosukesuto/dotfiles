@@ -6,7 +6,8 @@
     "DISABLE_ERROR_REPORTING": "true",
     "DISABLE_BUG_COMMAND": "true",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85",
-    "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": "1"
+    "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": "1",
+    "ENABLE_TOOL_SEARCH": "1"
   },
   "attribution": {
     "commit": "",
@@ -53,6 +54,12 @@
       "Bash(test:*)",
       "Bash(xargs:*)",
       "Bash(ps:*)",
+      "Bash(lsof:*)",
+      "Bash(pgrep:*)",
+      "Bash(tput:*)",
+      "Bash(ss:*)",
+      "Bash(fd:*)",
+      "Bash(fdfind:*)",
       "Bash(du:*)",
       "Bash(chmod:*)",
       "Bash(tar:*)",
