@@ -29,7 +29,7 @@ tmux/cmuxで右半分にCodexを開いて、インタラクティブにレビュ
 
 ## pane-manager.sh コマンド
 
-スクリプトパス: `~/.claude/skills/codex-review/scripts/pane-manager.sh`
+スクリプトパス: `${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh`
 
 | コマンド | 説明 |
 |----------|------|
@@ -51,7 +51,7 @@ tmux/cmuxで右半分にCodexを開いて、インタラクティブにレビュ
 ### ステップ1: Codexペインを作成
 
 ```bash
-~/.claude/skills/codex-review/scripts/pane-manager.sh ensure
+${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh ensure
 ```
 
 出力例（tmux）:
@@ -71,13 +71,13 @@ Auto-started Codex in surface
 git diffの内容をレビューしてもらう場合:
 
 ```bash
-~/.claude/skills/codex-review/scripts/pane-manager.sh send "git diffを確認して、セキュリティやパフォーマンスの問題があれば教えてください。"
+${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh send "git diffを確認して、セキュリティやパフォーマンスの問題があれば教えてください。"
 ```
 
 または具体的な質問:
 
 ```bash
-~/.claude/skills/codex-review/scripts/pane-manager.sh send "このリポジトリのアーキテクチャについてセカンドオピニオンをください。"
+${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh send "このリポジトリのアーキテクチャについてセカンドオピニオンをください。"
 ```
 
 ### ステップ3: 返答を待機してキャプチャ
@@ -85,14 +85,14 @@ git diffの内容をレビューしてもらう場合:
 `wait_response`で応答完了を待機してからキャプチャ:
 
 ```bash
-~/.claude/skills/codex-review/scripts/pane-manager.sh wait_response && \
-~/.claude/skills/codex-review/scripts/pane-manager.sh capture 200
+${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh wait_response && \
+${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh capture 200
 ```
 
 または従来のsleep方式:
 
 ```bash
-sleep 30 && ~/.claude/skills/codex-review/scripts/pane-manager.sh capture 100
+sleep 30 && ${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh capture 100
 ```
 
 ### ステップ4: 結果の報告

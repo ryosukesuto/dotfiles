@@ -1,6 +1,7 @@
 ---
 name: vibe-review
 description: バイブコーディングCodexレビュー - design/plans/PRの観点別レビュー
+argument-hint: "[design|plan|pr]"
 user-invocable: true
 allowed-tools:
   - Bash
