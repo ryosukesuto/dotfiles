@@ -71,6 +71,15 @@ git-wt remove feature/xxx
 - `wtl`: git-wt list（一覧）
 - `wtr`: git-wt remove（削除）
 
+### Claude Codeでのworktree操作
+
+`EnterWorktree` / `ExitWorktree` ツールでworktreeの切替が可能。
+ブランチ作業時は `EnterWorktree` でworktreeに入り、完了後は `ExitWorktree` で戻る。
+
+```
+EnterWorktree → .worktrees/feature/xxx で作業 → ExitWorktree で元のディレクトリに復帰
+```
+
 ### 設定
 gitconfigで `.worktrees` をbasedirに設定済み。
 
