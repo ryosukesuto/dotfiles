@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# pre-commit hook: mainブランチへの直接コミットを防止
+#
+# 保護対象: main, master
+# 除外: 個人リポジトリ（ryosukesuto/*）
+# バイパス: git commit --no-verify（緊急時のみ）
+
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+# main/master以外はスキップ
+if [[ "$current_branch" != "main" ]] && [[ "$current_branch" != "master" ]]; then
+    exit 0
+fi
+
+# 個人リポジトリは除外
+remote_url=$(git remote get-url origin 2>/dev/null)
+if [[ "$remote_url" == *"ryosukesuto/"* ]]; then
+    exit 0
+fi
+
+echo ""
+echo -e "\033[0;31m[BLOCKED]\033[0m ${current_branch} ブランチへの直接コミットは禁止されています"
+echo ""
+echo "  新しいブランチを作成してください:"
+echo "    git checkout -b feature/xxx"
+echo "    git worktree add .worktrees/feature/xxx -b feature/xxx"
+echo ""
+echo "  緊急時のバイパス: git commit --no-verify"
+echo ""
+exit 1
