@@ -126,7 +126,20 @@ fi
    - P2以下のみ: ユーザーに報告し、対応要否を確認してから次のステップへ進む
    - 指摘なし: そのまま次のステップへ進む
 
-### 7. PRの作成
+### 7. デフォルトブランチの最新化とリベース
+
+PR作成前にデフォルトブランチの最新を取り込み、コンフリクトを事前に解消する。
+
+```bash
+DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | cut -d' ' -f5)
+git fetch origin "$DEFAULT_BRANCH"
+git rebase "origin/$DEFAULT_BRANCH"
+```
+
+- リベースでコンフリクトが発生した場合は解消してから続行する
+- コンフリクトの内容をユーザーに報告し、対応方針を確認する
+
+### 8. PRの作成
 
 ```bash
 # Terraformリポジトリの場合はフォーマット実行

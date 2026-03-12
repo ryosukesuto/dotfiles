@@ -1,11 +1,12 @@
+---
+name: wiz-triage
+description: Wizアラートのトリアージと調査を支援。「Wizアラート」「Wiz対応」「セキュリティアラート」等で起動。
+user-invocable: true
+---
+
 # Wiz Triage
 
 Wizアラートのトリアージと調査を支援するskill。
-
-## 起動トリガー
-
-- 「Wizアラート」「Wiz対応」「セキュリティアラート」などの発言
-- Wizのアラート内容が貼り付けられたとき
 
 ## ワークフロー
 
