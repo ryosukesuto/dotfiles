@@ -360,7 +360,13 @@ if [ -d "$DOTFILES_DIR/git/hooks" ]; then
             fi
         fi
     done
-    info "Git hooks は core.hooksPath で全リポジトリに適用されます"
+    # core.hooksPathを動的に設定（ghq rootに依存しない）
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] git config --global core.hooksPath $DOTFILES_DIR/git/hooks"
+    else
+        git config --global core.hooksPath "$DOTFILES_DIR/git/hooks"
+        info "core.hooksPath を設定: $DOTFILES_DIR/git/hooks"
+    fi
 fi
 
 # mise設定
