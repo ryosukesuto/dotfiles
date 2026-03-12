@@ -347,17 +347,25 @@ create_symlink "$DOTFILES_DIR/config/claude/rules" "$HOME/.claude/rules"
 # Claude グローバル設定
 create_symlink "$DOTFILES_DIR/config/claude/GLOBAL_SETTINGS.md" "$HOME/.claude/CLAUDE.md"
 
-# Git hooks（dotfilesリポジトリ用）
+# Git hooks（core.hooksPathでグローバル適用）
 if [ -d "$DOTFILES_DIR/git/hooks" ]; then
     info "Git hooksをセットアップしています..."
-    # .git/hooks ディレクトリが存在することを確認
-    if [ -d "$DOTFILES_DIR/.git/hooks" ]; then
-        for hook in "$DOTFILES_DIR/git/hooks"/*; do
-            if [ -f "$hook" ]; then
-                hook_name=$(basename "$hook")
-                create_symlink "$hook" "$DOTFILES_DIR/.git/hooks/$hook_name"
+    for hook in "$DOTFILES_DIR/git/hooks"/*; do
+        if [ -f "$hook" ] && [ ! -x "$hook" ]; then
+            if [ "$DRY_RUN" = true ]; then
+                info "[DRY RUN] $(basename "$hook") に実行権限を付与"
+            else
+                chmod +x "$hook"
+                info "$(basename "$hook") に実行権限を付与"
             fi
-        done
+        fi
+    done
+    # core.hooksPathを動的に設定（ghq rootに依存しない）
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] git config --global core.hooksPath $DOTFILES_DIR/git/hooks"
+    else
+        git config --global core.hooksPath "$DOTFILES_DIR/git/hooks"
+        info "core.hooksPath を設定: $DOTFILES_DIR/git/hooks"
     fi
 fi
 
