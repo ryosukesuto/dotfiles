@@ -1,6 +1,7 @@
 ---
+name: google-workspace
 description: Google Workspace操作（Gmail・Calendar・Drive）。「メール確認」「予定教えて」「ドライブ検索」「メール送って」等で起動。
-user_invocable: false
+user-invocable: false
 ---
 
 ## 前提

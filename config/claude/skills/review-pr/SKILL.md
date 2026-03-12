@@ -17,6 +17,11 @@ allowed-tools:
 
 ## 実行手順
 
+### 0. リファレンス読み込み（必要時のみ）
+
+レビュー観点や評価基準の詳細が必要な場合のみ、以下を参照する。毎回読み込む必要はない:
+- `${CLAUDE_SKILL_DIR}/review-pr-reference.md` — 優先度分類の詳細、技術スタック別の観点
+
 ### 1. PR情報の取得
 
 ```bash
@@ -34,13 +39,15 @@ gh pr checks
 環境判定を自前で行わないこと（`echo $TMUX` 等は禁止）。
 
 ```bash
-~/.claude/skills/codex-review/scripts/pane-manager.sh ensure
-~/.claude/skills/codex-review/scripts/pane-manager.sh send "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
-~/.claude/skills/codex-review/scripts/pane-manager.sh wait_response 180
-~/.claude/skills/codex-review/scripts/pane-manager.sh capture 300
+PANE_MGR=~/.claude/skills/codex-review/scripts/pane-manager.sh
+
+$PANE_MGR ensure
+$PANE_MGR send "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
+$PANE_MGR wait_response 180
+$PANE_MGR capture 300
 ```
 
-`pane-manager.sh ensure` が失敗した場合（tmux/cmux外）のみ `codex exec` にフォールバック:
+`$PANE_MGR ensure` が失敗した場合（tmux/cmux外）のみ `codex exec` にフォールバック:
 
 ```bash
 codex exec "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
@@ -117,6 +124,22 @@ PRの目的と変更内容を1-2文で要約。
 - False Positive（AI誤検知）は除外
 - プロジェクト固有の文脈・制約を考慮
 - 最終的なレビュー内容はあなたが責任を持って決定
+
+## Reader Testing（大規模PR向け、任意）
+
+300行以上の変更があるPRでは、Subagentに「先入観なしのレビュー」を委譲することで、著者バイアスによる見落としを検出できる。
+自分がコードを書いた/読んだ後だと「見たいものしか見えない」ため、文脈ゼロのSubagentに読ませることに価値がある。
+
+```
+Agent(subagent_type="general-purpose"):
+  "このPRのdiffを読んで、以下の観点で問題を探してください。
+   PRの説明や目的は意図的に伝えません。diffだけから判断してください。
+   - 変更の意図が不明確な箇所
+   - テストで検証されていないエッジケース
+   - 暗黙の前提条件に依存している箇所"
+```
+
+Reader Testingの結果はステップ3の統合レビューに組み込む。
 
 ## 新規ディレクトリ作成時の追加チェック（必須）
 

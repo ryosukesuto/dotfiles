@@ -537,6 +537,26 @@ else
 fi
 
 # ============================================================================
+# ArgoCD CLIのインストール（Homebrew）
+# ============================================================================
+if ! command -v argocd &> /dev/null; then
+    if command -v brew &> /dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] ArgoCD CLI をインストール（brew）"
+        else
+            info "ArgoCD CLI をインストール中..."
+            brew install argocd 2>/dev/null && \
+                info "ArgoCD CLI のインストール完了" || \
+                warn "ArgoCD CLI のインストールに失敗しました"
+        fi
+    else
+        warn "ArgoCD CLI のインストールにはHomebrewが必要です"
+    fi
+else
+    info "ArgoCD CLI は既にインストールされています"
+fi
+
+# ============================================================================
 # Docker Desktopのインストール（Homebrew cask）
 # ============================================================================
 if [ -d "/Applications/Docker.app" ]; then

@@ -1,11 +1,17 @@
+---
+name: bug-bounty-review
+description: Bug Bountyレポートを評価し、Codexと協業して返信文を作成。「Bug Bountyレポートを評価して」「脆弱性レポートをレビューして」等で起動。
+user-invocable: true
+allowed-tools:
+  - Bash
+  - Read
+  - Glob
+  - Grep
+---
+
 # Bug Bounty Review
 
 Bug Bountyレポートを評価し、Codexと協業して返信文を作成するスキル。
-
-## トリガー
-
-- `/bug-bounty-review` コマンド
-- 「Bug Bountyレポートを評価して」「脆弱性レポートをレビューして」などの発言
 
 ## ワークフロー
 
