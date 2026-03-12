@@ -58,9 +58,7 @@
 
 ## 参考リンク
 
-- [Codexテンプレート集](codex-templates.md) - Codex依頼の詳細テンプレートと使用例
 - [クイックリファレンス](quick-reference.md) - 頻出パターンと即座に使える指示
-- [Terraformワークフロー](terraform-workflow.md) - Terraform特化の詳細手順
 
 ## セキュリティ
 
