@@ -18,21 +18,22 @@ zsh/           - Zsh設定（番号順に読み込み）
   50-tools.zsh     - mise初期化
   60-prompt.zsh    - プロンプト設定
   90-local.zsh     - ローカル設定
-  functions/       - 遅延読み込み関数
 config/        - アプリ設定
   claude/          - Claude Code設定
   codex/           - Codex CLI設定
   direnv/          - direnv設定（環境変数自動切替）
+  fzf/             - fzf設定
   ghostty/         - Ghosttyターミナル設定
   git/             - Git設定
   gh/              - GitHub CLI設定
   tmux/            - tmux設定
   vim/             - Vim設定
   ssh/             - SSH設定
-  aws/             - AWSテンプレート
   mise/            - mise設定
 bin/           - カスタムスクリプト
-  ctx-iac          - PR情報/planコメント収集（AI連携用）
+  ctx-iac            - PR情報/planコメント収集（AI連携用）
+  claude-commit-log  - コミットログ整形
+  claude-times-post  - 勤怠投稿
 ```
 
 ## 主要ツール

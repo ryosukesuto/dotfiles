@@ -6,6 +6,7 @@ node = "lts"
 uv = "latest"
 kubectl = "latest"
 argocd = "latest"
+terraform = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["ruby"]
