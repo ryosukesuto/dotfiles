@@ -4,6 +4,7 @@
 	autocrlf = input
 	quotepath = false
 	precomposeunicode = true
+	hooksPath = /Users/s32943/gh/github.com/ryosukesuto/dotfiles/git/hooks
 
 [color]
 	ui = auto

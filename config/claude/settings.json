@@ -205,10 +205,10 @@
       "Bash(git merge:*)",
       "Bash(git rebase:*)"
     ],
+    "defaultMode": "auto",
     "additionalDirectories": [
       "~/gh/github.com/ryosukesuto/obsidian-notes"
-    ],
-    "defaultMode": "auto"
+    ]
   },
   "hooks": {
     "SessionStart": [
@@ -290,6 +290,6 @@
     ]
   },
   "skipDangerousModePermissionPrompt": true,
-  "showTurnDuration": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "showTurnDuration": true
 }
