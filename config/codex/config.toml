@@ -182,6 +182,15 @@ trust_level = "trusted"
 [projects."/Users/s32943/gh/github.com/ai-agent-arena/winticket1"]
 trust_level = "trusted"
 
+[projects."/Users/s32943/gh/github.com/WinTicket/server-config"]
+trust_level = "trusted"
+
+[projects."/Users/s32943/gh/github.com/ryosukesuto/dotfiles"]
+trust_level = "trusted"
+
+[projects."/Users/s32943/gh/github.com/ryosukesuto/obsidian-notes"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 gpt-5-codex = "gpt-5.2-codex"
 "gpt-5.2-codex" = "gpt-5.4"

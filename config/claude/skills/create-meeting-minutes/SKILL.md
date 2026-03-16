@@ -13,6 +13,10 @@ allowed-tools:
   - mcp__linear-server__list_cycles
   - mcp__linear-server__list_issues
   - mcp__linear-server__list_projects
+  - mcp__notion__notion-search
+  - mcp__notion__notion-fetch
+  - mcp__notion__notion-move-pages
+  - mcp__ragent__hybrid_search
 ---
 
 # /create-meeting-minutes - 議事録作成
@@ -21,8 +25,10 @@ allowed-tools:
 会議の文字起こしから、Linearプロジェクトベースで構成された議事録を作成する。
 
 ## 前提条件
-- 引数で文字起こしテキストが渡されること
 - Linearにアクセス可能であること
+- 文字起こしテキストは以下のいずれかで取得:
+  - **引数で直接渡される**（従来通り）
+  - **Notion MCPから自動取得**（引数なしの場合）— カレンダーで会議を特定し、Notionから文字起こしを取得
 
 ## テンプレート
 
@@ -37,6 +43,40 @@ allowed-tools:
 該当テンプレートがない場合は PF定例テンプレートをベースに調整する。
 
 ## 実行手順
+
+### 0. 文字起こしの取得（引数で渡されなかった場合）
+
+引数に文字起こしテキストが含まれていない場合、Notion MCPとカレンダーから自動取得する。
+
+**Step 0-1: カレンダーから会議を特定**
+
+google-workspace Skillを参照し、今日の予定を取得:
+```bash
+eval "$(mise activate zsh)" && gws calendar +agenda --today
+```
+
+ユーザーが会議名を指定している場合（例: 「PF定例の議事録作って」）、カレンダーの予定から該当する会議を特定し、開催時刻を取得する。
+複数候補がある場合は須藤に確認。
+
+**Step 0-2: Notionからミーティングノートを検索**
+
+カレンダーで特定した会議の時間帯・タイトルを使ってNotionを検索:
+```
+mcp__notion__notion-search(query: "<会議名やキーワード>", page_size: 5, max_highlight_length: 100)
+```
+
+検索結果のtimestampとカレンダーの開催時刻を照合し、該当するミーティングノートを特定する。
+
+**Step 0-3: 文字起こしを取得**
+
+特定したNotionページから文字起こしを取得:
+```
+mcp__notion__notion-fetch(id: "<page_id>", include_transcript: true)
+```
+
+レスポンスの `<transcript>` セクションが文字起こし本文。これを以降のステップで使用する。
+
+---
 
 ### 1. テンプレート選択と必要情報の並列取得
 
@@ -101,6 +141,16 @@ Glob(pattern: "*<会議名>*", path: "<obsidian-notes>")
 - 音声認識は技術用語やプロジェクト名を頻繁に誤認識する
 - Issue内容との照合で正式名称を特定する（文字起こしの名称をそのまま使わない）
 
+**Step 4: RAGentで不足情報を補完**
+
+Linear・ドメイン用語対応表で解決できないプロジェクトや用語がある場合、社内ナレッジベースを検索:
+```
+mcp__ragent__hybrid_search(query: "<不明な用語やプロジェクト名>", search_mode: "hybrid", top_k: 5)
+```
+- プロジェクトの背景・経緯の補完
+- 不明な技術用語・社内用語の特定
+- 過去の議事録や設計ドキュメントとの照合
+
 **構成ルール**:
 - Linearプロジェクトごとにセクションを作成
 - 各セクションにLinearプロジェクトリンクと関連Issueを記載
@@ -160,7 +210,18 @@ tags: [meeting, Platform, ...]
 - 技術用語の英語表記（カタカナ→英語）
 - プロジェクト固有用語の統一
 
-### 5. ガーブル確認フェーズ
+### 5. Notionミーティングノートの後処理
+
+Notion MCPから文字起こしを取得した場合（Step 0を実行した場合）、議事録作成完了後に元のミーティングノートを「処理済み」ページに移動する:
+```
+mcp__notion__notion-move-pages(
+  page_or_database_ids: ["<取得元のNotion page_id>"],
+  new_parent: { type: "page_id", page_id: "325a420d-2606-8161-818d-f7d980870775" }
+)
+```
+※ 引数で文字起こしが渡された場合はこのステップをスキップ
+
+### 6. ガーブル確認フェーズ
 
 議事録作成後、以下の確認を須藤に求める:
 - 意味不明な音声ガーブルを箇条書きで提示
