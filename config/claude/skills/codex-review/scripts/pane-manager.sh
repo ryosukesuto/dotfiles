@@ -96,7 +96,7 @@ tmux_send() {
     echo "Waiting for Codex prompt..." >&2
     while [ $wait_elapsed -lt $wait_timeout ]; do
         local content=$(tmux capture-pane -t "$pane_id" -p -S -10 2>/dev/null)
-        if echo "$content" | tail -5 | grep -qE '^[>›]'; then
+        if echo "$content" | tail -10 | grep -qE '^›'; then
             echo "Codex prompt detected (${wait_elapsed}s)" >&2
             break
         fi
@@ -405,10 +405,28 @@ cmux_ensure() {
 
     echo "$new_id" > "$PANE_ID_FILE"
 
-    # codexを起動
+    # codexを起動し、プロンプト(›)が表示されるまで待機
     sleep 1
     cmux_api "surface.send_text" "{\"surface_id\":\"${new_id}\",\"text\":\"codex\\n\"}" > /dev/null
-    sleep 3
+
+    local boot_timeout=30
+    local boot_elapsed=0
+    echo "Waiting for Codex to start..." >&2
+    while [ $boot_elapsed -lt $boot_timeout ]; do
+        sleep 2
+        boot_elapsed=$((boot_elapsed + 2))
+        local screen
+        screen=$(cmux_read_screen "$new_id" false 2>/dev/null)
+        # Codexプロンプト(›)または起動バナー(OpenAI Codex)を検出
+        if echo "$screen" | grep -qE '^›|OpenAI Codex'; then
+            echo "Codex started (${boot_elapsed}s)" >&2
+            break
+        fi
+    done
+
+    if [ $boot_elapsed -ge $boot_timeout ]; then
+        echo "Warning: Codex prompt not detected after ${boot_timeout}s" >&2
+    fi
 
     echo "Created new Codex surface: $new_id (backend=cmux-socket)"
     echo "Auto-started Codex in surface"
@@ -432,7 +450,7 @@ cmux_send() {
     while [ $wait_elapsed -lt $wait_timeout ]; do
         local content
         content=$(cmux_read_screen "$surface_id" false)
-        if echo "$content" | tail -5 | grep -qE '^[>›]'; then
+        if echo "$content" | tail -10 | grep -qE '^›'; then
             echo "Codex prompt detected (${wait_elapsed}s)" >&2
             break
         fi
