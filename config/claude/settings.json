@@ -136,7 +136,6 @@
       "mcp__linear-server__create_comment",
       "mcp__linear-server__update_issue",
       "mcp__linear-server__update_project",
-      "mcp__pagerduty__get_incident",
       "mcp__ragent__hybrid_search"
     ],
     "deny": [
