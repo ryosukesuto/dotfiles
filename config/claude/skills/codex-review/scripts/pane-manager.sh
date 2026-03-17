@@ -233,7 +233,7 @@ cmux_api() {
         response=$(printf '{"id":"%s","method":"%s","params":%s}\n' "$id" "$method" "$params" \
             | nc -U "$CMUX_SOCK" -w 3 2>/dev/null) || true
         if [ -n "$response" ]; then
-            echo "$response"
+            printf '%s\n' "$response"
             return 0
         fi
         sleep 0.5
@@ -284,22 +284,13 @@ except Exception as e:
 }
 
 cmux_find_codex_pane() {
-    # 1. 保存済みIDがあればsurface.listで存在確認（リトライ付き）
+    # 1. 保存済みIDがあればsurface.read_textで直接存在確認
     if [ -f "$PANE_ID_FILE" ]; then
         local saved_id
         saved_id=$(cat "$PANE_ID_FILE" 2>/dev/null)
-        if [ -n "$saved_id" ]; then
-            local verify_attempt
-            for verify_attempt in 1 2 3; do
-                local list_response
-                list_response=$(cmux_list_surfaces) || true
-                if [ -n "$list_response" ] && echo "$list_response" | grep -q "\"$saved_id\""; then
-                    echo "$saved_id"
-                    return 0
-                fi
-                # ensure直後はsurfaceが未反映の場合があるので常にリトライ
-                sleep 1
-            done
+        if [ -n "$saved_id" ] && cmux_pane_exists "$saved_id"; then
+            echo "$saved_id"
+            return 0
         fi
     fi
 
@@ -333,9 +324,11 @@ except: pass
 cmux_pane_exists() {
     local surface_id="$1"
     [ -n "$surface_id" ] || return 1
-    local list_response
-    list_response=$(cmux_list_surfaces) || true
-    [ -n "$list_response" ] && echo "$list_response" | grep -q "\"$surface_id\""
+    # surface.read_textで直接存在確認（surface.list + grepより確実）
+    local response
+    response=$(cmux_api "surface.read_text" "{\"surface_id\":\"${surface_id}\",\"scrollback\":false}" 2>/dev/null) || return 1
+    # printf '%s' で出力（echo だと base64 内のエスケープが解釈されてJSONが壊れる）
+    [ -n "$response" ] && printf '%s' "$response" | grep -q '"result"'
 }
 
 cmux_ensure() {
