@@ -21,12 +21,4 @@ fi
 if [[ -d "$HOME/.bun" ]]; then
     export BUN_INSTALL="$HOME/.bun"
     export PATH="$BUN_INSTALL/bin:$PATH"
-    [[ -s "$BUN_INSTALL/_bun" ]] && source "$BUN_INSTALL/_bun"
 fi
-
-# bun completions
-[ -s "/Users/s32943/.bun/_bun" ] && source "/Users/s32943/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"

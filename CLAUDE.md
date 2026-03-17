@@ -9,14 +9,11 @@ Claude Code用のリポジトリガイダンス。
 ## 構成
 
 ```
-zsh/           - Zsh設定（番号順に読み込み）
+zsh/           - Zsh設定（Claude Code実行環境として最適化）
   00-core.zsh      - コアシェル設定
-  10-completion.zsh - 補完設定
   20-path.zsh      - PATH管理
-  30-aliases.zsh   - エイリアス定義
-  40-functions.zsh - シェル関数
-  50-tools.zsh     - mise初期化
-  60-prompt.zsh    - プロンプト設定
+  50-tools.zsh     - mise/direnv初期化
+  60-prompt.zsh    - プロンプト設定（ENV/AWS警告）
   90-local.zsh     - ローカル設定
 config/        - アプリ設定
   claude/          - Claude Code設定
@@ -65,12 +62,6 @@ git-wt remove feature/xxx
 ### キーバインド
 - `Ctrl+]`: ghqリポジトリ選択（fzf）
 - `Ctrl+\`: worktree選択（fzf）
-
-### エイリアス
-- `wt`: git-wt
-- `wta`: git-wt add（worktree作成）
-- `wtl`: git-wt list（一覧）
-- `wtr`: git-wt remove（削除）
 
 ### Claude Codeでのworktree操作
 
