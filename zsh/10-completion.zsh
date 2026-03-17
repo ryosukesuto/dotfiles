@@ -31,12 +31,23 @@ fi
 # ============================================================================
 autoload -Uz compinit
 
-# 1日1回だけ完全チェック、それ以外はキャッシュから読み込み
-if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
-  compinit
+# キャッシュを~/.zsh/cache/に集約
+[[ -d ~/.zsh/cache ]] || mkdir -p ~/.zsh/cache
+local _zcompdump=~/.zsh/cache/zcompdump
+
+# 1日1回だけ完全チェック（compaudit含む）、それ以外はキャッシュから高速読み込み
+if [[ -n ${_zcompdump}(#qN.mh+24) ]]; then
+  compinit -d "$_zcompdump"
 else
-  compinit -C
+  compinit -C -d "$_zcompdump"
 fi
+
+# zcompdumpをコンパイルして読み込みを高速化（バックグラウンド実行）
+{
+  if [[ -s "$_zcompdump" && (! -s "${_zcompdump}.zwc" || "$_zcompdump" -nt "${_zcompdump}.zwc") ]]; then
+    zcompile "$_zcompdump"
+  fi
+} &!
 
 # ============================================================================
 # 最小限の補完設定
