@@ -21,7 +21,6 @@ brew "ripgrep"       # grep代替
 brew "fd"            # find代替
 brew "jq"            # JSON処理
 brew "ghq"           # リポジトリ管理
-brew "peco"          # fzfフォールバック（ghq連携）
 brew "k1LoW/tap/git-wt"  # git worktree管理
 brew "terminal-notifier"  # macOS通知
 
