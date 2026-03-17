@@ -309,6 +309,7 @@
       "cmux"
     ]
   },
+  "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
   "showTurnDuration": true
