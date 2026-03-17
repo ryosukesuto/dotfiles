@@ -39,3 +39,10 @@ if (( $+commands[direnv] )); then
   eval "$(direnv hook zsh)"
 fi
 
+# Claude Code コンテキスト切替alias
+if (( $+commands[claude] )); then
+  _claude_ctx="$HOME/.claude/contexts"
+  alias claude-review='claude --system-prompt "$(cat "$_claude_ctx/review.md" 2>/dev/null)"'
+  alias claude-research='claude --system-prompt "$(cat "$_claude_ctx/research.md" 2>/dev/null)"'
+fi
+

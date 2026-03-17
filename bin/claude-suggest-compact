@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# claude-suggest-compact - Edit/Write回数を数えて論理的タイミングでcompactを提案
+#
+# PreToolUse (Edit|Write) hookとして実行。
+# 閾値到達時にstderrにメッセージを出力（Claudeへのフィードバック）。
+#
+# 環境変数:
+#   COMPACT_THRESHOLD - 初回提案までの回数（デフォルト: 50）
+#   COMPACT_INTERVAL  - 以降の提案間隔（デフォルト: 25）
+
+set -euo pipefail
+
+THRESHOLD="${COMPACT_THRESHOLD:-50}"
+INTERVAL="${COMPACT_INTERVAL:-25}"
+COUNTER_FILE="${HOME}/.claude/.compact-counter"
+
+mkdir -p "$(dirname "$COUNTER_FILE")"
+
+# カウンター読み込み・インクリメント
+COUNT=0
+if [[ -f "$COUNTER_FILE" ]]; then
+  COUNT=$(cat "$COUNTER_FILE" 2>/dev/null || echo 0)
+fi
+COUNT=$((COUNT + 1))
+echo "$COUNT" > "$COUNTER_FILE"
+
+# 閾値判定
+if (( COUNT == THRESHOLD )); then
+  echo "[Hook] Edit/Write ${COUNT}回到達。フェーズの区切りなら /compact を検討してください。" >&2
+elif (( COUNT > THRESHOLD && (COUNT - THRESHOLD) % INTERVAL == 0 )); then
+  echo "[Hook] Edit/Write ${COUNT}回。コンテキスト圧縮を推奨します。" >&2
+fi
+
+# stdinをそのままstdoutに通す
+cat

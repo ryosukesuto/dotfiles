@@ -344,6 +344,9 @@ create_symlink "$DOTFILES_DIR/config/claude/skills" "$HOME/.claude/skills"
 # Claude Rules（ワークフロー・協業ルール）
 create_symlink "$DOTFILES_DIR/config/claude/rules" "$HOME/.claude/rules"
 
+# Claude Contexts（--system-prompt用コンテキストファイル）
+create_symlink "$DOTFILES_DIR/config/claude/contexts" "$HOME/.claude/contexts"
+
 # Claude グローバル設定
 create_symlink "$DOTFILES_DIR/config/claude/GLOBAL_SETTINGS.md" "$HOME/.claude/CLAUDE.md"
 

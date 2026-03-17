@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# claude-pre-compact - PreCompact hookでコンテキスト状態を退避
+#
+# コンパクション前に以下を .claude/compact-state.md に保存:
+# - git diff --stat（変更ファイル一覧）
+# - 直近のコミット
+# - 現在のブランチ
+#
+# Claudeはcompact後にこのファイルを参照して文脈を復元できる。
+
+set -euo pipefail
+
+STATE_DIR="${HOME}/.claude"
+STATE_FILE="${STATE_DIR}/compact-state.md"
+
+mkdir -p "$STATE_DIR"
+
+# git情報（gitリポジトリ外では空になる）
+BRANCH=$(git branch --show-current 2>/dev/null || echo "N/A")
+DIFF_STAT=$(git diff --stat HEAD 2>/dev/null || echo "No changes")
+RECENT_COMMITS=$(git log --oneline -5 2>/dev/null || echo "N/A")
+TOPLEVEL=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+
+cat > "$STATE_FILE" <<EOF
+## Compact State (auto-saved)
+
+Updated: $(date '+%Y-%m-%d %H:%M:%S')
+Project: $(basename "$TOPLEVEL")
+Branch: $BRANCH
+
+### Changed Files
+\`\`\`
+${DIFF_STAT}
+\`\`\`
+
+### Recent Commits
+\`\`\`
+${RECENT_COMMITS}
+\`\`\`
+EOF
+
+# stdinをそのままstdoutに通す（hookの仕様）
+cat
