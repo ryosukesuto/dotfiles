@@ -2,13 +2,14 @@
 # プロンプト設定（vcs_info使用で高速化）
 
 autoload -Uz colors && colors
-autoload -Uz vcs_info
+autoload -Uz vcs_info add-zsh-hook
 setopt PROMPT_SUBST
 
 # vcs_info設定
+# msg_0_: プロンプト表示用、msg_1_: タブタイトル用（ブランチ名 dirty指標）
 zstyle ':vcs_info:*' enable git
-zstyle ':vcs_info:*' formats ' %F{green}(%b%u%c)%f'
-zstyle ':vcs_info:*' actionformats ' %F{green}(%b|%a%u%c)%f'
+zstyle ':vcs_info:*' formats ' %F{green}(%b%u%c)%f' '%b %u%c'
+zstyle ':vcs_info:*' actionformats ' %F{green}(%b|%a%u%c)%f' '%b %u%c'
 zstyle ':vcs_info:*' check-for-changes true
 zstyle ':vcs_info:*' stagedstr '+'
 zstyle ':vcs_info:*' unstagedstr '*'
@@ -44,18 +45,39 @@ _prompt_env_info() {
   fi
 }
 
-# precmdでvcs_infoを更新（プロンプト表示前に1回だけ実行）
-precmd() { vcs_info; __update_tab_title }
+# リポジトリ名キャッシュ（chpwdでのみ更新、precmd毎回のgit rev-parseを排除）
+typeset -g _tab_repo="" _tab_wt=""
 
-# タブタイトル設定
+_update_tab_repo_cache() {
+  if git rev-parse --is-inside-work-tree &>/dev/null; then
+    _tab_repo=$(basename "$(git rev-parse --show-toplevel)")
+    local wt=${PWD:t}
+    [[ "$wt" != "$_tab_repo" ]] && _tab_wt="@${wt}" || _tab_wt=""
+  else
+    _tab_repo="" _tab_wt=""
+  fi
+}
+
+add-zsh-hook chpwd _update_tab_repo_cache
+_update_tab_repo_cache  # 初期値
+
+# precmdでvcs_infoを更新（プロンプト表示前に1回だけ実行）
+add-zsh-hook precmd _precmd_vcs
+_precmd_vcs() { vcs_info; __update_tab_title }
+
+# タブタイトル設定（vcs_info_msg_1_ を再利用、追加のgitコマンドなし）
 # 形式: repo:branch* または repo@wt:branch* (worktree内)
 # tmux内: rename-windowでウィンドウ名を直接設定（OSC 2を無視する設定のため）
 # tmux外: OSC 2でターミナルタイトルを設定
 __update_tab_title() {
-  local title repo branch dirty wt
-  if git rev-parse --is-inside-work-tree &>/dev/null; then
-    repo=$(basename "$(git rev-parse --show-toplevel)")
-    branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+  local title
+  if [[ -n "$_tab_repo" && -n "$vcs_info_msg_1_" ]]; then
+    local branch=${vcs_info_msg_1_%% *}
+    local markers=${vcs_info_msg_1_#* }
+    # detached HEAD: vcs_infoが "heads/xxx" を返すので除去
+    branch=${branch#heads/}
+    # rebase/action中: "branch|action" → branchだけ取り出す
+    branch=${branch%%|*}
     # ブランチ名を短縮: "username/xxx" → "xxx", "feature/xxx" → "f/xxx"
     case "$branch" in
       feature/*) branch="f/${branch#feature/}" ;;
@@ -64,17 +86,12 @@ __update_tab_title() {
       hotfix/*) branch="h/${branch#hotfix/}" ;;
       */*) branch="${branch##*/}" ;;  # その他のprefix（ユーザー名等）は除去
     esac
-    # worktree内ならディレクトリ名を追加
-    wt=${PWD:t}
-    [[ "$wt" != "$repo" ]] && repo="${repo}@${wt}"
-    # 未コミット変更があれば*を追加
-    git diff --quiet --ignore-submodules -- 2>/dev/null || dirty="*"
-    title="${repo}:${branch}${dirty}"
+    local dirty=""
+    [[ "$markers" == *'*'* ]] && dirty="*"
+    title="${_tab_repo}${_tab_wt}:${branch}${dirty}"
   else
     title="${PWD:t}"
   fi
-  # tmux内: ウィンドウ名を直接設定
-  # tmux外: OSC 2でタイトル設定
   if [[ -n "$TMUX" ]]; then
     tmux rename-window "$title"
   else
