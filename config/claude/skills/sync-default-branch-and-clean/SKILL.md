@@ -25,46 +25,10 @@ git remote -v
 
 ### フェーズ0: lock待機とworktree安全対策
 
-#### lock待機関数
+詳細実装は `${CLAUDE_SKILL_DIR}/reference.md` の「lock待機関数」「worktree 内で実行時の安全対策」を参照。
 
-worktree環境では複数の場所でlockが発生するため、git操作前にlockを確認・待機する:
-
-```bash
-wait_git_lock() {
-  local git_dir git_common_dir count=0
-  git_dir="$(git rev-parse --git-dir 2>/dev/null)" || return 1
-  git_common_dir="$(git rev-parse --git-common-dir 2>/dev/null)" || return 1
-
-  while [ "$count" -lt 20 ]; do
-    # worktree固有dir + 共通dirの両方で *.lock を確認
-    if find "$git_dir" "$git_common_dir" -maxdepth 2 -name '*.lock' -print -quit 2>/dev/null | grep -q .; then
-      echo "Git lock detected, waiting... ($count)"
-      sleep 0.5
-      count=$((count + 1))
-    else
-      return 0
-    fi
-  done
-  echo "Warning: Git lock timeout after 10 seconds"
-  return 1
-}
-```
-
-以降の各gitコマンド（checkout, fetch, pull等）の前に `wait_git_lock` を呼び出す。
-
-#### worktree 内で実行時の安全対策
-
-worktree 内で実行された場合、メインリポジトリに移動してから処理を行う:
-
-```bash
-# worktree 内かどうかを判定（.git がファイルの場合は worktree）
-if [ -f ".git" ]; then
-    # メインリポジトリのパスを取得
-    MAIN_REPO=$(git rev-parse --git-common-dir | sed 's|/.git$||')
-    echo "worktree 内で実行されました。メインリポジトリに移動します: $MAIN_REPO"
-    cd "$MAIN_REPO"
-fi
-```
+- lock待機: `wait_git_lock` 関数を定義し、各gitコマンド前に呼び出す（20回リトライ、0.5秒間隔）
+- worktree検出: `.git` がファイルなら worktree 内と判定し、`git rev-parse --git-common-dir` でメインリポジトリに移動
 
 ### フェーズ1: デフォルトブランチの同期
 
@@ -93,29 +57,10 @@ REMOTE=$(git remote | grep -E '^origin$' || git remote | head -n1)
 
 ### フェーズ2: 不要なworktreeの削除
 
-worktree環境の場合、マージ済みPRに対応するworktreeを削除:
+詳細実装は `${CLAUDE_SKILL_DIR}/reference.md` の「フェーズ2: 不要なworktreeの削除（詳細）」を参照。
 
-```bash
-# worktree一覧を取得（メインworktree以外）
-git worktree list | tail -n +2 | while read wt_path wt_commit wt_branch; do
-    # ブランチ名を抽出（[branch-name] 形式）
-    branch=$(echo "$wt_branch" | tr -d '[]')
-
-    # PRの状態を確認
-    pr_state=$(gh pr list --head "$branch" --state all --json state -q '.[0].state' 2>/dev/null)
-
-    if [[ "$pr_state" == "MERGED" ]]; then
-        echo "マージ済み: $wt_path ($branch)"
-        # 削除候補としてリストアップ
-    fi
-done
-```
-
-削除実行:
-```bash
-git wt -d <branch|worktree>   # 安全な削除（マージ済みの場合のみ）
-git wt -D <branch|worktree>   # 強制削除
-```
+worktree環境の場合、`gh pr list --state all` でPR状態を確認し、`MERGED` のworktreeを削除候補としてリストアップ。
+削除は `git wt -d`（安全）または `git wt -D`（強制）で実行する。
 
 ### フェーズ3: 不要なローカルブランチの削除
 
@@ -156,22 +101,9 @@ done
 
 ## worktree環境での注意
 
-worktree使用時は追加の確認が必要:
+詳細手順は `${CLAUDE_SKILL_DIR}/reference.md` の「worktree環境での注意」を参照。
 
-```bash
-# worktree一覧を確認
-git wt
-
-# 別のworktreeでチェックアウト中のブランチは削除不可
-# → 先にworktreeを削除する必要がある
-git wt -d <branch|worktree>   # 安全な削除
-git wt -D <branch|worktree>   # 強制削除
-```
-
-削除できないブランチがある場合:
-1. `git wt` でどのworktreeが使用中か確認
-2. 不要なworktreeを `git wt -d` で削除
-3. その後ブランチを削除
+別worktreeで使用中のブランチは削除不可。先に `git wt -d` でworktreeを削除してからブランチを削除する。
 
 ## 注意事項
 
@@ -180,3 +112,7 @@ git wt -D <branch|worktree>   # 強制削除
 - gone ブランチは `-D` で強制削除されるため、未push のコミットがある場合は注意
 - worktree使用中のブランチは削除できない（先に `git wt -d` でworktreeを削除）
 - worktree 内で実行した場合、自動的にメインリポジトリに移動してから処理を行う
+
+## Gotchas
+
+(運用しながら追記)

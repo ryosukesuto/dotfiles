@@ -2,6 +2,12 @@
 name: service-debug
 description: kubectlでのサービス調査・ボトルネック調査のガイドライン。「サービス調査」「kubectl」「ボトルネック」「Spanner」等で起動。
 user-invocable: false
+allowed-tools:
+  - Bash(kubectl:*)
+  - mcp__datadog-mcp__search_datadog_logs
+  - mcp__datadog-mcp__search_datadog_events
+  - mcp__datadog-mcp__search_datadog_spans
+  - Agent
 ---
 
 ## デバッグ & 調査
@@ -58,3 +64,7 @@ kubectl get events -n default --sort-by='.lastTimestamp' | grep -E '(Killing|Evi
 - 「Agentで{調査A}をしながら、{調査B}を調べて」
 
 Claude Codeは複数のTask Agentを同時に起動できる。
+
+## Gotchas
+
+(運用しながら追記)

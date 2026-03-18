@@ -1,7 +1,13 @@
 ---
 name: claude-md-improver
 description: Audit and improve CLAUDE.md files in repositories. Use when user asks to check, audit, update, improve, or fix CLAUDE.md files. Scans for all CLAUDE.md files, evaluates quality against templates, outputs quality report, then makes targeted updates. Also use when the user mentions "CLAUDE.md maintenance" or "project memory optimization".
-tools: Read, Glob, Grep, Bash, Edit
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Edit
+user-invocable: true
 ---
 
 # CLAUDE.md Improver
@@ -34,7 +40,7 @@ find . -name "CLAUDE.md" -o -name ".claude.md" -o -name ".claude.local.md" 2>/de
 
 ### Phase 2: Quality Assessment
 
-For each CLAUDE.md file, evaluate against quality criteria. See [references/quality-criteria.md](references/quality-criteria.md) for detailed rubrics.
+For each CLAUDE.md file, evaluate against quality criteria. See [${CLAUDE_SKILL_DIR}/references/quality-criteria.md](references/quality-criteria.md) for detailed rubrics.
 
 **Quick Assessment Checklist:**
 
@@ -58,39 +64,8 @@ For each CLAUDE.md file, evaluate against quality criteria. See [references/qual
 
 **ALWAYS output the quality report BEFORE making any updates.**
 
-Format:
-
-```
-## CLAUDE.md Quality Report
-
-### Summary
-- Files found: X
-- Average score: X/100
-- Files needing update: X
-
-### File-by-File Assessment
-
-#### 1. ./CLAUDE.md (Project Root)
-**Score: XX/100 (Grade: X)**
-
-| Criterion | Score | Notes |
-|-----------|-------|-------|
-| Commands/workflows | X/20 | ... |
-| Architecture clarity | X/20 | ... |
-| Non-obvious patterns | X/15 | ... |
-| Conciseness | X/15 | ... |
-| Currency | X/15 | ... |
-| Actionability | X/15 | ... |
-
-**Issues:**
-- [List specific problems]
-
-**Recommended additions:**
-- [List what should be added]
-
-#### 2. ./packages/api/CLAUDE.md (Package-specific)
-...
-```
+レポートフォーマットは `${CLAUDE_SKILL_DIR}/reference.md` の「Phase 3: Quality Report フォーマット」を参照。
+Summary（件数・平均スコア）→ File-by-File Assessment（スコア表・Issues・Recommended additions）の構成で出力する。
 
 ### Phase 4: Targeted Updates
 
@@ -116,22 +91,7 @@ After outputting the quality report, ask user for confirmation before updating.
    - The specific addition (as a diff or quoted block)
    - Brief explanation of why this helps future sessions
 
-**Diff Format:**
-
-```markdown
-### Update: ./CLAUDE.md
-
-**Why:** Build command was missing, causing confusion about how to run the project.
-
-```diff
-+ ## Quick Start
-+
-+ ```bash
-+ npm install
-+ npm run dev  # Start development server on port 3000
-+ ```
-```
-```
+Diff Formatの例は `${CLAUDE_SKILL_DIR}/reference.md` の「Phase 4: Diff Format 例」を参照。
 
 ### Phase 5: Apply Updates
 
@@ -139,7 +99,7 @@ After user approval, apply changes using the Edit tool. Preserve existing conten
 
 ## Templates
 
-See [references/templates.md](references/templates.md) for CLAUDE.md templates by project type.
+See [${CLAUDE_SKILL_DIR}/references/templates.md](references/templates.md) for CLAUDE.md templates by project type.
 
 ## Common Issues to Flag
 
@@ -150,30 +110,12 @@ See [references/templates.md](references/templates.md) for CLAUDE.md templates b
 5. **Broken test commands**: Test scripts that have changed
 6. **Undocumented gotchas**: Non-obvious patterns not captured
 
-## User Tips to Share
+## User Tips / What Makes a Great CLAUDE.md
 
-When presenting recommendations, remind users:
+詳細は `${CLAUDE_SKILL_DIR}/reference.md` の「User Tips to Share」「What Makes a Great CLAUDE.md」を参照。
 
-- **`#` key shortcut**: During a Claude session, press `#` to have Claude auto-incorporate learnings into CLAUDE.md
-- **Keep it concise**: CLAUDE.md should be human-readable; dense is better than verbose
-- **Actionable commands**: All documented commands should be copy-paste ready
-- **Use `.claude.local.md`**: For personal preferences not shared with team (add to `.gitignore`)
-- **Global defaults**: Put user-wide preferences in `~/.claude/CLAUDE.md`
+推奨セクション: Commands / Architecture / Key Files / Code Style / Environment / Testing / Gotchas / Workflow
 
-## What Makes a Great CLAUDE.md
+## Gotchas
 
-**Key principles:**
-- Concise and human-readable
-- Actionable commands that can be copy-pasted
-- Project-specific patterns, not generic advice
-- Non-obvious gotchas and warnings
-
-**Recommended sections** (use only what's relevant):
-- Commands (build, test, dev, lint)
-- Architecture (directory structure)
-- Key Files (entry points, config)
-- Code Style (project conventions)
-- Environment (required vars, setup)
-- Testing (commands, patterns)
-- Gotchas (quirks, common mistakes)
-- Workflow (when to do what)
+(運用しながら追記)

@@ -2,6 +2,8 @@
 name: google-workspace
 description: Google Workspace操作（Gmail・Calendar・Drive）。「メール確認」「予定教えて」「ドライブ検索」「メール送って」等で起動。
 user-invocable: false
+allowed-tools:
+  - Bash(gws:*)
 ---
 
 ## 前提
@@ -75,7 +77,7 @@ eval "$(mise activate zsh)" && gws drive +upload --file /path/to/file
 
 - Drive書き込み不可: OAuthアプリが未検証のため、既存ファイルのリネーム・移動・削除はブロックされる（`appNotAuthorizedToFile` エラー）。gwsで新規作成したファイルのみ書き込み可能
 - Drive整理が必要な場合: Google Apps Script（clasp or ブラウザ）経由で実行する。GASはアプリ検証制限を受けない
-- GCPプロジェクト: `<PERSONAL_GCP_PROJECT>`（プロジェクト名: NASCA）、テストモード
+- GCPプロジェクト: `~/.claude/rules/service-environments.local.md` を参照（テストモード）
 
 ## 注意事項
 
@@ -83,3 +85,7 @@ eval "$(mise activate zsh)" && gws drive +upload --file /path/to/file
 - 時刻はJST（+09:00）で指定
 - API呼び出し時のパラメータは `--params` にJSON形式で渡す
 - ヘルパーコマンド（`+triage`, `+agenda`, `+send`, `+insert`, `+upload`）を優先的に使う
+
+## Gotchas
+
+(運用しながら追記)

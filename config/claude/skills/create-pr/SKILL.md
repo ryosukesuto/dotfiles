@@ -21,7 +21,11 @@ git diffを分析して、Mermaid図やテスト結果を含む包括的なPull 
 
 ## 実行手順
 
-### 0. ブランチ状態の確認と worktree 作成
+### 0. リファレンス読み込み（必要時のみ）
+
+- `${CLAUDE_SKILL_DIR}/reference.md` — PR本文テンプレート、worktree環境での動作、注意事項
+
+### 1. ブランチ状態の確認と worktree 作成
 
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
@@ -35,7 +39,7 @@ if [[ "$CURRENT_BRANCH" == "$DEFAULT_BRANCH" ]]; then
 fi
 ```
 
-### 1. 変更内容の分析
+### 2. 変更内容の分析
 
 ```bash
 git status
@@ -45,18 +49,18 @@ git log --oneline -10
 git branch --show-current
 ```
 
-### 2. 変更タイプの自動判定
+### 3. 変更タイプの自動判定
 
 - 変更規模: 追加/削除行数、ファイル数
 - 変更タイプ: feat/fix/refactor/docs/test/chore
 - 影響範囲: 変更ファイルの依存関係
 - Breaking Change: API変更、設定変更、削除されたメソッド
 
-### 3. Mermaid図の生成（必要に応じて）
+### 4. Mermaid図の生成（必要に応じて）
 
 アーキテクチャ変更、APIエンドポイント変更、状態管理変更が検出された場合に図を生成。
 
-### 4-6. テスト・PR本文生成・Codexレビュー（並列実行）
+### 5-7. テスト・PR本文生成・Codexレビュー（並列実行）
 
 以下の3つは依存関係がないため、Subagentで並列実行する。
 
@@ -64,34 +68,9 @@ git branch --show-current
 プロジェクトタイプに応じたテストコマンドを検出して実行。結果を返す。
 
 #### 並列タスクB: PR本文のドラフト生成
-ステップ1-3の分析結果をもとにPR本文をドラフト生成する（テスト結果の欄は後で埋める）。
+ステップ2-4の分析結果をもとにPR本文をドラフト生成する（テスト結果の欄は後で埋める）。
 
-```markdown
-## 概要
-[1-2行で変更の目的を説明]
-
-## 変更内容
-- [主要な変更点を箇条書き]
-
-## 変更の可視化
-[必要に応じてMermaid図を挿入]
-
-## チェックリスト
-- [ ] テストが全て通過
-- [ ] Lintエラーなし
-- [ ] 型チェック通過
-
-## Test plan
-- [ ] POST-MERGE: [マージ後に確認する項目]
-
-## テスト結果
-[並列タスクAの結果を挿入]
-
-## 影響範囲
-- 影響を受けるファイル: X files
-- 追加行数: +XXX
-- 削除行数: -XXX
-```
+`${CLAUDE_SKILL_DIR}/reference.md` のPR本文テンプレートに従う。
 
 #### 並列タスクC: Codex Review（必須）
 
@@ -126,7 +105,7 @@ fi
    - P2以下のみ: ユーザーに報告し、対応要否を確認してから次のステップへ進む
    - 指摘なし: そのまま次のステップへ進む
 
-### 7. デフォルトブランチの最新化とリベース
+### 8. デフォルトブランチの最新化とリベース
 
 PR作成前にデフォルトブランチの最新を取り込み、コンフリクトを事前に解消する。
 
@@ -139,7 +118,7 @@ git rebase "origin/$DEFAULT_BRANCH"
 - リベースでコンフリクトが発生した場合は解消してから続行する
 - コンフリクトの内容をユーザーに報告し、対応方針を確認する
 
-### 8. PRの作成
+### 9. PRの作成
 
 ```bash
 # Terraformリポジトリの場合はフォーマット実行
@@ -162,54 +141,13 @@ if [ -n "$PR_URL" ]; then
     Obsidian daily:append vault=obsidian-notes content="- $(date '+%Y/%m/%d %H:%M:%S'): PR #${PR_NUMBER} 作成完了: ${PR_URL}"
 fi
 
-# worktree内の場合は削除方法を案内
+# worktree内の場合は削除方法を案内（詳細は reference.md 参照）
 if [ -f ".git" ]; then
     BRANCH=$(git branch --show-current)
-    echo ""
-    echo "PRがマージされたら以下でworktreeを削除できます:"
-    echo "  git wt -d $BRANCH"
-    echo ""
-    echo "または /sync-default-branch-and-clean で一括クリーンアップ"
+    echo "PRマージ後: git wt -d $BRANCH または /sync-default-branch-and-clean"
 fi
 ```
 
-## オプション
+## Gotchas
 
-- `--draft` - ドラフトPRとして作成
-
-## 使用例
-
-```bash
-/create-pr
-/create-pr "feat: ユーザー認証機能の追加"
-/create-pr --draft
-```
-
-## worktree環境での動作
-
-### デフォルトブランチで作業開始した場合
-
-1. 変更内容を stash
-2. `git wt <branch-name>` で worktree を作成
-3. worktree 内で stash を適用: `git stash pop`
-4. 作業を続行
-
-### worktree内でPR作成後
-
-PRがマージされたら以下で削除:
-
-```bash
-git wt -d <branch-name>   # 安全な削除
-git wt -D <branch-name>   # 強制削除
-```
-
-または `/sync-default-branch-and-clean` で一括クリーンアップ
-
-## 注意事項
-
-1. コミット前の確認: 機密情報が含まれていないか確認
-2. テスト実行: PR作成前に必ずテストを実行
-3. ブランチ名: 意味のある名前を使用
-4. worktree優先: デフォルトブランチでの作業は worktree を使用
-5. worktree削除: PRマージ後は worktree の削除を忘れずに
-6. checklist completion: リポジトリで task-list-checker が有効な場合、PR body 内の未チェックのチェックボックス（`- [ ]`）があると CI が通らない。マージ後に確認する項目には `POST-MERGE:` プレフィックスを付けること（例: `- [ ] POST-MERGE: Pod が正常起動することを確認`）。`POST-MERGE:` または `N/A` タグ付きの項目はスキップされる
+(運用しながら追記)

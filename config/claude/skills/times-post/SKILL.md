@@ -89,3 +89,7 @@ curl -s -X POST "$WEBHOOK_URL" \
 ```
 
 投稿テキストの先頭には `:claude:` 絵文字を付ける。
+
+## Gotchas
+
+(運用しながら追記)
