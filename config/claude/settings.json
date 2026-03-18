@@ -264,6 +264,28 @@
         ]
       }
     ],
+    "StopFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmux notify --title 'Claude Code' --subtitle 'APIエラー' --body 'レート制限または認証エラーで停止しました' || true"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rm -f \"$HOME/.claude/.compact-counter\"; echo '[Hook] コンテキスト圧縮完了。カウンターをリセットしました。' >&2"
+          }
+        ]
+      }
+    ],
     "PostToolUseFailure": [
       {
         "matcher": "",
