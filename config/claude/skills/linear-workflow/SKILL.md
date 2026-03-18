@@ -2,6 +2,13 @@
 name: linear-workflow
 description: Linearでのissue作成・ポイント見積もり・サイクル管理のガイドライン。「issueを作って」「ポイント見積もり」「サイクル確認」「Linear MCP」等で起動。
 user-invocable: false
+allowed-tools:
+  - mcp__linear-server__list_issues
+  - mcp__linear-server__list_cycles
+  - mcp__linear-server__list_projects
+  - mcp__linear-server__save_issue
+  - mcp__linear-server__get_issue
+  - AskUserQuestion
 ---
 
 # Linearタスク管理ワークフロー
@@ -137,3 +144,7 @@ update_issue(id="PF-xxx", cycle="next")
 - 細かいステータスを増やす
 - pt実績を厳密に追う
 - KPIっぽい数値評価
+
+## Gotchas
+
+(運用しながら追記)

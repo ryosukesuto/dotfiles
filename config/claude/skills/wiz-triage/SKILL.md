@@ -2,6 +2,15 @@
 name: wiz-triage
 description: Wizアラートのトリアージと調査を支援。「Wizアラート」「Wiz対応」「セキュリティアラート」等で起動。
 user-invocable: true
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - mcp__linear-server__save_issue
+  - mcp__linear-server__get_issue
+  - mcp__datadog-mcp__search_datadog_logs
+  - mcp__datadog-mcp__search_datadog_events
+  - mcp__ragent__hybrid_search
 ---
 
 # Wiz Triage
@@ -130,3 +139,7 @@ Linear: {issueのURL}
 | DNS query for Burp Suite domains | MXレコード検証、メール送信機能 | 機能の正常動作なら無視 |
 | IMDS access | GCP認証トークン取得 | 正常動作なら無視 |
 | Suspicious outbound connection | 外部API呼び出し | 意図した通信か確認 |
+
+## Gotchas
+
+(運用しながら追記)

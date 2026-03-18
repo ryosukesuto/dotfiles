@@ -2,6 +2,11 @@
 name: infra-workflow
 description: Terraform・AWS CLI作業時のガイドライン。「Terraform」「terraform plan」「AWS CLI」「IaC」等で起動。
 user-invocable: false
+allowed-tools:
+  - Bash(terraform:*)
+  - Bash(aws:*)
+  - Read
+  - Glob
 ---
 
 # インフラ作業ワークフロー
@@ -21,3 +26,7 @@ user-invocable: false
 5. AWS CLIコマンドを実行（プロファイル指定不要）
 
 注意: 一時的な認証情報のため、有効期限切れ時は再取得が必要
+
+## Gotchas
+
+(運用しながら追記)
