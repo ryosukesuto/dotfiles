@@ -9,8 +9,30 @@ allowed-tools:
 ## 前提
 
 - `gws` コマンド（`@googleworkspace/cli`）がmiseでインストール済み
-- 認証済みアカウント: <PERSONAL_EMAIL>
 - Bash実行時は `eval "$(mise activate zsh)" &&` を前置してパスを通す
+
+## アカウント切り替え
+
+gwsはプロファイル切り替え機能がないため、`GOOGLE_WORKSPACE_CLI_CONFIG_DIR` で切り替える。
+
+| コマンド | アカウント | GCPプロジェクト | config dir |
+|---------|-----------|----------------|-----------|
+| `gws` | WinTicket（会社） | <WORKSPACE_GCP_PROJECT> | `~/.config/gws/` |
+| `gws-personal` | <PERSONAL_EMAIL> | <PERSONAL_GCP_PROJECT> | `~/.config/gws-personal/` |
+
+`gws-personal` は `~/.zshrc` に以下の関数として定義済み:
+```bash
+function gws-personal() {
+  GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws-personal gws "$@"
+}
+```
+
+新しいターミナルセッション以外では以下で代替:
+```bash
+eval "$(mise activate zsh)" && GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws-personal gws <args>
+```
+
+個人用Drive（01_Finance等）へのアクセスは必ず `gws-personal` を使う。
 
 ## コマンドパターン
 
@@ -63,9 +85,24 @@ eval "$(mise activate zsh)" && gws calendar +insert --summary "1on1" --start "..
 
 ### Drive
 
-ファイル検索:
+ファイル検索（個人: gws-personal、仕事: gws）:
 ```bash
-eval "$(mise activate zsh)" && gws drive files list --params '{"q": "name contains '\''検索語'\''", "fields": "files(id,name,mimeType,modifiedTime)"}'
+eval "$(mise activate zsh)" && gws-personal drive files list --params '{"q": "name contains '\''検索語'\''", "fields": "files(id,name,mimeType,modifiedTime)"}'
+```
+
+フォルダ内ファイル一覧:
+```bash
+eval "$(mise activate zsh)" && gws-personal drive files list --params '{"q": "'\''FOLDER_ID'\'' in parents and trashed=false", "fields": "files(id,name,mimeType,modifiedTime)", "orderBy": "modifiedTime desc"}'
+```
+
+マイドライブルート一覧:
+```bash
+eval "$(mise activate zsh)" && gws-personal drive files list --params '{"q": "'\''root'\'' in parents and trashed=false", "fields": "files(id,name,mimeType,modifiedTime)", "orderBy": "modifiedTime desc"}'
+```
+
+ファイルダウンロード（PDF等）:
+```bash
+eval "$(mise activate zsh)" && gws-personal drive files get --params '{"fileId": "FILE_ID", "alt": "media"}' --output /tmp/filename.pdf
 ```
 
 ファイルアップロード:

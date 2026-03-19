@@ -209,6 +209,7 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
+  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
