@@ -17,6 +17,9 @@ allowed-tools:
   - mcp__notion__notion-fetch
   - mcp__notion__notion-move-pages
   - mcp__ragent__hybrid_search
+  - mcp__claude_ai_Slack__slack_search_channels
+  - mcp__claude_ai_Slack__slack_read_channel
+  - mcp__claude_ai_Slack__slack_search_public
 ---
 
 # /create-meeting-minutes - 議事録作成
@@ -80,6 +83,7 @@ date "+%Y-%m-%d (%a) %H:%M"
 - Linearプロジェクト一覧: `mcp__linear-server__list_projects(team: "<チーム名>")` ※ LeadがPJ担当者
 - current cycleの全Issue: `mcp__linear-server__list_cycles` → `mcp__linear-server__list_issues(limit: 250)` ※ TEAM_IDは service-environments.local.md 参照、`assignee: "me"` は付けない
 - 過去の同じ会議の議事録: `Glob(pattern: "*<会議名>*")` → 最新2-3件を読んで表記ルール確認
+- 会議チャンネルの直近メッセージ: `mcp__claude_ai_Slack__slack_search_channels(query: "<会議名>")` → channel_id を特定して `mcp__claude_ai_Slack__slack_read_channel(limit: 30)` ※ チャンネルが見つからない場合はスキップ
 
 ### 3. プロジェクト照合（逆引き方式）
 
@@ -88,7 +92,8 @@ date "+%Y-%m-%d (%a) %H:%M"
 1. Issue内容との逆引き: Issueタイトル・内容と議論内容を照合してプロジェクトを特定
 2. プロジェクトLeadとの照合: Lead情報から発言者とプロジェクトの対応を推定
 3. ガーブル名の解読: `${CLAUDE_SKILL_DIR}/reference.md` のガーブル対応表を参照
-4. RAGentで補完: 解決できない場合は `mcp__ragent__hybrid_search(search_mode: "hybrid", top_k: 5)`
+4. Slack検索で補完: Step 2 で取得した会議チャンネルの発言や `mcp__claude_ai_Slack__slack_search_public(query: "<ガーブル語句> OR <推測キーワード>")` で前後の文脈を確認
+5. RAGentで補完: それでも解決できない場合は `mcp__ragent__hybrid_search(search_mode: "hybrid", top_k: 5)`
 
 構成: Linearプロジェクトごとにセクションを作成。リンク・関連Issueを記載。紐付かない話題は「その他」へ。
 

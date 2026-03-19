@@ -22,3 +22,8 @@ if [[ -d "$HOME/.bun" ]]; then
     export BUN_INSTALL="$HOME/.bun"
     export PATH="$BUN_INSTALL/bin:$PATH"
 fi
+
+# gws personal account (plasma-creek-116906 / ryosuke.suto@gmail.com)
+function gws-personal() {
+  GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws-personal gws "$@"
+}
