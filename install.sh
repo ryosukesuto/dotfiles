@@ -336,7 +336,7 @@ if [ ! -d "$HOME/.claude" ]; then
     fi
 fi
 create_symlink "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settings.json"
-create_symlink "$DOTFILES_DIR/config/claude/statusline.sh" "$HOME/.claude/statusline.sh"
+create_symlink "$DOTFILES_DIR/config/claude/statusline.py" "$HOME/.claude/statusline.py"
 
 # Claude Skills
 create_symlink "$DOTFILES_DIR/config/claude/skills" "$HOME/.claude/skills"

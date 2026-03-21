@@ -87,6 +87,7 @@
       "Bash(fzf:*)",
       "Bash(Obsidian:*)",
       "Bash(gnews:*)",
+      "Bash(ntn:*)",
       "Bash(reload)",
       "Bash(exec zsh)",
       "WebSearch",
@@ -209,7 +210,6 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
-  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
@@ -323,7 +323,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash \"$HOME/.claude/statusline.sh\""
+    "command": "python3 \"$HOME/.claude/statusline.py\""
   },
   "outputStyle": "Concise",
   "language": "japanese",
@@ -335,5 +335,8 @@
   "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
-  "showTurnDuration": true
+  "showTurnDuration": true,
+  "showClearContextOnPlanAccept": true,
+  "effortLevel": "high",
+  "channelsEnabled": true
 }
