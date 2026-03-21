@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# claude-session-end - Stop hookでセッション終了時のサジェストを出す
+#
+# コミット内容や変更量を分析して、/til で記録すべきかを判定。
+# 記録すべきと判断した場合は強めにサジェストする。
+#
+# 判定基準:
+# - 直近1時間でコミットがある
+# - 変更ファイル数が一定以上
+# - 新規ファイルの作成がある
+# - コミットメッセージに特定パターン（fix, feat, refactorなど）
+
+set -euo pipefail
+
+# cmux通知（失敗しても続行）
+cmux notify --title 'Claude Code' --subtitle '処理終了' --body 'タスクが完了しました' 2>/dev/null || true
+
+# git情報の収集
+AUTHOR=$(git config user.name 2>/dev/null || echo "")
+if [[ -z "$AUTHOR" ]]; then
+  exit 0
+fi
+
+COMMITS_1H=$(git log --oneline --since='1 hour ago' --author="$AUTHOR" 2>/dev/null) || true
+COMMIT_COUNT=0
+if [[ -n "$COMMITS_1H" ]]; then
+  COMMIT_COUNT=$(echo "$COMMITS_1H" | wc -l | tr -d ' ')
+fi
+
+if [[ "$COMMIT_COUNT" -eq 0 ]]; then
+  exit 0
+fi
+
+# 変更の規模を把握
+CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null | wc -l | tr -d ' ') || true
+NEW_FILES=$(git log --diff-filter=A --name-only --since='1 hour ago' --author="$AUTHOR" 2>/dev/null | grep -v '^$' | sort -u | wc -l | tr -d ' ') || true
+
+# コミットメッセージのパターン分析（grep -c は0件でexit 1するのでサブシェルで処理）
+HAS_FIX=$(echo "$COMMITS_1H" | grep -ciE '(fix|bug|hotfix|resolve)' || true)
+HAS_FEAT=$(echo "$COMMITS_1H" | grep -ciE '(feat|add|implement|introduce)' || true)
+HAS_REFACTOR=$(echo "$COMMITS_1H" | grep -ciE '(refactor|migrate|upgrade|rename)' || true)
+HAS_INFRA=$(echo "$COMMITS_1H" | grep -ciE '(terraform|k8s|deploy|ci|cd|pipeline|helm|docker)' || true)
+
+# 学びの記録が有益かスコアリング
+SCORE=0
+# コミット数ベース
+if [[ "$COMMIT_COUNT" -ge 3 ]]; then
+  SCORE=$((SCORE + 2))
+elif [[ "$COMMIT_COUNT" -ge 1 ]]; then
+  SCORE=$((SCORE + 1))
+fi
+# 新規ファイル
+if [[ "$NEW_FILES" -ge 2 ]]; then
+  SCORE=$((SCORE + 2))
+fi
+# パターンボーナス（fix/refactorは学びが多い傾向）
+if [[ "$HAS_FIX" -gt 0 ]]; then
+  SCORE=$((SCORE + 2))
+fi
+if [[ "$HAS_REFACTOR" -gt 0 ]]; then
+  SCORE=$((SCORE + 1))
+fi
+if [[ "$HAS_INFRA" -gt 0 ]]; then
+  SCORE=$((SCORE + 1))
+fi
+if [[ "$HAS_FEAT" -gt 0 ]]; then
+  SCORE=$((SCORE + 1))
+fi
+
+# スコアに応じたメッセージ
+if [[ "$SCORE" -ge 4 ]]; then
+  echo "[Hook] セッション概要: コミット${COMMIT_COUNT}件、新規ファイル${NEW_FILES}件、変更${CHANGED_FILES}ファイル" >&2
+  echo "[Hook] 学びの記録を強く推奨します。 /til を実行してください。" >&2
+elif [[ "$SCORE" -ge 2 ]]; then
+  echo "[Hook] セッション概要: コミット${COMMIT_COUNT}件、変更${CHANGED_FILES}ファイル" >&2
+  echo "Tip: /til で学びを記録、/times-post でtimesに投稿できます" >&2
+else
+  echo "Tip: /til で学びを記録、/times-post でtimesに投稿できます" >&2
+fi
