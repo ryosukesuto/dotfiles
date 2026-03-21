@@ -5,6 +5,9 @@
 # - git diff --stat（変更ファイル一覧）
 # - 直近のコミット
 # - 現在のブランチ
+# - ステージ済み変更
+# - セッションID（あれば）
+# - コンパクション回数
 #
 # Claudeはcompact後にこのファイルを参照して文脈を復元できる。
 
@@ -12,14 +15,31 @@ set -euo pipefail
 
 STATE_DIR="${HOME}/.claude"
 STATE_FILE="${STATE_DIR}/compact-state.md"
+COMPACT_HISTORY="${STATE_DIR}/compact-history.log"
 
 mkdir -p "$STATE_DIR"
 
 # git情報（gitリポジトリ外では空になる）
 BRANCH=$(git branch --show-current 2>/dev/null || echo "N/A")
 DIFF_STAT=$(git diff --stat HEAD 2>/dev/null || echo "No changes")
+STAGED_STAT=$(git diff --cached --stat 2>/dev/null || echo "No staged changes")
 RECENT_COMMITS=$(git log --oneline -5 2>/dev/null || echo "N/A")
 TOPLEVEL=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+
+# セッション中のコンパクション回数を記録
+COMPACT_COUNT=0
+if [[ -f "$COMPACT_HISTORY" ]]; then
+  TODAY=$(date '+%Y-%m-%d')
+  COMPACT_COUNT=$(grep -c "^${TODAY}" "$COMPACT_HISTORY" 2>/dev/null || echo 0)
+fi
+echo "$(date '+%Y-%m-%d %H:%M:%S') $(basename "$TOPLEVEL") ${BRANCH}" >> "$COMPACT_HISTORY"
+
+# セッション開始からのコミット数（直近1時間）
+SESSION_COMMITS=$(git log --oneline --since='1 hour ago' --author="$(git config user.name 2>/dev/null)" 2>/dev/null | wc -l | tr -d ' ')
+
+# 変更ファイル数
+CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null | wc -l | tr -d ' ')
+STAGED_FILES=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
 
 cat > "$STATE_FILE" <<EOF
 ## Compact State (auto-saved)
@@ -27,10 +47,17 @@ cat > "$STATE_FILE" <<EOF
 Updated: $(date '+%Y-%m-%d %H:%M:%S')
 Project: $(basename "$TOPLEVEL")
 Branch: $BRANCH
+Session Compactions: $((COMPACT_COUNT + 1))
+Session Commits (1h): $SESSION_COMMITS
 
-### Changed Files
+### Uncommitted Changes ($CHANGED_FILES files)
 \`\`\`
 ${DIFF_STAT}
+\`\`\`
+
+### Staged Changes ($STAGED_FILES files)
+\`\`\`
+${STAGED_STAT}
 \`\`\`
 
 ### Recent Commits
@@ -38,6 +65,9 @@ ${DIFF_STAT}
 ${RECENT_COMMITS}
 \`\`\`
 EOF
+
+# stderrにメッセージ出力（Claudeへのフィードバック）
+echo "[PreCompact] コンテキスト状態を ~/.claude/compact-state.md に退避しました。compact後に参照してください。" >&2
 
 # stdinをそのままstdoutに通す（hookの仕様）
 cat

@@ -304,7 +304,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmux notify --title 'Claude Code' --subtitle '処理終了' --body 'タスクが完了しました' || true; HAS_COMMITS=$(git log --oneline --since='1 hour ago' --author=\"$(git config user.name)\" 2>/dev/null | head -1); if [ -n \"$HAS_COMMITS\" ]; then echo 'Tip: /times-post でtimesに投稿、/til で学びを記録できます'; fi"
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-session-end"
           }
         ]
       }
