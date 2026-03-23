@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# cmux 4分割レイアウト: 各ペインでClaude Codeを起動
+#
+# Usage: cmux-quad
+#
+# Layout:
+#   ┌──────────────────┬──────────────────┐
+#   │  obsidian-notes  │       ops        │
+#   ├──────────────────┼──────────────────┤
+#   │     server       │  server-config   │
+#   └──────────────────┴──────────────────┘
+
+set -euo pipefail
+
+GHQ_ROOT="$(ghq root)"
+
+# リポジトリ定義（左上→右上→左下→右下）
+REPOS=(
+  "github.com/ryosukesuto/obsidian-notes"
+  "github.com/WinTicket/ops"
+  "github.com/WinTicket/server"
+  "github.com/WinTicket/server-config"
+)
+
+# cmux環境チェック
+if [[ -z "${CMUX_WORKSPACE_ID:-}" ]]; then
+  echo "error: cmux内で実行してください" >&2
+  exit 1
+fi
+
+# リポジトリパスの検証
+for repo in "${REPOS[@]}"; do
+  dir="${GHQ_ROOT}/${repo}"
+  if [[ ! -d "$dir" ]]; then
+    echo "error: リポジトリが見つかりません: $dir" >&2
+    exit 1
+  fi
+done
+
+# new-splitの出力からsurface refを抽出
+extract_surface() {
+  local output="$1"
+  echo "$output" | grep -oE 'surface:[0-9]+'
+}
+
+# 現在のsurface（左上: obsidian-notes）
+SURFACE_TL="${CMUX_SURFACE_ID}"
+
+# 右に分割 → 右上: ops
+output=$(cmux new-split right --surface "$SURFACE_TL")
+SURFACE_TR=$(extract_surface "$output")
+
+# 左上を下に分割 → 左下: server
+output=$(cmux new-split down --surface "$SURFACE_TL")
+SURFACE_BL=$(extract_surface "$output")
+
+# 右上を下に分割 → 右下: server-config
+output=$(cmux new-split down --surface "$SURFACE_TR")
+SURFACE_BR=$(extract_surface "$output")
+
+SURFACES=("$SURFACE_TL" "$SURFACE_TR" "$SURFACE_BL" "$SURFACE_BR")
+
+# 各ペインでcd → claude起動
+for i in 0 1 2 3; do
+  dir="${GHQ_ROOT}/${REPOS[$i]}"
+  surface="${SURFACES[$i]}"
+  cmux send --surface "$surface" "cd ${dir} && claude\n"
+done
+
+echo "4分割レイアウトを作成しました"
