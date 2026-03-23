@@ -377,21 +377,20 @@ cmux_ensure() {
         return 0
     fi
 
-    # 自身のsurfaceの右にsplitして新しいsurfaceを作成
-    local my_surface="${CMUX_SURFACE_ID:-${CMUX_PANEL_ID:-}}"
-    local split_params='{"direction":"right"}'
-    if [ -n "$my_surface" ]; then
-        split_params="{\"direction\":\"right\",\"surface_id\":\"${my_surface}\"}"
+    # surface.splitはsurface作成後に消失する問題があるためpane.createを使用
+    local create_params='{"direction":"right"}'
+    if [ -n "$CMUX_WS_ID" ]; then
+        create_params="{\"direction\":\"right\",\"workspace_id\":\"${CMUX_WS_ID}\"}"
     fi
-    local split_response
-    split_response=$(cmux_api "surface.split" "$split_params")
+    local create_response
+    create_response=$(cmux_api "pane.create" "$create_params")
 
     local new_id
-    new_id=$(cmux_extract "$split_response" "surface_id")
+    new_id=$(cmux_extract "$create_response" "surface_id")
 
     if [ -z "$new_id" ]; then
-        echo "Error: 新しいsurfaceの作成に失敗した" >&2
-        echo "Response: $split_response" >&2
+        echo "Error: 新しいペインの作成に失敗した" >&2
+        echo "Response: $create_response" >&2
         rm -f "$lock_file"
         exit 1
     fi
