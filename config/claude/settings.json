@@ -1,5 +1,5 @@
 {
-  "cleanupPeriodDays": 7,
+  "cleanupPeriodDays": 31,
   "env": {
     "MAX_THINKING_TOKENS": "31999",
     "DISABLE_TELEMETRY": "true",
@@ -7,7 +7,8 @@
     "DISABLE_BUG_COMMAND": "true",
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85",
     "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": "1",
-    "ENABLE_TOOL_SEARCH": "1"
+    "ENABLE_TOOL_SEARCH": "1",
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1"
   },
   "attribution": {
     "commit": "",
@@ -210,6 +211,7 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
+  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -325,6 +327,9 @@
     "type": "command",
     "command": "python3 \"$HOME/.claude/statusline.py\""
   },
+  "enabledPlugins": {
+    "slack@claude-plugins-official": false
+  },
   "outputStyle": "Concise",
   "language": "japanese",
   "sandbox": {
@@ -332,11 +337,22 @@
       "cmux"
     ]
   },
+  "effortLevel": "high",
+  "showClearContextOnPlanAccept": true,
   "voiceEnabled": true,
+  "channelsEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
   "showTurnDuration": true,
-  "showClearContextOnPlanAccept": true,
-  "effortLevel": "high",
-  "channelsEnabled": true
+  "mcpServers": {
+    "slack": {
+      "type": "http",
+      "url": "https://mcp.slack.com/mcp",
+      "oauth": {
+        "clientId": "1601185624273.8899143856786",
+        "callbackPort": 3118
+      }
+    }
+  },
+  "fastMode": true
 }
