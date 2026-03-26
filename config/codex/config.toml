@@ -197,6 +197,9 @@ trust_level = "trusted"
 [projects."/Users/s32943/gh/github.com/WinTicket/server"]
 trust_level = "trusted"
 
+[projects."/Users/s32943/gh/github.com/WinTicket/wizbot"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 gpt-5-codex = "gpt-5.2-codex"
 "gpt-5.2-codex" = "gpt-5.4"

@@ -596,6 +596,31 @@ else
 fi
 
 # ============================================================================
+# pipectlのインストール（PipeCD CLI）
+# ============================================================================
+if ! command -v pipectl &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] pipectl をインストール（PipeCD CLI）"
+    else
+        info "pipectl をインストール中..."
+        PIPECTL_VERSION=$(curl -s "https://api.github.com/repos/pipe-cd/pipecd/releases/latest" | grep '"tag_name"' | sed 's/.*"tag_name": "\(.*\)".*/\1/')
+        PIPECTL_ARCH=$(uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
+        # Apple Silicon は arm64
+        if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
+            PIPECTL_ARCH="arm64"
+        fi
+        mkdir -p "$HOME/.local/bin"
+        curl -Lo /tmp/pipectl "https://github.com/pipe-cd/pipecd/releases/download/${PIPECTL_VERSION}/pipectl_${PIPECTL_VERSION}_darwin_${PIPECTL_ARCH}" 2>/dev/null && \
+            chmod +x /tmp/pipectl && \
+            mv /tmp/pipectl "$HOME/.local/bin/pipectl" && \
+            info "pipectl ${PIPECTL_VERSION} のインストール完了" || \
+            warn "pipectl のインストールに失敗しました"
+    fi
+else
+    info "pipectl は既にインストールされています"
+fi
+
+# ============================================================================
 # Notionのインストール（Homebrew cask）
 # ============================================================================
 if [ -d "/Applications/Notion.app" ]; then
