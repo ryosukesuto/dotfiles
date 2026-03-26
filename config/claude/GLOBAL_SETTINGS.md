@@ -60,7 +60,7 @@
 - テスト必須: 実装時は必ずテストコードも作成。テストが全て通るまでコミットしない
 - 完了確認: 各タスク完了時は成功条件を満たしていることを確認。動作確認・lint/typecheck通過を必須
 - 日時確認: 日時関連作業では必ず `date "+%Y-%m-%d (%a) %H:%M"` で現在時刻を確認
-- 作業報告: `Obsidian daily:append vault=obsidian-notes content="- $(date '+%Y/%m/%d %H:%M:%S'): 作業内容"` でデイリーノートに自動記録
+- 作業報告: `echo "- $(date '+%Y/%m/%d %H:%M:%S'): 作業内容" >> ~/gh/github.com/ryosukesuto/obsidian-notes/$(date '+%Y-%m-%d')_daily.md` でデイリーノートに追記
 
 ## 参考リンク
 

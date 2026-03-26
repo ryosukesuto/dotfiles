@@ -41,20 +41,22 @@ allowed-tools:
 
 ### 3. ファイル書き込み
 
-Obsidian CLIでデイリーノートに追記する。
+デイリーノートに直接追記する。
 
 ```bash
-# デイリーノートが存在しない場合は自動作成される
-# content内の改行は \n で表現
-Obsidian daily:append vault=obsidian-notes content="$CONTENT"
+VAULT_DIR="$HOME/gh/github.com/ryosukesuto/obsidian-notes"
+DAILY_NOTE="$VAULT_DIR/$(date '+%Y-%m-%d')_daily.md"
+
+# デイリーノートが存在しない場合は作成
+if [ ! -f "$DAILY_NOTE" ]; then
+    echo "## Tasks\n\n---" > "$DAILY_NOTE"
+fi
+
+# セパレータを付けて追記
+echo -e "\n---\n\n${MARKDOWN_BODY}" >> "$DAILY_NOTE"
 ```
 
-`$CONTENT` は抽出した知識をマークダウン形式で組み立てたもの。セパレータ `---` を先頭に付けて既存内容と区切る。
-
-```bash
-CONTENT="---\n\n${MARKDOWN_BODY}"
-Obsidian daily:append vault=obsidian-notes content="$CONTENT"
-```
+`$MARKDOWN_BODY` は抽出した知識をマークダウン形式で組み立てたもの。
 
 ## 出力形式テンプレート
 
