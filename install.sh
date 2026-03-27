@@ -596,6 +596,26 @@ else
 fi
 
 # ============================================================================
+# Vercel CLIのインストール（npm）
+# ============================================================================
+if ! command -v vercel &> /dev/null; then
+    if command -v npm &> /dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] Vercel CLI をインストール（npm）"
+        else
+            info "Vercel CLI をインストール中..."
+            npm install -g vercel 2>/dev/null && \
+                info "Vercel CLI のインストール完了" || \
+                warn "Vercel CLI のインストールに失敗しました"
+        fi
+    else
+        warn "Vercel CLI のインストールにはnpmが必要です"
+    fi
+else
+    info "Vercel CLI は既にインストールされています"
+fi
+
+# ============================================================================
 # pipectlのインストール（PipeCD CLI）
 # ============================================================================
 if ! command -v pipectl &> /dev/null; then
