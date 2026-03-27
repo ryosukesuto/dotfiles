@@ -2,6 +2,9 @@
 name: review-server-pr
 description: WinTicket/server リポジトリ専用のPRレビュー。クリーンアーキテクチャ、コーディング規約、クロスリポジトリ整合性を検証する。
 user-invocable: true
+paths:
+  - "**/server"
+  - "**/server/**"
 allowed-tools:
   - Bash
   - Read
