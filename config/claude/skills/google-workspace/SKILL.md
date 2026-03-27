@@ -62,19 +62,29 @@ eval "$(mise activate zsh)" && gws gmail users labels list --params '{"userId": 
 
 ### Calendar
 
+デフォルトカレンダー: NASCAカレンダー（会議予定が入っている）
+- カレンダーID: `<CALENDAR_ID>`
+- `+agenda` ヘルパーは `--calendar` 指定で使う
+- `primary` カレンダーには勤務場所（オフィス/リモート）のみ登録されている
+
 今日の予定:
 ```bash
-eval "$(mise activate zsh)" && gws calendar +agenda --today
+eval "$(mise activate zsh)" && gws calendar +agenda --today --calendar '<CALENDAR_DISPLAY_NAME>'
 ```
 
 今週の予定:
 ```bash
-eval "$(mise activate zsh)" && gws calendar +agenda --week --format table
+eval "$(mise activate zsh)" && gws calendar +agenda --week --format table --calendar '<CALENDAR_DISPLAY_NAME>'
 ```
 
 N日間の予定:
 ```bash
-eval "$(mise activate zsh)" && gws calendar +agenda --days 3
+eval "$(mise activate zsh)" && gws calendar +agenda --days 3 --calendar '<CALENDAR_DISPLAY_NAME>'
+```
+
+任意の日付の予定（`+agenda` は日付指定不可のため API 直接呼び出し）:
+```bash
+eval "$(mise activate zsh)" && gws calendar events list --params '{"calendarId": "<CALENDAR_ID>", "timeMin": "YYYY-MM-DDT00:00:00+09:00", "timeMax": "YYYY-MM-DDT00:00:00+09:00", "singleEvents": true, "orderBy": "startTime"}'
 ```
 
 予定作成（必ず須藤に内容を確認してから実行）:
@@ -125,4 +135,5 @@ eval "$(mise activate zsh)" && gws drive +upload --file /path/to/file
 
 ## Gotchas
 
-(運用しながら追記)
+- `+agenda` ヘルパーは `--start` オプション非対応。任意日付は `events list` API を直接使う
+- OAuth同意画面にスコープ未登録だと `--scope` 指定しても反映されない。GCPコンソールで API 有効化 → スコープ追加が必要
