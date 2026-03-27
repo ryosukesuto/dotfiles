@@ -259,6 +259,7 @@
       },
       {
         "matcher": "Bash",
+        "if": "Bash(git commit *)",
         "hooks": [
           {
             "type": "command",
@@ -307,6 +308,17 @@
           {
             "type": "command",
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-session-end"
+          }
+        ]
+      }
+    ],
+    "CwdChanged": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -S \"${CMUX_SOCKET_PATH:-/tmp/cmux.sock}\" ] && [ -n \"$CMUX_WORKSPACE_ID\" ] && echo \"{\\\"method\\\":\\\"workspace.rename\\\",\\\"params\\\":{\\\"title\\\":\\\"$(basename \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\")\\\",\\\"workspace_id\\\":\\\"$CMUX_WORKSPACE_ID\\\"}}\" | nc -U \"$CMUX_SOCKET_PATH\" 2>/dev/null || true"
           }
         ]
       }
