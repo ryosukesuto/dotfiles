@@ -1,6 +1,6 @@
 ---
 name: google-workspace
-description: Google Workspace操作（Gmail・Calendar・Drive）。「メール確認」「予定教えて」「ドライブ検索」「メール送って」等で起動。
+description: Google Workspace操作（Gmail・Calendar・Drive・Docs・Sheets・Slides）。「メール確認」「予定教えて」「ドライブ検索」「メール送って」「スプレッドシート読んで」「ドキュメントに追記」等で起動。
 user-invocable: false
 allowed-tools:
   - Bash(gws:*)
@@ -47,12 +47,32 @@ eval "$(mise activate zsh)" && gws gmail +triage --format table
 
 メール本文を読む（+triageでIDを取得してから）:
 ```bash
-eval "$(mise activate zsh)" && gws gmail users messages get --params '{"userId": "me", "id": "MESSAGE_ID"}'
+eval "$(mise activate zsh)" && gws gmail +read --id MESSAGE_ID
+eval "$(mise activate zsh)" && gws gmail +read --id MESSAGE_ID --headers
+eval "$(mise activate zsh)" && gws gmail +read --id MESSAGE_ID --format json
 ```
 
 メール送信（必ず須藤に宛先・件名・本文を確認してから実行）:
 ```bash
 eval "$(mise activate zsh)" && gws gmail +send --to "recipient@example.com" --subject "件名" --body "本文"
+```
+
+返信（必ず須藤に内容を確認してから実行）:
+```bash
+eval "$(mise activate zsh)" && gws gmail +reply --message-id MESSAGE_ID --body "返信本文"
+eval "$(mise activate zsh)" && gws gmail +reply --message-id MESSAGE_ID --body "返信本文" --cc "cc@example.com"
+eval "$(mise activate zsh)" && gws gmail +reply --message-id MESSAGE_ID --body "下書き" --draft
+```
+
+全員に返信:
+```bash
+eval "$(mise activate zsh)" && gws gmail +reply-all --message-id MESSAGE_ID --body "返信本文"
+```
+
+転送（必ず須藤に内容を確認してから実行）:
+```bash
+eval "$(mise activate zsh)" && gws gmail +forward --message-id MESSAGE_ID --to "forward@example.com"
+eval "$(mise activate zsh)" && gws gmail +forward --message-id MESSAGE_ID --to "forward@example.com" --body "FYI"
 ```
 
 ラベル一覧:
@@ -120,6 +140,44 @@ eval "$(mise activate zsh)" && gws-personal drive files get --params '{"fileId":
 eval "$(mise activate zsh)" && gws drive +upload --file /path/to/file
 ```
 
+### Docs
+
+ドキュメントにテキスト追記（必ず須藤に内容を確認してから実行）:
+```bash
+eval "$(mise activate zsh)" && gws docs +write --document DOCUMENT_ID --text "追記するテキスト"
+```
+
+ドキュメント取得:
+```bash
+eval "$(mise activate zsh)" && gws docs documents get --params '{"documentId": "DOCUMENT_ID"}'
+```
+
+### Sheets
+
+スプレッドシートの値を読み取り:
+```bash
+eval "$(mise activate zsh)" && gws sheets +read --spreadsheet SPREADSHEET_ID --range "Sheet1!A1:D10"
+eval "$(mise activate zsh)" && gws sheets +read --spreadsheet SPREADSHEET_ID --range Sheet1 --format table
+```
+
+行の追加（必ず須藤に内容を確認してから実行）:
+```bash
+eval "$(mise activate zsh)" && gws sheets +append --spreadsheet SPREADSHEET_ID --values 'Alice,100,true'
+eval "$(mise activate zsh)" && gws sheets +append --spreadsheet SPREADSHEET_ID --json-values '[["a","b"],["c","d"]]'
+```
+
+既存セルの値を編集（必ず須藤に内容を確認してから実行）:
+```bash
+eval "$(mise activate zsh)" && gws sheets spreadsheets values update --params '{"spreadsheetId": "SPREADSHEET_ID", "range": "Sheet1!A1:B2", "valueInputOption": "USER_ENTERED"}' --json '{"values": [["新しい値", "100"], ["行2", "200"]]}'
+```
+
+### Slides
+
+プレゼンテーション取得:
+```bash
+eval "$(mise activate zsh)" && gws slides presentations get --params '{"presentationId": "PRESENTATION_ID"}'
+```
+
 ## 既知の制約
 
 - Drive書き込み不可: OAuthアプリが未検証のため、既存ファイルのリネーム・移動・削除はブロックされる（`appNotAuthorizedToFile` エラー）。gwsで新規作成したファイルのみ書き込み可能
@@ -131,7 +189,7 @@ eval "$(mise activate zsh)" && gws drive +upload --file /path/to/file
 - 送信系操作（メール送信、予定作成）は必ず内容を提示して須藤の確認を取ってから実行
 - 時刻はJST（+09:00）で指定
 - API呼び出し時のパラメータは `--params` にJSON形式で渡す
-- ヘルパーコマンド（`+triage`, `+agenda`, `+send`, `+insert`, `+upload`）を優先的に使う
+- ヘルパーコマンド（`+triage`, `+read`, `+send`, `+reply`, `+forward`, `+agenda`, `+insert`, `+upload`, `+write`, `+append`）を優先的に使う
 
 ## Gotchas
 
