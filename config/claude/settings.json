@@ -116,7 +116,6 @@
       "mcp__datadog-mcp__search_datadog_monitors",
       "mcp__datadog-mcp__search_datadog_hosts",
       "mcp__datadog-mcp__search_datadog_incidents",
-      "mcp__datadog-mcp__search_datadog_docs",
       "mcp__datadog-mcp__search_datadog_service_dependencies",
       "mcp__datadog-mcp__get_datadog_metric",
       "mcp__datadog-mcp__get_datadog_metric_context",
@@ -132,12 +131,9 @@
       "mcp__linear-server__get_user",
       "mcp__linear-server__get_status_updates",
       "mcp__linear-server__save_issue",
+      "mcp__linear-server__save_comment",
       "mcp__linear-server__save_project",
       "mcp__linear-server__save_status_update",
-      "mcp__linear-server__create_issue",
-      "mcp__linear-server__create_comment",
-      "mcp__linear-server__update_issue",
-      "mcp__linear-server__update_project",
       "mcp__ragent__hybrid_search"
     ],
     "deny": [
