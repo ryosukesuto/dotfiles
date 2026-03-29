@@ -215,7 +215,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "rm -f \"$HOME/.claude/.compact-counter\"; [ -S \"${CMUX_SOCKET_PATH:-/tmp/cmux.sock}\" ] && [ -n \"$CMUX_WORKSPACE_ID\" ] && echo \"{\\\"method\\\":\\\"workspace.rename\\\",\\\"params\\\":{\\\"title\\\":\\\"$(basename \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\")\\\",\\\"workspace_id\\\":\\\"$CMUX_WORKSPACE_ID\\\"}}\" | nc -U \"$CMUX_SOCKET_PATH\" 2>/dev/null || true"
+            "command": "rm -f \"$HOME/.claude/.compact-counter\"; [ -S \"${CMUX_SOCKET_PATH:-/tmp/cmux.sock}\" ] && [ -n \"$CMUX_WORKSPACE_ID\" ] && echo \"{\\\"method\\\":\\\"workspace.rename\\\",\\\"params\\\":{\\\"title\\\":\\\"$(d=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && basename \"$(dirname \"$d\")\" || basename \"$(pwd)\")\\\",\\\"workspace_id\\\":\\\"$CMUX_WORKSPACE_ID\\\"}}\" | nc -U \"$CMUX_SOCKET_PATH\" 2>/dev/null || true"
           }
         ]
       }
@@ -314,7 +314,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -S \"${CMUX_SOCKET_PATH:-/tmp/cmux.sock}\" ] && [ -n \"$CMUX_WORKSPACE_ID\" ] && echo \"{\\\"method\\\":\\\"workspace.rename\\\",\\\"params\\\":{\\\"title\\\":\\\"$(basename \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\")\\\",\\\"workspace_id\\\":\\\"$CMUX_WORKSPACE_ID\\\"}}\" | nc -U \"$CMUX_SOCKET_PATH\" 2>/dev/null || true"
+            "command": "[ -S \"${CMUX_SOCKET_PATH:-/tmp/cmux.sock}\" ] && [ -n \"$CMUX_WORKSPACE_ID\" ] && echo \"{\\\"method\\\":\\\"workspace.rename\\\",\\\"params\\\":{\\\"title\\\":\\\"$(d=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && basename \"$(dirname \"$d\")\" || basename \"$(pwd)\")\\\",\\\"workspace_id\\\":\\\"$CMUX_WORKSPACE_ID\\\"}}\" | nc -U \"$CMUX_SOCKET_PATH\" 2>/dev/null || true"
           }
         ]
       }
