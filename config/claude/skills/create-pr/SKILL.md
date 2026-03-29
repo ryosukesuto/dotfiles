@@ -13,6 +13,9 @@ allowed-tools:
   - Read
   - Glob
   - Grep
+  - mcp__linear-server__get_issue
+  - mcp__linear-server__save_issue
+  - AskUserQuestion
 ---
 
 # /create-pr - スマートPR作成コマンド
@@ -49,18 +52,31 @@ git log --oneline -10
 git branch --show-current
 ```
 
-### 3. 変更タイプの自動判定
+### 3. Linear Issue紐づけ
+
+ブランチ名から `PF-XXXX` パターンを抽出し、Linear Issueとの紐づけを行う。PRとIssueの関係をPR作成時に確定させることで、後から追跡する手間を省く。
+
+```bash
+BRANCH=$(git branch --show-current)
+ISSUE_ID=$(echo "$BRANCH" | grep -oE 'PF-[0-9]+' | head -1)
+```
+
+- `PF-XXXX` が見つかった場合: `get_issue` でIssue詳細を取得し、タイトルと概要をPR本文に含める
+- 見つからない場合: ユーザーに確認（既存Issue ID指定 / 新規起票不要 / スキップ）
+- Issue情報はステップ5のPR本文生成で使用する
+
+### 4. 変更タイプの自動判定
 
 - 変更規模: 追加/削除行数、ファイル数
 - 変更タイプ: feat/fix/refactor/docs/test/chore
 - 影響範囲: 変更ファイルの依存関係
 - Breaking Change: API変更、設定変更、削除されたメソッド
 
-### 4. Mermaid図の生成（必要に応じて）
+### 5. Mermaid図の生成（必要に応じて）
 
 アーキテクチャ変更、APIエンドポイント変更、状態管理変更が検出された場合に図を生成。
 
-### 5-7. テスト・PR本文生成・Codexレビュー（並列実行）
+### 6-8. テスト・PR本文生成・Codexレビュー（並列実行）
 
 以下の3つは依存関係がないため、Subagentで並列実行する。
 
@@ -68,7 +84,7 @@ git branch --show-current
 プロジェクトタイプに応じたテストコマンドを検出して実行。結果を返す。
 
 #### 並列タスクB: PR本文のドラフト生成
-ステップ2-4の分析結果をもとにPR本文をドラフト生成する（テスト結果の欄は後で埋める）。
+ステップ2-5の分析結果とLinear Issue情報をもとにPR本文をドラフト生成する（テスト結果の欄は後で埋める）。
 
 `${CLAUDE_SKILL_DIR}/reference.md` のPR本文テンプレートに従う。
 
@@ -105,7 +121,7 @@ fi
    - P2以下のみ: ユーザーに報告し、対応要否を確認してから次のステップへ進む
    - 指摘なし: そのまま次のステップへ進む
 
-### 8. デフォルトブランチの最新化とリベース
+### 9. デフォルトブランチの最新化とリベース
 
 PR作成前にデフォルトブランチの最新を取り込み、コンフリクトを事前に解消する。
 
@@ -118,35 +134,16 @@ git rebase "origin/$DEFAULT_BRANCH"
 - リベースでコンフリクトが発生した場合は解消してから続行する
 - コンフリクトの内容をユーザーに報告し、対応方針を確認する
 
-### 9. PRの作成
+### 10. PRの作成
 
-```bash
-# Terraformリポジトリの場合はフォーマット実行
-if [ -f "terraform.tf" ] || [ -f "main.tf" ]; then
-    terraform fmt -recursive
-fi
+1. Terraformリポジトリの場合は `terraform fmt -recursive` を実行
+2. `git add -A && git commit && git push -u origin HEAD`
+3. `gh pr create` でPR作成（Linear Issueリンクを含むbodyを使用）
+4. PR作成後、Linear Issueのステータスを `In Review` に更新（`save_issue`）
+5. 作業報告をデイリーノートに追記
+6. worktree内の場合は削除方法を案内
 
-git add -A
-git commit -m "feat: [簡潔な説明]"
-git push -u origin HEAD
-
-PR_URL=$(gh pr create \
-    --title "[Type]: 簡潔なタイトル" \
-    --body "[生成されたPR本文]" \
-    --assignee @me)
-
-# 作業報告
-if [ -n "$PR_URL" ]; then
-    PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-    Obsidian daily:append vault=obsidian-notes content="- $(date '+%Y/%m/%d %H:%M:%S'): PR #${PR_NUMBER} 作成完了: ${PR_URL}"
-fi
-
-# worktree内の場合は削除方法を案内（詳細は reference.md 参照）
-if [ -f ".git" ]; then
-    BRANCH=$(git branch --show-current)
-    echo "PRマージ後: git wt -d $BRANCH または /sync-default-branch-and-clean"
-fi
-```
+詳細なコマンドは `${CLAUDE_SKILL_DIR}/reference.md` を参照。
 
 ## Gotchas
 
