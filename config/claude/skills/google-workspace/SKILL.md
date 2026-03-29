@@ -20,16 +20,23 @@ gwsはプロファイル切り替え機能がないため、`GOOGLE_WORKSPACE_CL
 | `gws` | WinTicket（会社） | <WORKSPACE_GCP_PROJECT> | `~/.config/gws/` |
 | `gws-personal` | <PERSONAL_EMAIL> | <PERSONAL_GCP_PROJECT> | `~/.config/gws-personal/` |
 
-`gws-personal` は `~/.zshrc` に以下の関数として定義済み:
+`gws-personal` は `~/.zshrc` に関数として定義済み（自前OAuthクライアント + config dir切替）:
 ```bash
 function gws-personal() {
-  GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws-personal gws "$@"
+  GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws-personal \
+  GOOGLE_WORKSPACE_CLI_CLIENT_ID="..." \
+  GOOGLE_WORKSPACE_CLI_CLIENT_SECRET="..." \
+  gws "$@"
 }
 ```
 
+- OAuthクライアント: GCPプロジェクト `<PERSONAL_GCP_PROJECT>` で作成済み（デスクトップアプリ型）
+- `client_secret.json` が `~/.config/gws-personal/` に配置済み。通常のAPI呼び出しはこれで認証される
+- 環境変数 `CLIENT_ID`/`CLIENT_SECRET` は `auth login`（再認証）時に必要。通常のAPI呼び出しでは不要
+
 新しいターミナルセッション以外では以下で代替:
 ```bash
-eval "$(mise activate zsh)" && GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws-personal gws <args>
+eval "$(mise activate zsh)" && gws-personal <args>
 ```
 
 個人用Drive（01_Finance等）へのアクセスは必ず `gws-personal` を使う。
