@@ -2,6 +2,10 @@
 name: infra-workflow
 description: Terraform・AWS CLI作業時のガイドライン。「Terraform」「terraform plan」「AWS CLI」「IaC」等で起動。
 user-invocable: false
+paths:
+  - "**/*.tf"
+  - "**/terragrunt.hcl"
+  - "**/.envrc"
 allowed-tools:
   - Bash(terraform:*)
   - Bash(aws:*)
