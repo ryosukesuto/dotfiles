@@ -24,6 +24,8 @@ if [[ -d "$HOME/.bun" ]]; then
 fi
 
 # gws personal account (<PERSONAL_GCP_PROJECT> / <PERSONAL_EMAIL>)
+# OAuthクライアント: ~/.config/gws-personal/client_secret.json（自前作成、デスクトップアプリ型）
+# 再認証時はCLIENT_ID/SECRET環境変数が必要 → ~/.config/gws-personal/client_secret.jsonから読む
 function gws-personal() {
   GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws-personal gws "$@"
 }
