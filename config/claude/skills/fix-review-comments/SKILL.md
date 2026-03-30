@@ -30,13 +30,24 @@ PR_NUMBER=$(gh pr view --json number --jq '.number' 2>/dev/null)
 
 PRが見つからない場合はユーザーにPR番号を確認する。
 
-### 2. 未解決レビュースレッドの取得
+### 2. リポジトリ情報の取得
 
-push後にresolveするために、全スレッドのIDを取得しておく必要がある。
+```bash
+REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+OWNER=$(echo "$REPO" | cut -d/ -f1)
+REPO_NAME=$(echo "$REPO" | cut -d/ -f2)
+```
+
+### 3. レビューコメントの取得
+
+レビューコメントには2種類ある。両方を取得すること。
+
+- インラインコメント（`reviewThreads`）: コードの特定行に付くコメント。resolveが可能
+- review body（`reviews`）: レビュー全体のサマリーコメント。APPROVED / CHANGES_REQUESTED 等の状態を持つ
 
 ```bash
 gh api graphql -f query='query {
-  repository(owner: "WinTicket", name: "server") {
+  repository(owner: "'"$OWNER"'", name: "'"$REPO_NAME"'") {
     pullRequest(number: '"$PR_NUMBER"') {
       reviewThreads(first: 50) {
         nodes {
@@ -53,14 +64,30 @@ gh api graphql -f query='query {
           }
         }
       }
+      reviews(first: 20) {
+        nodes {
+          body
+          state
+          author { login }
+          comments(first: 20) {
+            nodes {
+              body
+              path
+              line
+              author { login }
+            }
+          }
+        }
+      }
     }
   }
 }'
 ```
 
-未解決（`isResolved: false`）のスレッドのみを対象にする。
+- `reviewThreads`: 未解決（`isResolved: false`）のスレッドのみを対象にする
+- `reviews`: `CHANGES_REQUESTED` 状態のレビューを優先的に対応する。`APPROVED` のレビューに含まれる指摘も見落とさないこと
 
-### 3. コメントの分析と優先度判断
+### 4. コメントの分析と優先度判断
 
 全コメントに一律対応すると不要な修正が混ざる。ユーザーの判断を仰ぐために分類する。
 
@@ -77,7 +104,7 @@ gh api graphql -f query='query {
 - 「推奨対応」はユーザー判断（デフォルトは対応する）
 - 「対応不要」は理由を添えて resolve する
 
-### 4. コード修正
+### 5. コード修正
 
 対応が必要なコメントに対して修正を実施:
 
@@ -86,7 +113,7 @@ gh api graphql -f query='query {
 3. プロジェクトのコーディング規約に従う
 4. 関連するテスト・lintを実行して検証
 
-### 5. コミット・push
+### 6. コミット・push
 
 ```bash
 git add -A
@@ -96,7 +123,7 @@ git commit -m "fix: address review comments
 git push
 ```
 
-### 6. スレッドの resolve
+### 7. スレッドの resolve
 
 レビュアーが対応状況を一目で把握できるよう、対応済みスレッドは resolve する。修正対応したスレッドと、対応不要と判断したスレッドを resolve する。
 
@@ -123,7 +150,7 @@ gh api graphql -f query='mutation {
 }'
 ```
 
-### 7. 結果報告
+### 8. 結果報告
 
 対応結果をまとめてユーザーに報告:
 - 修正したコメント数
@@ -132,7 +159,9 @@ gh api graphql -f query='mutation {
 
 ## Gotchas
 
-- GraphQL の `reviewThreads` は PR conversation のコメント（一般コメント）を含まない。スレッド形式のレビューコメントのみが対象
-- `resolveReviewThread` は PR author 権限で実行可能。他人の PR では権限エラーになる場合がある
+- `reviewThreads` はインラインコメント（コードの特定行に付くコメント）のみ返す。review body（レビュー全体のサマリー）は `reviews` で別途取得が必要。両方を必ず取得すること
+- review body に指摘が書かれていてインラインコメントが0件のケースがある（自動レビューボットに多い）。`reviewThreads` が空でも `reviews` を確認する
+- `resolveReviewThread` は PR author 権限で実行可能。他人の PR では権限エラーになる場合がある。review body のコメントは resolve できないので、PR コメントで対応済みの旨を返信する
+- リポジトリ名はハードコードせず、`gh repo view` から動的に取得する
 - Greptile の suggestion を `git apply` で適用する場合、diff 形式が GitHub の suggestion 形式と異なることがあるので、手動で Edit ツールを使って修正する方が確実
 - 複数コメントへの修正を1コミットにまとめる。コメントごとに commit すると履歴が散らかる
