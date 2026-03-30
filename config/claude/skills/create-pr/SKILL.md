@@ -62,7 +62,9 @@ ISSUE_ID=$(echo "$BRANCH" | grep -oE 'PF-[0-9]+' | head -1)
 ```
 
 - `PF-XXXX` が見つかった場合: `get_issue` でIssue詳細を取得し、タイトルと概要をPR本文に含める
-- 見つからない場合: ユーザーに確認（既存Issue ID指定 / 新規起票不要 / スキップ）
+- 見つからない場合: ステップ2の変更内容からIssueタイトル・説明を推定し、`save_issue` で起票する
+  - 起票前にユーザーにタイトル・チーム・説明を提示して確認を取る
+  - ユーザーが「不要」「スキップ」と回答した場合のみ起票しない
 - Issue情報はステップ5のPR本文生成で使用する
 
 ### 4. 変更タイプの自動判定
@@ -147,4 +149,21 @@ git rebase "origin/$DEFAULT_BRANCH"
 
 ## Gotchas
 
-(運用しながら追記)
+- PR本文で `#NNN` をそのまま書くと別の Issue/PR にリンクされてしまう。Dependabot alert 番号など GitHub 外のIDを書く場合はフル URL リンクにする
+- レビューコメント（Greptile 等）に対応して push した後は、該当スレッドを resolve する。GitHub の suggestion を適用した場合は自動 resolve されるが、手動で修正した場合は GraphQL API `resolveReviewThread` で明示的に resolve する
+
+```bash
+# 未解決のレビュースレッドを取得
+gh api graphql -f query='query {
+  repository(owner: "WinTicket", name: "server") {
+    pullRequest(number: PR_NUMBER) {
+      reviewThreads(first: 50) {
+        nodes { id isResolved comments(first: 1) { nodes { body author { login } } } }
+      }
+    }
+  }
+}'
+
+# スレッドを resolve
+gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "THREAD_ID"}) { thread { isResolved } } }'
+```

@@ -2,8 +2,8 @@
 #
 # pre-commit hook: mainブランチへの直接コミットを防止
 #
-# 保護対象: main, master
-# 除外: 個人リポジトリ（ryosukesuto/*）
+# 保護対象: main, master（全リポジトリ共通）
+# 除外: git config --local wt.allowDirectCommit true を設定したリポジトリ
 # バイパス: git commit --no-verify（緊急時のみ）
 
 current_branch=$(git rev-parse --abbrev-ref HEAD)
@@ -13,19 +13,18 @@ if [[ "$current_branch" != "main" ]] && [[ "$current_branch" != "master" ]]; the
     exit 0
 fi
 
-# 個人リポジトリは除外
-remote_url=$(git remote get-url origin 2>/dev/null)
-if [[ "$remote_url" == *"ryosukesuto/"* ]]; then
+# リポジトリ単位のopt-out
+if [[ "$(git config --bool wt.allowDirectCommit 2>/dev/null)" == "true" ]]; then
     exit 0
 fi
 
 echo ""
 echo -e "\033[0;31m[BLOCKED]\033[0m ${current_branch} ブランチへの直接コミットは禁止されています"
 echo ""
-echo "  新しいブランチを作成してください:"
-echo "    git checkout -b feature/xxx"
-echo "    git worktree add .worktrees/feature/xxx -b feature/xxx"
+echo "  worktreeを作成してください:"
+echo "    git-wt add feature/xxx"
 echo ""
-echo "  緊急時のバイパス: git commit --no-verify"
+echo "  除外設定: git config --local wt.allowDirectCommit true"
+echo "  緊急バイパス: git commit --no-verify"
 echo ""
 exit 1
