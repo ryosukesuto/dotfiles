@@ -45,6 +45,14 @@ bin/           - カスタムスクリプト
 
 リポジトリ管理はghq、ブランチ作業はgit worktreeで分離。
 
+### worktree必須ルール
+
+ブランチ作業は必ずworktreeで行う。`git checkout -b` は使わない。
+
+- 理由: 複数タスクを並行実行するため、作業ディレクトリの独立性が必要
+- mainへの直接コミットはpre-commitフックでブロック済み（`wt.allowDirectCommit` でopt-out可能）
+- Claude Codeでの並列作業は `isolation: "worktree"` のsubagentも活用する
+
 ### 基本フロー
 ```bash
 # 1. リポジトリをclone（ghq）
@@ -73,7 +81,8 @@ EnterWorktree → .worktrees/feature/xxx で作業 → ExitWorktree で元のデ
 ```
 
 ### 設定
-gitconfigで `.worktrees` をbasedirに設定済み。
+- gitconfigで `.worktrees` をbasedirに設定済み
+- `git/hooks/pre-commit` でmain/masterへの直接コミットをブロック
 
 ## IaC運用
 
