@@ -50,14 +50,44 @@ gh api "repos/{owner}/{repo}/pulls/$(gh pr view --json number -q .number)/commen
 既存のレビューコメントや承認状況に関わらず、必ずCodex分析を実行すること。
 スキップは禁止。独自の視点を得るため、他のレビュー結果に依存しない。
 
+#### 2a. レビュー前提の読み込み
+
+`.claude/review-context.md` が存在する場合、内容を読み込んでCodexプロンプトに組み込む。
+ファイルがなければこのステップはスキップし、デフォルトのプロンプトを使う。
+
+```bash
+REVIEW_CONTEXT=""
+if [[ -f ".claude/review-context.md" ]]; then
+  REVIEW_CONTEXT=$(cat .claude/review-context.md)
+fi
+```
+
+#### 2b. Codex実行
+
 まず `pane-manager.sh ensure` を実行する。バックエンドは `$CMUX_SOCKET_PATH` → `$TMUX` の順で自動検出される。
 環境判定を自前で行わないこと（`echo $TMUX` 等は禁止）。
+
+review-context.md がある場合のプロンプト:
+
+```
+gh pr diffをレビューしてください。
+このrepoの実運用前提で、実害のある問題だけをP0-P3で分類してください。
+前提:
+{review-context.md の内容}
+各指摘は [PX] file:line - 問題の要約 の形式で報告してください。
+```
+
+review-context.md がない場合のプロンプト:
+
+```
+gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。
+```
 
 ```bash
 PANE_MGR=~/.claude/skills/codex-review/scripts/pane-manager.sh
 
 $PANE_MGR ensure
-$PANE_MGR send "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
+$PANE_MGR send "{上記で組み立てたプロンプト}"
 $PANE_MGR wait_response 180
 $PANE_MGR capture 300
 ```
@@ -65,7 +95,7 @@ $PANE_MGR capture 300
 `$PANE_MGR ensure` が失敗した場合（tmux/cmux外）のみ `codex exec` にフォールバック:
 
 ```bash
-codex exec "gh pr diffをレビューしてください。P0-P3の優先度で問題を分類し、各指摘は [PX] file:line - 問題の要約 の形式で報告してください。"
+codex exec "{上記で組み立てたプロンプト}"
 ```
 
 ### 2.5 Codex指摘の検証（必須）
