@@ -16,8 +16,32 @@ set -e
 PANE_TITLE="codex-review"
 PANE_BG="colour233"
 
-# ペインIDを保存するファイル（ユーザー単位で固定）
-PANE_ID_FILE="/tmp/codex-review-pane-${USER:-$(id -un)}"
+# =============================================================================
+# リポジトリ名の取得（ワークスペース特定に使用）
+# =============================================================================
+
+get_repo_name() {
+    # git rev-parse --git-common-dir でworktree内でもメインリポジトリのパスを取得
+    local git_common_dir
+    git_common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || true
+    if [ -n "$git_common_dir" ] && [ "$git_common_dir" != ".git" ]; then
+        # 絶対パスの場合: /path/to/repo/.git → /path/to/repo → repo
+        dirname "$git_common_dir" | xargs basename
+    elif [ -d ".git" ]; then
+        basename "$PWD"
+    else
+        echo ""
+    fi
+}
+
+REPO_NAME=$(get_repo_name)
+
+# ペインIDを保存するファイル（リポジトリ単位で分離）
+if [ -n "$REPO_NAME" ]; then
+    PANE_ID_FILE="/tmp/codex-review-pane-${USER:-$(id -un)}-${REPO_NAME}"
+else
+    PANE_ID_FILE="/tmp/codex-review-pane-${USER:-$(id -un)}"
+fi
 
 # =============================================================================
 # バックエンド検出
@@ -222,6 +246,35 @@ tmux_wait_response() {
 CMUX_SOCK="${CMUX_SOCKET_PATH:-/tmp/cmux.sock}"
 CMUX_WS_ID="${CMUX_WORKSPACE_ID:-}"
 
+# CMUX_WS_ID が未設定の場合、リポジトリ名からワークスペースを自動検出
+cmux_resolve_workspace_id() {
+    [ -n "$CMUX_WS_ID" ] && return 0
+    [ -n "$REPO_NAME" ] || return 1
+
+    local list_response
+    list_response=$(cmux_api "workspace.list" "{}") || return 1
+
+    CMUX_WS_ID=$(echo "$list_response" | python3 -c "
+import sys,json
+try:
+    r=json.load(sys.stdin)
+    repo='$REPO_NAME'
+    for ws in r.get('result',{}).get('workspaces',[]):
+        name=ws.get('name','') or ws.get('title','')
+        wid=ws.get('workspace_id','') or ws.get('id','')
+        if name == repo:
+            print(wid,end='')
+            break
+except: pass
+" 2>/dev/null)
+
+    if [ -n "$CMUX_WS_ID" ]; then
+        echo "Auto-detected workspace: $CMUX_WS_ID (repo=$REPO_NAME)" >&2
+        return 0
+    fi
+    return 1
+}
+
 # ソケットAPIにJSON-RPCリクエストを送信し、レスポンスを返す（リトライ付き）
 cmux_api() {
     local method="$1"
@@ -284,6 +337,9 @@ except Exception as e:
 }
 
 cmux_find_codex_pane() {
+    # ワークスペースIDを自動検出（未設定の場合）
+    cmux_resolve_workspace_id 2>/dev/null || true
+
     # 1. 保存済みIDがあればsurface.read_textで直接存在確認
     if [ -f "$PANE_ID_FILE" ]; then
         local saved_id
@@ -337,8 +393,14 @@ cmux_ensure() {
         exit 1
     fi
 
+    # ワークスペースIDを自動検出（未設定の場合）
+    cmux_resolve_workspace_id || true
+    if [ -z "$CMUX_WS_ID" ]; then
+        echo "Warning: ワークスペースを特定できませんでした。フォーカス中のワークスペースに作成します" >&2
+    fi
+
     # 排他ロック: 並行呼び出しによる重複surface作成を防止（macOS互換）
-    local lock_file="/tmp/codex-review-lock-${USER:-$(id -un)}"
+    local lock_file="/tmp/codex-review-lock-${USER:-$(id -un)}${REPO_NAME:+-${REPO_NAME}}"
     local lock_acquired=false
     for _i in $(seq 1 10); do
         if ( set -o noclobber; echo $$ > "$lock_file" ) 2>/dev/null; then
