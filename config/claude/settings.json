@@ -8,7 +8,8 @@
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85",
     "CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS": "1",
     "ENABLE_TOOL_SEARCH": "1",
-    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1"
+    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
+    "CLAUDE_CODE_NO_FLICKER": "1"
   },
   "attribution": {
     "commit": "",
@@ -255,7 +256,6 @@
       },
       {
         "matcher": "Bash",
-        "if": "Bash(git commit *)",
         "hooks": [
           {
             "type": "command",
@@ -319,6 +319,17 @@
         ]
       }
     ],
+    "PermissionDenied": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmux notify --title 'Claude Code' --subtitle '権限拒否' --body \"auto modeで拒否: $CLAUDE_TOOL_NAME\" || true"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "matcher": "",
@@ -337,7 +348,16 @@
   },
   "enabledPlugins": {
     "slack@claude-plugins-official": false,
-    "figma@claude-plugins-official": true
+    "figma@claude-plugins-official": true,
+    "codex@openai-codex": true
+  },
+  "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    }
   },
   "outputStyle": "Concise",
   "language": "japanese",
@@ -353,6 +373,7 @@
   "channelsEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
+  "showThinkingSummaries": true,
   "showTurnDuration": true,
   "mcpServers": {
     "slack": {
