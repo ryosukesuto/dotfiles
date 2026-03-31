@@ -319,13 +319,13 @@
         ]
       }
     ],
-    "PermissionDenied": [
+    "PermissionRequest": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "cmux notify --title 'Claude Code' --subtitle '権限拒否' --body \"auto modeで拒否: $CLAUDE_TOOL_NAME\" || true"
+            "command": "cmux notify --title 'Claude Code' --subtitle '権限確認' --body \"許可を求めています: $CLAUDE_TOOL_NAME\" || true"
           }
         ]
       }
@@ -336,7 +336,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmux notify --title 'Claude Code' --subtitle '確認待ち' --body '許可を求めています' || true"
+            "command": "cmux notify --title 'Claude Code' --subtitle '通知' --body \"$CLAUDE_NOTIFICATION\" || true"
           }
         ]
       }
