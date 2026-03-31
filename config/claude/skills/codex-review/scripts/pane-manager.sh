@@ -366,10 +366,13 @@ except: pass
     for sid in $surface_ids; do
         [ -n "$sid" ] || continue
         local screen
-        # scrollback: true で起動バナーがスクロールアウトしていても検出
-        screen=$(cmux_read_screen "$sid" true 2>/dev/null)
-        # Codexのプロンプト、ステータスバー、起動バナー、作業中表示を検出
-        if echo "$screen" | grep -qE '(OpenAI Codex|codex>|^› |gpt-[0-9]+\.[0-9]|esc to interrupt)'; then
+        screen=$(cmux_read_screen "$sid" false 2>/dev/null)
+        # Claude Codeペインはスキップ（コード表示内のリテラルで誤検出するため先に除外）
+        if echo "$screen" | grep -qE '(Opus [0-9]|Sonnet [0-9]|Haiku [0-9]|Claude Code)'; then
+            continue
+        fi
+        # Codex固有パターンで検出
+        if echo "$screen" | grep -qE '(OpenAI Codex|codex>|gpt-[0-9]+\.[0-9]|esc to interrupt)'; then
             echo "$sid" > "$PANE_ID_FILE"
             echo "$sid"
             return 0
