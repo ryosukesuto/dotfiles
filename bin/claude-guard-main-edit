@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# PreToolUse hook: mainブランチでの編集をブロック
+#
+# main/masterで直接コミットが禁止されているリポジトリでは、
+# Edit/Writeを阻止してworktreeへの移動を促す。
+#
+# 判定ロジックはpre-commitフックと同一:
+#   - main/masterブランチかどうか
+#   - wt.allowDirectCommit でopt-outされていないか
+#
+# exit 0: 編集を許可
+# exit 2: 編集をブロック
+
+file_path="${CLAUDE_TOOL_INPUT_file_path}"
+[[ -z "$file_path" ]] && exit 0
+
+# ファイルのディレクトリからgitリポジトリ情報を取得
+file_dir="$(dirname "$file_path")"
+# 新規ファイルの場合、親ディレクトリを辿る
+while [[ ! -d "$file_dir" ]] && [[ "$file_dir" != "/" ]]; do
+    file_dir="$(dirname "$file_dir")"
+done
+[[ ! -d "$file_dir" ]] && exit 0
+
+# gitリポジトリ外はスキップ
+current_branch=$(git -C "$file_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+[[ -z "$current_branch" ]] && exit 0
+
+# main/master以外はスキップ
+[[ "$current_branch" != "main" ]] && [[ "$current_branch" != "master" ]] && exit 0
+
+# リポジトリ単位のopt-out
+[[ "$(git -C "$file_dir" config --bool wt.allowDirectCommit 2>/dev/null)" == "true" ]] && exit 0
+
+echo "[BLOCKED] ${current_branch}ブランチで直接編集はできません"
+echo ""
+echo "  先にworktreeを作成してください:"
+echo "    EnterWorktree でworktreeに移動"
+echo "    または: git-wt add feature/xxx"
+echo ""
+echo "  除外設定: git config --local wt.allowDirectCommit true"
+exit 2
