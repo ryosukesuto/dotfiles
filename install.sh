@@ -420,6 +420,21 @@ fi
 create_symlink "$DOTFILES_DIR/config/codex/prompts/create-pr-pro.md" "$HOME/.codex/prompts/create-pr-pro.md"
 
 # ============================================================================
+# dotfiles-private（機密設定ファイルのシンボリックリンク）
+# ============================================================================
+PRIVATE_DIR="$(cd "$DOTFILES_DIR/.." && pwd)/dotfiles-private"
+if [ -d "$PRIVATE_DIR" ]; then
+    info "dotfiles-private を検出。機密設定ファイルをリンクしています..."
+    while IFS= read -r src; do
+        rel="${src#$PRIVATE_DIR/}"
+        dest="$DOTFILES_DIR/$rel"
+        create_symlink "$src" "$dest"
+    done < <(find "$PRIVATE_DIR" -name '*.local.md' -type f)
+else
+    warn "dotfiles-private が見つかりません（ghq get ryosukesuto/dotfiles-private）"
+fi
+
+# ============================================================================
 # binディレクトリのコマンドに実行権限を付与
 # ============================================================================
 if [ -d "$DOTFILES_DIR/bin" ]; then
