@@ -18,6 +18,39 @@ if [[ "$(git config --bool wt.allowDirectCommit 2>/dev/null)" == "true" ]]; then
     exit 0
 fi
 
+# ===== シークレットスキャン =====
+# ステージ済みファイルから機密情報パターンを検出
+secret_patterns=(
+    'AKIA[0-9A-Z]{16}'                     # AWS Access Key
+    'sk-[a-zA-Z0-9]{20,}'                  # OpenAI/Stripe API Key
+    'ghp_[a-zA-Z0-9]{36}'                  # GitHub PAT
+    'gho_[a-zA-Z0-9]{36}'                  # GitHub OAuth
+    'github_pat_[a-zA-Z0-9_]{82}'          # GitHub Fine-grained PAT
+    'xoxb-[0-9]+-[a-zA-Z0-9]+'            # Slack Bot Token
+    'xoxp-[0-9]+-[a-zA-Z0-9]+'            # Slack User Token
+    'hooks\.slack\.com/services/T[A-Z0-9]+' # Slack Webhook
+    'ya29\.[0-9A-Za-z_-]+'                 # Google OAuth Token
+    'AIza[0-9A-Za-z_-]{35}'               # Google API Key
+    'password\s*[:=]\s*["\x27][^"\x27]{8,}' # Hardcoded password
+    'secret\s*[:=]\s*["\x27][^"\x27]{8,}'  # Hardcoded secret
+)
+
+staged_files=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
+if [[ -n "$staged_files" ]]; then
+    combined_pattern=$(IFS='|'; echo "${secret_patterns[*]}")
+    matches=$(echo "$staged_files" | xargs grep -nE "$combined_pattern" 2>/dev/null || true)
+    if [[ -n "$matches" ]]; then
+        echo ""
+        echo -e "\033[0;31m[BLOCKED]\033[0m シークレットらしき文字列が検出されました"
+        echo ""
+        echo "$matches" | head -10
+        echo ""
+        echo "  誤検知の場合: git commit --no-verify"
+        echo ""
+        exit 1
+    fi
+fi
+
 echo ""
 echo -e "\033[0;31m[BLOCKED]\033[0m ${current_branch} ブランチへの直接コミットは禁止されています"
 echo ""
