@@ -6,12 +6,9 @@ Claude Code / Codex CLIの設定と制御をdotfilesで管理する。
 
 ### publicリポジトリと機密分離
 
-機密情報は `dotfiles-private` で管理。`install.sh` がシンボリックリンクで自動配置する。
-
 ```
 dotfiles/           public: 構造とロジック
-dotfiles-private/   private: 機密値
-  config/claude/rules/foo.local.md  → dotfiles/ 側に symlink
+dotfiles-private/   private: 機密値（*.local.md → dotfiles/ 側に symlink）
 ```
 
 ### シンボリックリンクで即時反映
