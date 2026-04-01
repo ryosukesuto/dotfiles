@@ -1,6 +1,6 @@
 # dotfiles
 
-macOSの開発環境をコードで管理するリポジトリ。`git clone` → `./install.sh` で環境が再現できる。
+Claude Code / Codex CLIの設定と制御をdotfilesで管理する。
 
 ## 設計の考え方
 
