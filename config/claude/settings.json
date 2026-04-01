@@ -195,6 +195,7 @@
       "Bash(npm install:*)",
       "Bash(npm add:*)",
       "Bash(npm ci:*)",
+      "Bash(npx:*)",
       "Bash(yarn:*)",
       "Bash(npm publish:*)",
       "Bash(pnpm publish:*)",

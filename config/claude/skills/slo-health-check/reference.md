@@ -24,10 +24,7 @@ done < /tmp/sre_slo_ids.txt
 
 ### Step 2: Slack チャンネル調査
 
-対象チャンネル:
-- `#00-alert` (ID: <SLACK_CHANNEL_ID>) - Datadog/PagerDuty/外部サービスのアラート
-- `#00-emergency` - 緊急対応
-- `#00-trouble-shooting` - 障害対応
+対象チャンネル: `${CLAUDE_SKILL_DIR}/SKILL.local.md` を参照
 
 調査方法:
 1. `slack_read_channel` で直近のメッセージを取得（limit: 30-50）
@@ -50,17 +47,7 @@ breached のレイテンシSLO がある場合:
    ```
    → SLO定義ファイルで `route` と `max_latency` を確認
 
-2. メトリクスモジュールの確認:
-   - `terraform/datadog/modules/gateway/slo_latency/main.tf` にメトリクスクエリがある
-   - メトリクス名: `gcp.prometheus.<INTERNAL_METRIC_NAME>.histogram.p99`
-   - タグ: `route`, `method`, `status`
-
-3. Datadog MCP でメトリクス取得:
-   ```
-   get_datadog_metric:
-     queries: ["avg:gcp.prometheus.<INTERNAL_METRIC_NAME>.histogram.p99{route:{route},method:{method},status:2*}"]
-     from: "now-7d"
-   ```
+2. メトリクス名・クエリ・Terraformパスは `${CLAUDE_SKILL_DIR}/SKILL.local.md` を参照
 
 ### Step 4: SLO反応の突合
 

@@ -33,12 +33,12 @@ date "+%Y-%m-%d (%a) %H:%M"
 
 ### 3. 今日のカレンダー取得
 
-NASCAカレンダーから今日のMTG予定を取得する:
+NASCAカレンダーから今日のMTG予定を取得する。カレンダーIDは `~/.claude/skills/google-workspace/SKILL.local.md` を参照。
 
 `+agenda` ヘルパーはCalendarList APIを使うためスコープエラーになることがある。`events list` APIを直接使う:
 
 ```bash
-eval "$(mise activate zsh)" && gws calendar events list --params '{"calendarId": "<CALENDAR_ID>", "timeMin": "YYYY-MM-DDT00:00:00+09:00", "timeMax": "YYYY-MM-DDT23:59:59+09:00", "singleEvents": true, "orderBy": "startTime"}'
+eval "$(mise activate zsh)" && gws calendar events list --params '{"calendarId": "<SKILL.local.mdのカレンダーID>", "timeMin": "YYYY-MM-DDT00:00:00+09:00", "timeMax": "YYYY-MM-DDT23:59:59+09:00", "singleEvents": true, "orderBy": "startTime"}'
 ```
 
 認証エラーの場合はスキップし、ユーザーに `gws auth login` を案内する。
