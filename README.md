@@ -6,7 +6,7 @@ Claude Code / Codex CLIの設定と制御をdotfilesで管理する。
 
 ### publicリポジトリと機密分離
 
-dotfilesをpublicにしておくと、機密を入れられない。機密情報は `dotfiles-private` で管理し、`install.sh` がシンボリックリンクで自動配置する。
+機密情報は `dotfiles-private` で管理。`install.sh` がシンボリックリンクで自動配置する。
 
 ```
 dotfiles/           public: 構造とロジック
