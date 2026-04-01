@@ -63,7 +63,11 @@ _update_prompt_env_cache() {
     fi
   fi
   [[ -n "$AWS_PROFILE" ]] && info+=("%F{yellow}AWS:${AWS_PROFILE}%f")
-  if [[ -n "$GOOGLE_CLOUD_PROJECT" ]]; then
+  if [[ -n "$CLOUDSDK_ACTIVE_CONFIG_NAME" ]]; then
+    local gcp_label="${CLOUDSDK_ACTIVE_CONFIG_NAME}"
+    [[ -n "$GOOGLE_CLOUD_PROJECT" ]] && gcp_label="${gcp_label}/${GOOGLE_CLOUD_PROJECT}"
+    info+=("%F{cyan}GCP:${gcp_label}%f")
+  elif [[ -n "$GOOGLE_CLOUD_PROJECT" ]]; then
     info+=("%F{cyan}GCP:${GOOGLE_CLOUD_PROJECT}%f")
   elif [[ -n "$GCP_PROJECT" ]]; then
     info+=("%F{cyan}GCP:${GCP_PROJECT}%f")
