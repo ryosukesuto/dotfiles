@@ -1,30 +1,21 @@
 # dotfiles
 
-Claude Code / Codex CLIの設定と制御をdotfilesで管理する。
+AI開発特化型dotfiles
 
-## 設計の考え方
+## 設計
 
-### publicリポジトリと機密分離
-
-dotfilesをpublicにしておくと、機密を入れられない。自然と設定の分離が進む。
-
-機密情報は `dotfiles-private` で管理。`install.sh` がシンボリックリンクで自動配置する。publicリポジトリには `*.local.md` → `.gitignore` のパターンだけが残る。
+### 機密情報の分離
 
 ```
 dotfiles/           public: 構造とロジック
-dotfiles-private/   private: 機密値
-  config/claude/rules/foo.local.md  → dotfiles/ 側に symlink
+dotfiles-private/   private: 機密値（*.local.md → dotfiles/ 側に symlink）
 ```
-
-### シンボリックリンクで即時反映
-
-設定ファイルはコピーではなくシンボリックリンクで配置。リポジトリを編集すればそのまま反映される。`install.sh` は冪等で、何度実行しても安全。
 
 ### ghq + git worktree
 
-リポジトリ管理は `ghq`、ブランチ作業は `git worktree` で分離。
+リポジトリ管理は `ghq`、ブランチ作業は `git worktree` で行う。
 
-`git checkout -b` は使わない。複数タスクを並行で進めるので、ブランチごとに独立したディレクトリが要る。AIと人間で別ブランチを同時に触れる。
+複数タスクを並行で進めるため、通常のブランチは封印。
 
 ```bash
 ghq get github.com/org/repo          # リポジトリ取得
@@ -34,11 +25,11 @@ git-wt add feature/xxx               # .worktrees/feature/xxx に作成
 
 - `Ctrl+]`: ghqリポジトリをfzfで選択
 - `Ctrl+\`: worktreeをfzfで選択
-- mainへの直接コミットはpre-commitフックでブロック
+- mainへの直接コミットはpre-commit hookでブロックする。
 
 ### direnvで環境切替
 
-AWSプロファイル、GCPプロジェクト、環境名は `direnv` で自動切替。`cd` するだけでセットされ、プロンプトに表示される。本番環境は赤色警告。
+AWSプロファイル、GCPプロジェクト、環境名は `direnv` で制御。
 
 ```bash
 # .envrc の例
@@ -49,11 +40,9 @@ use_gcp_project my-project-dev
 
 ## AI開発環境
 
-Claude CodeとCodex CLIの設定もdotfilesでまとめている。
-
 ### Hook
 
-`config/claude/settings.json` でライフサイクルフックを定義し、`bin/` 配下のスクリプトと連携。
+`config/claude/settings.json` でライフサイクルフックを定義、`bin/` 配下のスクリプトと連携。
 
 | フック | スクリプト | 役割 |
 |-------|----------|------|
@@ -63,25 +52,22 @@ Claude CodeとCodex CLIの設定もdotfilesでまとめている。
 | PreCompact | `claude-pre-compact` | 圧縮前に保持すべき情報を退避 |
 | Stop | `claude-session-end` | セッション終了時の後処理 |
 
-間違った操作をする前に止める、操作直後に検証する、の順で問題を早く検出する。
-
 ### Skills
 
-`config/claude/skills/` に30以上配置。Claude Codeが文脈に応じて自動で選ぶワークフロー定義。
+`config/claude/skills/` に配置。
 
-- `review-pr` — PRレビューとフィードバック
+- `review-pr` — Claude Code+Codexの協業PRレビュー
 - `post-merge` — マージ後のLinear更新、ブランチ削除、デフォルトブランチ同期
-- `vibe-start` → `vibe-plan` → `vibe-review` — 設計から実装・レビューまで
+- `vibe-start` → `vibe-plan` → `vibe-review` — バイブコーディング用Skill
 - `codex-review` — Codex CLIをセカンドオピニオンとして呼ぶ
 
 ### Rules
 
-`config/claude/rules/` にプロジェクト横断の行動ルールを配置。
+`config/claude/rules/` にプロジェクト横断のルールを配置。
 
 - `workflow.md` — PR作成手順、コード品質の原則
 - `codex-collaboration.md` — Claude Codeが実装、Codexが検証、の役割分担
 - `knowledge-search.md` — 社内ナレッジ検索のパラメータガイド
-- `automation.md` — 繰り返し作業を検知してSkill化を提案
 
 ### Permission
 
@@ -90,8 +76,6 @@ Claude CodeとCodex CLIの設定もdotfilesでまとめている。
 - `allow` — 自動実行。`git`, `gh`, `mise`, 読み取り系コマンドなど
 - `deny` — 実行禁止。`rm -rf`, mainへのforce push, 機密ファイルの読み取りなど
 - `ask` — 実行前に確認。`git push`, `curl`, `wget`
-
-npm/yarn/npxは `deny` に入れ、pnpmのみ許可。サプライチェーン対策。
 
 ## セットアップ
 
@@ -113,7 +97,7 @@ cd ~/gh/ryosukesuto/dotfiles
 ./install.sh --brew
 ```
 
-### install.shがやること
+### install.sh
 
 1. シンボリックリンクの作成 — zsh, git, ssh, tmux, vim, claude, codex, mise, direnv, ghostty, npm, uv
 2. dotfiles-privateの検出と機密ファイルのリンク
@@ -121,8 +105,6 @@ cd ~/gh/ryosukesuto/dotfiles
 4. mise経由のツールインストール
 5. corepack経由のpnpm有効化
 6. Claude Code, Claude Desktop, Codex CLI, Deno, Biome等のインストール
-
-リンク済みのファイルはスキップ。冪等。
 
 | オプション | 説明 |
 |-----------|------|
@@ -180,8 +162,6 @@ bin/               カスタムスクリプト、Claude Code hooks
 ```
 
 ## ローカル設定
-
-gitで管理されないマシン固有の設定:
 
 | ファイル | 用途 |
 |---------|------|
