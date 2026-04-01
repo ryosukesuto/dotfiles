@@ -387,7 +387,7 @@ if [ ! -d "$HOME/.config/direnv" ]; then
 fi
 create_symlink "$DOTFILES_DIR/config/direnv/direnvrc" "$HOME/.config/direnv/direnvrc"
 
-# npm設定（サプライチェーン対策）
+# npmrc設定（pnpmも読む。サプライチェーン対策）
 create_symlink "$DOTFILES_DIR/config/npm/npmrc" "$HOME/.npmrc"
 
 # uv設定（サプライチェーン対策）
