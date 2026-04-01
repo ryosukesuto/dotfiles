@@ -20,13 +20,6 @@
       "Bash(git:*)",
       "Bash(git-wt:*)",
       "Bash(gh:*)",
-      "Bash(npm run:*)",
-      "Bash(npm test:*)",
-      "Bash(npm config:*)",
-      "Bash(npm ls:*)",
-      "Bash(npm info:*)",
-      "Bash(npm outdated:*)",
-      "Bash(npm why:*)",
       "Bash(pnpm:*)",
       "Bash(python:*)",
       "Bash(python3:*)",
@@ -268,7 +261,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$CLAUDE_TOOL_INPUT_file_path\"; if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then npm run lint --silent 2>&1 | tail -20; elif command -v golangci-lint >/dev/null 2>&1 && [ -f go.mod ]; then golangci-lint run \"$FILE\" 2>&1 | tail -20; fi",
+            "command": "FILE=\"$CLAUDE_TOOL_INPUT_file_path\"; if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then pnpm run lint --silent 2>&1 | tail -20; elif command -v golangci-lint >/dev/null 2>&1 && [ -f go.mod ]; then golangci-lint run \"$FILE\" 2>&1 | tail -20; fi",
             "timeout": 30
           }
         ]

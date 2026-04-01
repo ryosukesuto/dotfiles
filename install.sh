@@ -222,7 +222,8 @@ if [ "$FORCE" = false ]; then
     echo "以下のディレクトリからdotfilesをインストールします:"
     echo "  $DOTFILES_DIR"
     echo ""
-    read -p "続行しますか？ (y/N): " -n 1 -r
+    echo -n "続行しますか？ (y/N): "
+    read -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         info "インストールをキャンセルしました"
@@ -454,6 +455,32 @@ else
 fi
 
 # ============================================================================
+# pnpmセットアップ（corepack経由）
+# ============================================================================
+if command -v corepack &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] corepack enable pnpm を実行"
+    else
+        info "corepack で pnpm を有効化中..."
+        corepack enable pnpm 2>/dev/null && \
+            info "pnpm の有効化完了" || \
+            warn "pnpm の有効化に失敗しました"
+    fi
+    # PNPM_HOME ディレクトリを作成
+    PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"
+    if [ ! -d "$PNPM_HOME" ]; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] PNPM_HOME ディレクトリを作成: $PNPM_HOME"
+        else
+            mkdir -p "$PNPM_HOME"
+            info "PNPM_HOME ディレクトリを作成: $PNPM_HOME"
+        fi
+    fi
+else
+    warn "corepack が見つかりません。Node.js インストール後に再実行してください"
+fi
+
+# ============================================================================
 # Claude Desktopのインストール（Homebrew cask）
 # ============================================================================
 if [ -d "/Applications/Claude.app" ]; then
@@ -602,23 +629,30 @@ else
 fi
 
 # ============================================================================
-# Vercel CLIのインストール（npm）
+# グローバルCLIツールのインストール（pnpm）
 # ============================================================================
-if ! command -v vercel &> /dev/null; then
-    if command -v npm &> /dev/null; then
+if command -v pnpm &> /dev/null; then
+    export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"
+    export PATH="$PNPM_HOME:$PATH"
+    PNPM_GLOBAL_PACKAGES=(
+        "@openai/codex"
+        "@google/clasp"
+        "@googleworkspace/cli"
+        "@bitwarden/cli"
+        "dev-browser"
+    )
+    for pkg in "${PNPM_GLOBAL_PACKAGES[@]}"; do
         if [ "$DRY_RUN" = true ]; then
-            info "[DRY RUN] Vercel CLI をインストール（npm）"
+            info "[DRY RUN] ${pkg} をインストール（pnpm global）"
         else
-            info "Vercel CLI をインストール中..."
-            npm install -g vercel 2>/dev/null && \
-                info "Vercel CLI のインストール完了" || \
-                warn "Vercel CLI のインストールに失敗しました"
+            info "${pkg} をインストール中..."
+            pnpm add -g "$pkg" 2>/dev/null && \
+                info "${pkg} のインストール完了" || \
+                warn "${pkg} のインストールに失敗しました"
         fi
-    else
-        warn "Vercel CLI のインストールにはnpmが必要です"
-    fi
+    done
 else
-    info "Vercel CLI は既にインストールされています"
+    warn "pnpm が見つかりません。corepack enable pnpm 後に再実行してください"
 fi
 
 # ============================================================================
@@ -747,7 +781,8 @@ if [ "$CLEAN_BACKUP" = true ] && [ "$DRY_RUN" = false ]; then
             echo "... 他 $((file_count - 20)) 件"
         fi
         echo ""
-        read -p "これらを削除してもよろしいですか？ (y/N): " -n 1 -r
+        echo -n "これらを削除してもよろしいですか？ (y/N): "
+        read -n 1 -r
         echo
 
         if [[ $REPLY =~ ^[Yy]$ ]]; then
