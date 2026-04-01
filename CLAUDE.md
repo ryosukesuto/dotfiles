@@ -11,7 +11,8 @@ Claude Code用のリポジトリガイダンス。
 ```
 zsh/           - Zsh設定（Claude Code実行環境として最適化）
   00-core.zsh      - コアシェル設定
-  20-path.zsh      - PATH管理
+  20-path.zsh      - PATH管理（PNPM_HOME含む）
+  40-functions.zsh - カスタム関数
   50-tools.zsh     - mise/direnv初期化
   60-prompt.zsh    - プロンプト設定（ENV/AWS警告）
   90-local.zsh     - ローカル設定
@@ -23,14 +24,20 @@ config/        - アプリ設定
   ghostty/         - Ghosttyターミナル設定
   git/             - Git設定
   gh/              - GitHub CLI設定
+  mise/            - mise設定（node, uv等）
+  npm/             - npmrc（pnpmハードニング設定）
+  ssh/             - SSH設定
   tmux/            - tmux設定
   vim/             - Vim設定
-  ssh/             - SSH設定
-  mise/            - mise設定
 bin/           - カスタムスクリプト
-  ctx-iac            - PR情報/planコメント収集（AI連携用）
-  claude-commit-log  - コミットログ整形
-  claude-times-post  - 勤怠投稿
+  ctx-iac              - PR情報/planコメント収集（AI連携用）
+  claude-commit-log    - コミットログ整形
+  claude-times-post    - 勤怠投稿
+  claude-guard-main-edit - mainブランチ編集ガード（PreToolUse hook）
+  claude-suggest-compact - コンパクト提案（PreToolUse hook）
+  claude-pre-compact   - コンパクト前処理（PreCompact hook）
+  claude-session-end   - セッション終了処理（Stop hook）
+  cmux-quad            - cmux 4分割レイアウト
 ```
 
 ## 主要ツール
@@ -113,9 +120,9 @@ ctx-iac -l           # ローカルlintも実行
 
 ## タスク
 
-1. インストール: `./install.sh`
+1. インストール: `./install.sh`（`--force` で確認スキップ、`--dry-run` で確認のみ、`--brew` でBrewfile実行）
 2. 更新: リポジトリ変更 → シンボリックリンク経由で即反映
-3. ローカル設定: `.local`ファイル使用（gitignore済み）
+3. ローカル設定: `.local`ファイル使用（gitignore済み、dotfiles-privateで管理）
 4. AWS: `aws sso login --profile <name>`
 
 ## セキュリティ
