@@ -1,7 +1,3 @@
-# Claude Code グローバル設定
-
-このファイルは、Claude Codeで使用するコア設定を管理します。
-
 ## 基本原則
 
 ### コミュニケーションスタイル（秘書型）
@@ -69,7 +65,7 @@
 
 ## 参考リンク
 
-- [クイックリファレンス](quick-reference.md) - 頻出パターンと即座に使える指示
+- クイックリファレンス: `~/.claude/rules/` 配下の各rulesファイル、および `config/claude/quick-reference.md`
 
 ## コンテキスト圧縮
 
