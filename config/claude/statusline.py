@@ -154,15 +154,18 @@ def main():
         except (ValueError, TypeError):
             pass
 
-    # Thinking status
+    # Thinking status — check MAX_THINKING_TOKENS env or settings.json env
     thinking_on = False
-    settings_path = os.path.expanduser("~/.claude/settings.json")
-    try:
-        with open(settings_path) as f:
-            settings = json.load(f)
-            thinking_on = settings.get("alwaysThinkingEnabled", False)
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
+    if os.environ.get("MAX_THINKING_TOKENS"):
+        thinking_on = True
+    else:
+        settings_path = os.path.expanduser("~/.claude/settings.json")
+        try:
+            with open(settings_path) as f:
+                settings = json.load(f)
+                thinking_on = bool(settings.get("env", {}).get("MAX_THINKING_TOKENS"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
 
     # ── LINE 1: Model | Directory (branch) | Session | Thinking ──
     parts = [f"{BLUE}{model_name}{R}"]

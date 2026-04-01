@@ -338,6 +338,17 @@
         ]
       }
     ],
+    "PermissionDenied": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmux notify --title 'Claude Code' --subtitle '権限拒否' --body \"auto modeが拒否しました: $CLAUDE_TOOL_NAME\" || true"
+          }
+        ]
+      }
+    ],
     "PermissionRequest": [
       {
         "matcher": "",
