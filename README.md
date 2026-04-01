@@ -52,8 +52,6 @@ use_gcp_project my-project-dev
 | PreCompact | `claude-pre-compact` | 圧縮前に保持すべき情報を退避 |
 | Stop | `claude-session-end` | セッション終了時の後処理 |
 
-間違った操作をする前に止める、操作直後に検証する、の順で問題を早く検出する。
-
 ### Skills
 
 `config/claude/skills/` に30以上配置。Claude Codeが文脈に応じて自動で選ぶワークフロー定義。
