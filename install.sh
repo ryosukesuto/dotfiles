@@ -434,6 +434,11 @@ else
     warn "dotfiles-private が見つかりません（ghq get ryosukesuto/dotfiles-private）"
 fi
 
+# orphanチェック: シンボリックリンクでない *.local.md を検出
+while IFS= read -r orphan; do
+    warn "orphan検出: $orphan（dotfiles-private に移動してください）"
+done < <(find "$DOTFILES_DIR" -name '*.local.md' -not -path '*/.git/*' -type f ! -type l 2>/dev/null)
+
 # ============================================================================
 # binディレクトリのコマンドに実行権限を付与
 # ============================================================================
