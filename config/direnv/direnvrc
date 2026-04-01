@@ -25,6 +25,24 @@ use_aws_profile() {
   log_status "AWS_PROFILE=${profile}"
 }
 
+# use_gcloud_config: Activate gcloud configuration
+use_gcloud_config() {
+  local config="${1}"
+  if [[ -z "${config}" ]]; then
+    log_error "use_gcloud_config requires a config name"
+    return 1
+  fi
+
+  # configuration の存在確認
+  if ! gcloud config configurations list --format='value(name)' 2>/dev/null | grep -q "^${config}$"; then
+    log_error "gcloud config '${config}' not found"
+    return 1
+  fi
+
+  export CLOUDSDK_ACTIVE_CONFIG_NAME="${config}"
+  log_status "gcloud config: ${config}"
+}
+
 # use_gcp_project: Set GCP project
 use_gcp_project() {
   local project="${1}"
