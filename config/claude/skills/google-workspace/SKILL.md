@@ -15,10 +15,7 @@ allowed-tools:
 
 gwsはプロファイル切り替え機能がないため、`GOOGLE_WORKSPACE_CLI_CONFIG_DIR` で切り替える。
 
-| コマンド | アカウント | GCPプロジェクト | config dir |
-|---------|-----------|----------------|-----------|
-| `gws` | WinTicket（会社） | <WORKSPACE_GCP_PROJECT> | `~/.config/gws/` |
-| `gws-personal` | <PERSONAL_EMAIL> | <PERSONAL_GCP_PROJECT> | `~/.config/gws-personal/` |
+アカウント情報・GCPプロジェクト・カレンダーIDは `${CLAUDE_SKILL_DIR}/SKILL.local.md` を参照。
 
 `gws-personal` は `~/.zshrc` に関数として定義済み（自前OAuthクライアント + config dir切替）:
 ```bash
@@ -30,8 +27,6 @@ function gws-personal() {
 }
 ```
 
-- OAuthクライアント: GCPプロジェクト `<PERSONAL_GCP_PROJECT>` で作成済み（デスクトップアプリ型）
-- `client_secret.json` が `~/.config/gws-personal/` に配置済み。通常のAPI呼び出しはこれで認証される
 - 環境変数 `CLIENT_ID`/`CLIENT_SECRET` は `auth login`（再認証）時に必要。通常のAPI呼び出しでは不要
 
 新しいターミナルセッション以外では以下で代替:
@@ -90,28 +85,27 @@ eval "$(mise activate zsh)" && gws gmail users labels list --params '{"userId": 
 ### Calendar
 
 デフォルトカレンダー: NASCAカレンダー（会議予定が入っている）
-- カレンダーID: `<CALENDAR_ID>`
+- カレンダーIDと表示名は `${CLAUDE_SKILL_DIR}/SKILL.local.md` を参照
 - `+agenda` ヘルパーは `--calendar` 指定で使う
-- `primary` カレンダーには勤務場所（オフィス/リモート）のみ登録されている
 
 今日の予定:
 ```bash
-eval "$(mise activate zsh)" && gws calendar +agenda --today --calendar '<CALENDAR_DISPLAY_NAME>'
+eval "$(mise activate zsh)" && gws calendar +agenda --today --calendar '<SKILL.local.mdのカレンダー表示名>'
 ```
 
 今週の予定:
 ```bash
-eval "$(mise activate zsh)" && gws calendar +agenda --week --format table --calendar '<CALENDAR_DISPLAY_NAME>'
+eval "$(mise activate zsh)" && gws calendar +agenda --week --format table --calendar '<SKILL.local.mdのカレンダー表示名>'
 ```
 
 N日間の予定:
 ```bash
-eval "$(mise activate zsh)" && gws calendar +agenda --days 3 --calendar '<CALENDAR_DISPLAY_NAME>'
+eval "$(mise activate zsh)" && gws calendar +agenda --days 3 --calendar '<SKILL.local.mdのカレンダー表示名>'
 ```
 
 任意の日付の予定（`+agenda` は日付指定不可のため API 直接呼び出し）:
 ```bash
-eval "$(mise activate zsh)" && gws calendar events list --params '{"calendarId": "<CALENDAR_ID>", "timeMin": "YYYY-MM-DDT00:00:00+09:00", "timeMax": "YYYY-MM-DDT00:00:00+09:00", "singleEvents": true, "orderBy": "startTime"}'
+eval "$(mise activate zsh)" && gws calendar events list --params '{"calendarId": "<SKILL.local.mdのカレンダーID>", "timeMin": "YYYY-MM-DDT00:00:00+09:00", "timeMax": "YYYY-MM-DDT00:00:00+09:00", "singleEvents": true, "orderBy": "startTime"}'
 ```
 
 予定作成（必ず須藤に内容を確認してから実行）:
@@ -189,7 +183,7 @@ eval "$(mise activate zsh)" && gws slides presentations get --params '{"presenta
 
 - Drive書き込み不可: OAuthアプリが未検証のため、既存ファイルのリネーム・移動・削除はブロックされる（`appNotAuthorizedToFile` エラー）。gwsで新規作成したファイルのみ書き込み可能
 - Drive整理が必要な場合: Google Apps Script（clasp or ブラウザ）経由で実行する。GASはアプリ検証制限を受けない
-- GCPプロジェクト: `~/.claude/rules/service-environments.local.md` を参照（テストモード）
+- GCPプロジェクト: `~/.claude/rules/gcp-accounts.local.md` を参照
 
 ## 注意事項
 

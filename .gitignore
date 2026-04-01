@@ -37,6 +37,7 @@ Temporary Items
 .config/gcloud/
 .boto
 .zsh_history
+.bash_history
 .python_history
 .lesshst
 .viminfo
@@ -68,6 +69,7 @@ aws/config
 .local/
 .npm/
 .pyenv/
+node_modules/
 
 # ローカル設定
 *.local

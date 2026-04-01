@@ -60,4 +60,4 @@ Terraformコードからメトリクス名を特定し、Datadog MCPでメトリ
 - Slack の `slack_search_public_and_private` は結果が限定的。1ヶ月分のデータを取るには `slack_read_channel` でページネーション（cursor）しながら遡る必要がある
 - zsh では `status` は読み取り専用変数。シェルスクリプト内で変数名に使うとエラーになる。`slo_state` 等を使う
 - `pup slos status` のレスポンスパスは `.data.attributes.state`（`.data.overall_status[0].state` ではない）
-- レイテンシSLOのメトリクス名は Terraform の `terraform/datadog/modules/gateway/slo_latency/main.tf` に定義されている（`gcp.prometheus.<INTERNAL_METRIC_NAME>.histogram.p99`）
+- レイテンシSLOのメトリクス名は `${CLAUDE_SKILL_DIR}/SKILL.local.md` を参照

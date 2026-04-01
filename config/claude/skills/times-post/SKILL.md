@@ -53,7 +53,7 @@ allowed-tools:
 
 良い例:
 - `Claude Code設定の定期メンテナンスです。v2.1.84〜86のchangelogと照合して、廃止済みMCPツールのpermission 5件削除とSkill descriptionの250文字制限対応をしておきました`
-- `<INTERNAL_SERVICE>のN+1クエリを修正しました。レスポンスタイムが40%改善しています`
+- `○○サービスのN+1クエリを修正しました。レスポンスタイムが40%改善しています`
 - `Terraformのstate importを15件実施しました。deprecatedな属性の対応も含めて完了です`
 
 悪い例:
