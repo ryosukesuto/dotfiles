@@ -26,6 +26,10 @@ elif [[ -d "$HOME/google-cloud-sdk/bin" ]]; then
     path+=("$HOME/google-cloud-sdk/bin")
 fi
 
+# pnpm
+export PNPM_HOME="$HOME/.local/share/pnpm"
+[[ -d "$PNPM_HOME" ]] && path=("$PNPM_HOME" $path)
+
 # Deno
 [[ -d "$HOME/.deno/bin" ]] && path=("$HOME/.deno/bin" $path)
 
