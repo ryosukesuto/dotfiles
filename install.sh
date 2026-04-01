@@ -386,6 +386,12 @@ if [ ! -d "$HOME/.config/direnv" ]; then
 fi
 create_symlink "$DOTFILES_DIR/config/direnv/direnvrc" "$HOME/.config/direnv/direnvrc"
 
+# npm設定（サプライチェーン対策）
+create_symlink "$DOTFILES_DIR/config/npm/npmrc" "$HOME/.npmrc"
+
+# uv設定（サプライチェーン対策）
+create_symlink "$DOTFILES_DIR/config/uv/uv.toml" "$HOME/.config/uv/uv.toml"
+
 # Ghostty設定
 create_symlink "$DOTFILES_DIR/config/ghostty/config" "$HOME/.config/ghostty/config"
 
