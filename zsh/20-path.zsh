@@ -32,9 +32,6 @@ fi
 # Go
 # GOPRIVATE は ~/.zshrc.local で設定
 
-# Firebase
-export FIREBASE_CREDENTIALS=~/firebase_adminsdk_service_account.json
-
 # Obsidian CLI
 [[ -x "/Applications/Obsidian.app/Contents/MacOS/Obsidian" ]] && path+=("/Applications/Obsidian.app/Contents/MacOS")
 
