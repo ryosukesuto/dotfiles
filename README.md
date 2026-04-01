@@ -13,7 +13,7 @@ dotfiles-private/   private: 機密値（*.local.md → dotfiles/ 側に symlink
 
 ### シンボリックリンクで即時反映
 
-設定ファイルはコピーではなくシンボリックリンクで配置。リポジトリを編集すればそのまま反映される。`install.sh` は冪等で、何度実行しても安全。
+`install.sh` がシンボリックリンクを作成。リポジトリを編集すればそのまま反映される。
 
 ### ghq + git worktree
 
