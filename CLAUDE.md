@@ -122,18 +122,7 @@ ctx-iac -l           # ローカルlintも実行
 
 - 認証情報はコミットしない
 - テンプレートファイル使用（aws/）
-- 機密設定は`.local`ファイルへ（`*.local.*` パターンでgitignore済み）
-- パッケージマネージャ: pnpm（corepack経由）。npm/npx/yarnは使わない
-
-### 機密情報の管理（dotfiles-private）
-
-サービス固有の知識（プロジェクトID、内部URL、メトリクス名、メールアドレス、SlackチャンネルID等）はpublicリポジトリに含めない。
-
-- 配置先: 各skill/rulesディレクトリの `*.local.md`
-- 管理先: `ryosukesuto/dotfiles-private`（private repo）
-- skill/rulesファイルからは `${CLAUDE_SKILL_DIR}/SKILL.local.md` で参照
-- `install.sh` がdotfiles-privateを検出し、自動でシンボリックリンクを配置
-- 新しい機密情報を追加する場合: dotfiles-private側にファイルを作成し、public側はプレースホルダで参照
+- 機密設定は`.local`ファイルへ（グローバル設定のセキュリティセクション参照）
 
 ## 重要
 
