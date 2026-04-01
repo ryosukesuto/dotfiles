@@ -11,10 +11,6 @@ dotfiles/           public: 構造とロジック
 dotfiles-private/   private: 機密値（*.local.md → dotfiles/ 側に symlink）
 ```
 
-### シンボリックリンクで即時反映
-
-`install.sh` がシンボリックリンクを作成。リポジトリを編集すればそのまま反映される。
-
 ### ghq + git worktree
 
 リポジトリ管理は `ghq`、ブランチ作業は `git worktree` で分離。
