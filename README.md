@@ -6,7 +6,7 @@ macOSの開発環境をコードで管理するリポジトリ。`git clone` →
 
 ### publicリポジトリと機密分離
 
-dotfilesをpublicにしておくと、機密を入れられない。この制約が設定の構造化を強制する。
+dotfilesをpublicにしておくと、機密を入れられない。自然と設定の分離が進む。
 
 機密情報は `dotfiles-private` で管理。`install.sh` がシンボリックリンクで自動配置する。publicリポジトリには `*.local.md` → `.gitignore` のパターンだけが残る。
 
@@ -24,7 +24,7 @@ dotfiles-private/   private: 機密値
 
 リポジトリ管理は `ghq`、ブランチ作業は `git worktree` で分離。
 
-`git checkout -b` は使わない。複数タスクを並行で進めるので、ブランチごとに独立したディレクトリが要る。AIに別ブランチを投げつつ自分は別ブランチで作業する、という使い方。
+`git checkout -b` は使わない。複数タスクを並行で進めるので、ブランチごとに独立したディレクトリが要る。AIと人間で別ブランチを同時に触れる。
 
 ```bash
 ghq get github.com/org/repo          # リポジトリ取得
@@ -49,7 +49,7 @@ use_gcp_project my-project-dev
 
 ## AI開発環境
 
-Claude CodeとCodex CLIの設定をdotfilesで一元管理している。
+Claude CodeとCodex CLIの設定もdotfilesでまとめている。
 
 ### Hook
 
@@ -67,7 +67,7 @@ Claude CodeとCodex CLIの設定をdotfilesで一元管理している。
 
 ### Skills
 
-`config/claude/skills/` に30以上のスキルを配置。Claude Codeが文脈から選択する再利用可能なワークフロー定義。
+`config/claude/skills/` に30以上配置。Claude Codeが文脈に応じて自動で選ぶワークフロー定義。
 
 - `review-pr` — PRレビューとフィードバック
 - `post-merge` — マージ後のLinear更新、ブランチ削除、デフォルトブランチ同期
@@ -155,7 +155,7 @@ codex    # OpenAI APIキー
 ## 構成
 
 ```
-zsh/               Zsh設定（番号プレフィクスで読み込み順を制御）
+zsh/               Zsh設定、番号プレフィクスで読み込み順を制御
   00-core.zsh        コアシェル設定
   20-path.zsh        PATH管理
   40-functions.zsh   カスタム関数
