@@ -29,7 +29,7 @@ git-wt add feature/xxx               # .worktrees/feature/xxx に作成
 
 ### direnvで環境切替
 
-AWSプロファイル、GCPプロジェクト、環境名は `direnv` で自動切替。`cd` するだけでセットされ、プロンプトに表示される。本番環境は赤色警告。
+AWSプロファイル、GCPプロジェクト、環境名は `direnv` で制御。
 
 ```bash
 # .envrc の例
