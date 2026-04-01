@@ -40,8 +40,6 @@ use_gcp_project my-project-dev
 
 ## AI開発環境
 
-Claude CodeとCodex CLIの設定もdotfilesでまとめている。
-
 ### Hook
 
 `config/claude/settings.json` でライフサイクルフックを定義し、`bin/` 配下のスクリプトと連携。
