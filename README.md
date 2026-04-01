@@ -2,7 +2,7 @@
 
 Claude Code / Codex CLIの設定と制御をdotfilesで管理する。
 
-## 設計の考え方
+## 設計
 
 ### publicリポジトリと機密分離
 
