@@ -15,7 +15,7 @@ dotfiles-private/   private: 機密値（*.local.md → dotfiles/ 側に symlink
 
 リポジトリ管理は `ghq`、ブランチ作業は `git worktree` で分離。
 
-`git checkout -b` は使わない。複数タスクを並行で進めるので、ブランチごとに独立したディレクトリが要る。AIと人間で別ブランチを同時に触れる。
+複数タスクを並行で進めるため通常のブランチは利用しない。
 
 ```bash
 ghq get github.com/org/repo          # リポジトリ取得
