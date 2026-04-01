@@ -21,7 +21,7 @@ mouse-hide-while-typing = true
 # 操作
 copy-on-select = true
 confirm-close-surface = false
-scrollback-limit = 100000
+scrollback-limit = 1000000
 
 # キーバインド
 keybind = shift+enter=text:\n
