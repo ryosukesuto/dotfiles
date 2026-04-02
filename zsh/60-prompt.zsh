@@ -130,6 +130,8 @@ add-zsh-hook precmd _precmd_vcs
 
 # --- プロンプト ---
 # vcs_info_msg_0_ = ブランチ名、_dirty_result = 非同期で取得した +（staged）*（unstaged）
-PROMPT='${_prompt_env_cache}%F{cyan}%~%f${vcs_info_msg_0_:+ %F{green}(${vcs_info_msg_0_}${_dirty_result})%f}
+# NOTE: %F{green} の } が ${:+} の閉じ括弧と誤認されるため、色指定を変数に退避
+typeset -g _prompt_git_color='%F{green}'
+PROMPT='${_prompt_env_cache}%F{cyan}%~%f${vcs_info_msg_0_:+ ${_prompt_git_color}(${vcs_info_msg_0_}${_dirty_result})%f}
 %F{yellow}>%f '
 RPROMPT='%F{8}%T%f'
