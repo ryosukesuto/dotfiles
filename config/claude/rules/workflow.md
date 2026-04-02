@@ -4,7 +4,7 @@
 
 以下の成果物は `/proofread` を通してから提出する
 
-- PR description（`gh pr create` / `gh pr edit` の body）
+- PR description → `/create-pr` Skill内のステップで自動実行
 - ガイドライン・手順書（Kibela、Obsidian等に書く文書）
 - 議事録・レポート
 
