@@ -1,5 +1,13 @@
 # ワークフロー
 
+## 校正（proofread）必須のタイミング
+
+以下の成果物は `/proofread` を通してから提出する
+
+- PR description（`gh pr create` / `gh pr edit` の body）
+- ガイドライン・手順書（Kibela、Obsidian等に書く文書）
+- 議事録・レポート
+
 ## PR作成時
 0. body にコードブロック（` ``` `）を含める場合、`gh pr edit --body-file` でファイルから渡す。heredoc 内の ``` は Bash にエスケープされてレンダリングが壊れるため
 1. テンプレート確認 → `.github/PULL_REQUEST_TEMPLATE.md`があれば、その構造に従う
