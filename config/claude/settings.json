@@ -86,6 +86,7 @@
       "Bash(Obsidian:*)",
       "Bash(gnews:*)",
       "Bash(ntn:*)",
+      "Bash(trash:*)",
       "Bash(reload)",
       "Bash(exec zsh)",
       "WebSearch",
@@ -353,6 +354,17 @@
           {
             "type": "command",
             "command": "cmux notify --title 'Claude Code' --subtitle '権限確認' --body \"許可を求めています: $CLAUDE_TOOL_NAME\" || true"
+          }
+        ]
+      }
+    ],
+    "TaskCreated": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmux notify --title 'Claude Code' --subtitle 'タスク作成' --body \"$CLAUDE_TASK_DESCRIPTION\" || true"
           }
         ]
       }
