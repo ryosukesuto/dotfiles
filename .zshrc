@@ -25,7 +25,10 @@ fi
 
 # gws personal account
 # OAuthクライアント: ~/.config/gws-personal/client_secret.json（自前作成、デスクトップアプリ型）
-# 再認証時はCLIENT_ID/SECRET環境変数が必要 → ~/.config/gws-personal/client_secret.jsonから読む
+# 社内のCLIENT_ID/SECRET環境変数をunsetして、client_secret.jsonから読ませる
 function gws-personal() {
-  GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws-personal gws "$@"
+  env -u GOOGLE_WORKSPACE_CLI_CLIENT_ID \
+      -u GOOGLE_WORKSPACE_CLI_CLIENT_SECRET \
+      GOOGLE_WORKSPACE_CLI_CONFIG_DIR="$HOME/.config/gws-personal" \
+      gws "$@"
 }
