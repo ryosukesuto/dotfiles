@@ -29,3 +29,15 @@ if (( $+commands[git-wt] )) && (( $+commands[fzf] )); then
     zle -N fzf-wt
     bindkey '^\' fzf-wt  # Ctrl+\ でworktree選択
 fi
+
+# bw unlock ラッパー（cmuxでプロンプトが表示されない問題の回避）
+bw-unlock() {
+    if [[ -n "${CMUX_SOCKET_PATH:-}" ]]; then
+        local pw
+        read -rs "pw?Master password: "
+        echo
+        command bw unlock --raw "$pw"
+    else
+        command bw unlock --raw "$@"
+    fi
+}
