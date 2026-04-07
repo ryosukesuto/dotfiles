@@ -203,6 +203,12 @@ trust_level = "trusted"
 [projects."/Users/s32943/gh/github.com/WinTicket/.github-private"]
 trust_level = "trusted"
 
+[projects."/Users/s32943/gh/github.com/WinTicket/claude-code-policy"]
+trust_level = "trusted"
+
+[projects."/Users/s32943/gh/github.com/WinTicket/n8n-workflows"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 gpt-5-codex = "gpt-5.2-codex"
 "gpt-5.2-codex" = "gpt-5.4"
