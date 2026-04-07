@@ -34,14 +34,14 @@ Linear: [PF-XXXX](https://linear.app/winticket/issue/PF-XXXX)
 
 ## オプション
 
-- `--draft` - ドラフトPRとして作成
+- `--no-draft` - 通常PR（非draft）として作成。デフォルトはdraft
 
 ## 使用例
 
 ```bash
-/create-pr
-/create-pr "feat: ユーザー認証機能の追加"
-/create-pr --draft
+/create-pr                              # draft PRを作成（デフォルト）
+/create-pr "feat: ユーザー認証機能の追加"  # タイトル指定でdraft PR作成
+/create-pr --no-draft                   # 通常PRとして作成
 ```
 
 ## worktree環境での動作
@@ -77,6 +77,7 @@ git commit -m "feat: [簡潔な説明]"
 git push -u origin HEAD
 
 PR_URL=$(gh pr create \
+    --draft \
     --title "[Type]: 簡潔なタイトル" \
     --body "[生成されたPR本文]" \
     --assignee @me)
