@@ -423,6 +423,7 @@
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
   "showThinkingSummaries": true,
+  "effortLevel": "high",
   "showTurnDuration": true,
   "mcpServers": {
     "slack": {
