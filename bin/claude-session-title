@@ -1,0 +1,29 @@
+#!/bin/bash
+# claude-session-title: Set session title from first user prompt
+# Hook: UserPromptSubmit (v2.1.94+)
+#
+# Only sets the title once per session. SessionStart hook clears the marker.
+
+MARKER="$HOME/.claude/.session-titled"
+
+# Already titled this session — skip
+[ -f "$MARKER" ] && exit 0
+
+# Read user_prompt from stdin JSON
+prompt=$(jq -r '.user_prompt // empty' 2>/dev/null)
+[ -z "$prompt" ] && exit 0
+
+# Strip slash commands (e.g., /commit, /review-pr) — not useful as titles
+[[ "$prompt" == /* ]] && exit 0
+
+# Clean: collapse whitespace, trim to 80 chars
+title=$(printf '%s' "$prompt" | tr '\n\r\t' '   ' | sed 's/  */ /g; s/^ //; s/ $//' | cut -c1-80)
+[ -z "$title" ] && exit 0
+
+# Mark as titled
+touch "$MARKER"
+
+# Return session title
+cat <<EOF
+{"hookSpecificOutput":{"sessionTitle":"$title"}}
+EOF
