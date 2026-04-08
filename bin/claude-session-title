@@ -16,8 +16,8 @@ prompt=$(jq -r '.prompt // empty' 2>/dev/null)
 # Strip slash commands (e.g., /commit, /review-pr) — not useful as titles
 [[ "$prompt" == /* ]] && exit 0
 
-# Clean: collapse whitespace, trim to 80 chars
-title=$(printf '%s' "$prompt" | tr '\n\r\t' '   ' | sed 's/  */ /g; s/^ //; s/ $//' | cut -c1-80)
+# Clean: strip image refs, collapse whitespace, trim to 80 chars
+title=$(printf '%s' "$prompt" | tr '\n\r\t' '   ' | sed 's/\[Image[^]]*\]//g; s/  */ /g; s/^ //; s/ $//' | cut -c1-80)
 [ -z "$title" ] && exit 0
 
 # Mark as titled
