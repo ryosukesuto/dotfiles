@@ -9,8 +9,8 @@ MARKER="$HOME/.claude/.session-titled"
 # Already titled this session — skip
 [ -f "$MARKER" ] && exit 0
 
-# Read user_prompt from stdin JSON
-prompt=$(jq -r '.user_prompt // empty' 2>/dev/null)
+# Read prompt from stdin JSON (field name is "prompt", not "user_prompt")
+prompt=$(jq -r '.prompt // empty' 2>/dev/null)
 [ -z "$prompt" ] && exit 0
 
 # Strip slash commands (e.g., /commit, /review-pr) — not useful as titles
@@ -23,7 +23,5 @@ title=$(printf '%s' "$prompt" | tr '\n\r\t' '   ' | sed 's/  */ /g; s/^ //; s/ $
 # Mark as titled
 touch "$MARKER"
 
-# Return session title
-cat <<EOF
-{"hookSpecificOutput":{"sessionTitle":"$title"}}
-EOF
+# Return session title (use jq for safe JSON encoding)
+jq -nc --arg t "$title" '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","sessionTitle":$t}}'
