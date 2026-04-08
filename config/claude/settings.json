@@ -394,7 +394,8 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "python3 \"$HOME/.claude/statusline.py\""
+    "command": "python3 \"$HOME/.claude/statusline.py\"",
+    "refreshInterval": 30
   },
   "enabledPlugins": {
     "slack@claude-plugins-official": false,
@@ -423,7 +424,6 @@
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
   "showThinkingSummaries": true,
-  "effortLevel": "high",
   "showTurnDuration": true,
   "mcpServers": {
     "slack": {

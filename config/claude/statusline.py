@@ -115,9 +115,10 @@ def main():
     )
     pct_used = current * 100 // size if size > 0 else 0
 
-    # Directory + git branch
+    # Directory + git branch + worktree
     cwd = data.get("cwd") or os.getcwd()
     dirname = os.path.basename(cwd)
+    is_worktree = bool(data.get("workspace", {}).get("git_worktree"))
 
     git_branch = ""
     git_dirty = ""
@@ -172,7 +173,8 @@ def main():
 
     dir_part = f"{CYAN}{dirname}{R}"
     if git_branch:
-        dir_part += f" {GREEN}({git_branch}{RED}{git_dirty}{GREEN}){R}"
+        wt_label = f" {YELLOW}wt{GREEN}" if is_worktree else ""
+        dir_part += f" {GREEN}({git_branch}{RED}{git_dirty}{wt_label}{GREEN}){R}"
     parts.append(dir_part)
 
     if session_duration:
