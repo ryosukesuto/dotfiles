@@ -128,6 +128,7 @@ check_dependencies() {
         "aws"
         "mise"
         "git-filter-repo"
+        "op"
     )
     
     local missing_recommended=()
@@ -698,6 +699,26 @@ if ! command -v pipectl &> /dev/null; then
     fi
 else
     info "pipectl は既にインストールされています"
+fi
+
+# ============================================================================
+# 1Password CLIのインストール（Homebrew）
+# ============================================================================
+if ! command -v op &> /dev/null; then
+    if command -v brew &> /dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] 1Password CLI をインストール（brew）"
+        else
+            info "1Password CLI をインストール中..."
+            brew install 1password-cli 2>/dev/null && \
+                info "1Password CLI のインストール完了" || \
+                warn "1Password CLI のインストールに失敗しました"
+        fi
+    else
+        warn "1Password CLI のインストールにはHomebrewが必要です"
+    fi
+else
+    info "1Password CLI は既にインストールされています"
 fi
 
 # ============================================================================

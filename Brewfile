@@ -57,6 +57,7 @@ cask "ghostty"
 
 # ===== アプリケーション =====
 cask "1password"           # パスワード管理
+brew "1password-cli"       # 1Password CLI (op)
 cask "arc"                 # ブラウザ
 cask "bitwarden"           # パスワード管理（OSS）
 cask "chatgpt"             # ChatGPTデスクトップ
