@@ -3,7 +3,7 @@ theme = TokyoNight Night
 
 # フォント
 font-family = "Osaka−等幅"
-font-size = 9
+font-size = 10
 adjust-cell-height = -2
 font-thicken = true
 
