@@ -283,6 +283,15 @@
         ]
       },
       {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-suggest-proofread"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
@@ -417,13 +426,12 @@
       "cmux"
     ]
   },
-  "fastMode": true,
   "showClearContextOnPlanAccept": true,
   "voiceEnabled": true,
   "channelsEnabled": true,
+  "showThinkingSummaries": true,
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
-  "showThinkingSummaries": true,
   "showTurnDuration": true,
   "mcpServers": {
     "slack": {

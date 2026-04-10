@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# PostToolUse hook (Write): Obsidian Vault内のmdファイル新規作成時に /proofread をサジェスト
+#
+# 判定条件:
+#   - ファイルがObsidian Vault配下
+#   - 拡張子が .md
+#   - CLAUDE.md / SKILL.md 等の設定ファイルは除外
+
+file_path="${CLAUDE_TOOL_INPUT_file_path}"
+[[ -z "$file_path" ]] && exit 0
+
+VAULT_DIR="$HOME/gh/github.com/ryosukesuto/obsidian-notes"
+
+# Vault配下でなければスキップ
+[[ "$file_path" != "$VAULT_DIR"/* ]] && exit 0
+
+# .md以外はスキップ
+[[ "$file_path" != *.md ]] && exit 0
+
+# 設定ファイルは除外
+basename=$(basename "$file_path")
+case "$basename" in
+  CLAUDE.md|SKILL.md|MEMORY.md|reference.md) exit 0 ;;
+esac
+
+# .claude/ 配下は除外
+[[ "$file_path" == */.claude/* ]] && exit 0
+
+echo "Tip: /proofread で校正できます" >&2
