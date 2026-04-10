@@ -47,9 +47,9 @@ allowed-tools:
 VAULT_DIR="$HOME/gh/github.com/ryosukesuto/obsidian-notes"
 DAILY_NOTE="$VAULT_DIR/$(date '+%Y-%m-%d')_daily.md"
 
-# デイリーノートが存在しない場合は作成
+# デイリーノートが存在しない場合はfrontmatter付きで作成
 if [ ! -f "$DAILY_NOTE" ]; then
-    echo "## Tasks\n\n---" > "$DAILY_NOTE"
+    printf -- '---\ntags:\n  - types/daily\n---\n\n---\n' > "$DAILY_NOTE"
 fi
 
 # セパレータを付けて追記
