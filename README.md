@@ -65,8 +65,6 @@ use_gcp_project my-project-dev
 
 `config/claude/rules/` にプロジェクト横断のルールを配置。
 
-- `workflow.md` — PR作成手順、コード品質の原則
-- `codex-collaboration.md` — Claude Codeが実装、Codexが検証、の役割分担
 - `knowledge-search.md` — 社内ナレッジ検索のパラメータガイド
 
 ### Permission
