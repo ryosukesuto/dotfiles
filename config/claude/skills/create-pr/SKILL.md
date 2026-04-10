@@ -141,7 +141,7 @@ git rebase "origin/$DEFAULT_BRANCH"
 
 1. Terraformリポジトリの場合は `terraform fmt -recursive` を実行
 2. `git add -A && git commit && git push -u origin HEAD`
-3. `gh pr create --draft` でdraft PRを作成（Linear Issueリンクを含むbodyを使用）。ユーザーが明示的に `--no-draft` や「draftなしで」と指定した場合のみ通常PRにする
+3. `gh pr create --draft` でdraft PRを作成（Linear Issueリンクを含むbodyを使用）。bodyにコードブロック（` ``` `）を含む場合は `--body-file` でファイルから渡す（heredoc内の ``` はBashにエスケープされてレンダリングが壊れるため）。ユーザーが明示的に `--no-draft` や「draftなしで」と指定した場合のみ通常PRにする
 4. PR作成後、Linear Issueのステータスを `In Review` に更新（`save_issue`）
 5. 作業報告をデイリーノートに追記
 6. worktree内の場合は削除方法を案内
