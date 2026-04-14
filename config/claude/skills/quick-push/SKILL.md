@@ -18,9 +18,10 @@ allowed-tools:
 2. このセッションで自分が変更・作成したファイルのみを対象にする（会話履歴から判断）
    - セッション前から存在するunstaged変更は対象外
    - 判断に迷う場合はユーザーに確認する
-3. 危険なファイル（.env、secrets、credentials等）を除外
-4. 対象ファイルのみを`git add`
-5. 変更内容を分析して適切なprefixを選択：
+3. main/masterブランチの場合は `wt.allowDirectCommit` を確認（詳細は下記「main直コミット判定」）
+4. 危険なファイル（.env、secrets、credentials等）を除外
+5. 対象ファイルのみを`git add`
+6. 変更内容を分析して適切なprefixを選択：
    - `feat:` 新機能追加
    - `fix:` バグ修正
    - `docs:` ドキュメント変更
@@ -28,10 +29,30 @@ allowed-tools:
    - `refactor:` リファクタリング
    - `test:` テスト追加・修正
    - `chore:` その他の変更
-6. コミットメッセージを表示して確認
-7. PRマージ済みチェック（push前）
-8. 現在のブランチをリモートにプッシュ
-9. mainブランチ以外の場合、PR作成を提案
+7. コミットメッセージを表示して確認
+8. PRマージ済みチェック（push前）
+9. 現在のブランチをリモートにプッシュ
+10. mainブランチ以外の場合、PR作成を提案
+
+## main直コミット判定
+
+現在のブランチが`main`/`master`だった場合、worktree作成やブランチ切り替えを提案する前に必ず以下を確認する。
+
+```bash
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$current_branch" == "main" ]] || [[ "$current_branch" == "master" ]]; then
+    allow=$(git config --get wt.allowDirectCommit 2>/dev/null)
+    if [[ "$allow" == "true" ]]; then
+        # そのまま直コミット可。worktree作成/ブランチ切替は提案しない
+        :
+    else
+        # worktree作成を提案する（CLAUDE.mdのworktree必須ルール）
+        echo "main直コミットはブロックされています。worktreeを作成します"
+    fi
+fi
+```
+
+なぜこのチェックが必要か: CLAUDE.mdは「ブランチ作業はworktree必須」と書かれているが、dotfilesなど個人リポジトリでは `wt.allowDirectCommit=true` でopt-outされている。ルールの禁止側だけ見てworktree作成に進むと、opt-outされたリポジトリで無駄なworktreeを作ってユーザーを待たせる。**worktreeフローに入る前に必ずこの設定を確認する**。
 
 ## PRマージ済みチェックの実装手順
 
@@ -93,4 +114,4 @@ PRマージ後にエラーが発生した場合:
 
 ## Gotchas
 
-(運用しながら追記)
+- `wt.allowDirectCommit=true` のリポジトリ（dotfiles等）でworktree作成を提案しない。CLAUDE.mdの「worktree必須」はopt-out前提のルール。main/masterブランチに入ったら即座に worktree を作ろうとせず、先に `git config --get wt.allowDirectCommit` を確認する
