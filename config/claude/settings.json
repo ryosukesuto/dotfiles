@@ -221,7 +221,6 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
-  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
