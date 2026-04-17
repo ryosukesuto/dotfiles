@@ -67,6 +67,17 @@ if [[ "$HAS_FEAT" -gt 0 ]]; then
   SCORE=$((SCORE + 1))
 fi
 
+# メモリ保存の判定: セッション開始からの経過時間（compact-history で近似）
+MEMORY_HINT=""
+COMPACT_HISTORY="${HOME}/.claude/compact-history.log"
+if [[ -f "$COMPACT_HISTORY" ]]; then
+  TODAY=$(date '+%Y-%m-%d')
+  TODAY_COMPACTS=$(grep -c "^${TODAY}" "$COMPACT_HISTORY" 2>/dev/null || echo 0)
+  if [[ "$TODAY_COMPACTS" -ge 2 ]]; then
+    MEMORY_HINT="  長いセッションでした。フィードバックや方針決定があれば memory に保存してください。"
+  fi
+fi
+
 # スコアに応じたメッセージ
 if [[ "$SCORE" -ge 4 ]]; then
   echo "[Hook] セッション概要: コミット${COMMIT_COUNT}件、新規ファイル${NEW_FILES}件、変更${CHANGED_FILES}ファイル" >&2
@@ -76,4 +87,8 @@ elif [[ "$SCORE" -ge 2 ]]; then
   echo "Tip: /til で学びを記録、/times-post でtimesに投稿できます" >&2
 else
   echo "Tip: /til で学びを記録、/times-post でtimesに投稿できます" >&2
+fi
+
+if [[ -n "$MEMORY_HINT" ]]; then
+  echo "$MEMORY_HINT" >&2
 fi
