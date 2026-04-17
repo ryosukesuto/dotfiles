@@ -431,7 +431,6 @@
   "voiceEnabled": true,
   "channelsEnabled": true,
   "showThinkingSummaries": true,
-  "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
   "showTurnDuration": true,
   "mcpServers": {
