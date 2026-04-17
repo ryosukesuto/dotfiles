@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ryosukesuto/dotfiles/schemas/review/triage.schema.json",
+  "title": "Triage Output",
+  "description": "Output of review-triage skill. Authoritative. Downstream reviewers do not re-evaluate selection rules.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "input_mode",
+    "base_sha",
+    "head_sha",
+    "repo_roots",
+    "size",
+    "risk_tags",
+    "changed_files",
+    "selected_reviewers",
+    "global_token_budget",
+    "per_reviewer_budget",
+    "must_check_interfaces"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "input_mode": {
+      "type": "string",
+      "enum": ["pr", "local-diff"],
+      "description": "pr: PR URL given. local-diff: git diff given without PR context."
+    },
+    "pr_ref": {
+      "type": ["string", "null"],
+      "description": "Required when input_mode=pr. Null when input_mode=local-diff."
+    },
+    "pr_metadata": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "title": {"type": "string"},
+        "labels": {"type": "array", "items": {"type": "string"}},
+        "author": {"type": "string"}
+      }
+    },
+    "base_sha": {
+      "type": "string",
+      "minLength": 4
+    },
+    "head_sha": {
+      "type": "string",
+      "minLength": 4
+    },
+    "repo_roots": {
+      "type": "object",
+      "description": "Map of repo_id to absolute local path.",
+      "additionalProperties": {"type": "string"},
+      "minProperties": 1
+    },
+    "size": {
+      "type": "string",
+      "enum": ["quick", "standard", "deep"],
+      "description": "Thresholds are defined in external config (not hardcoded here)."
+    },
+    "risk_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "breaking-change",
+          "security-sensitive",
+          "data-migration",
+          "cross-repo",
+          "auth",
+          "iam",
+          "payment",
+          "performance-sensitive",
+          "observability"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "changed_files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "path", "status"],
+        "properties": {
+          "repo": {"type": "string", "minLength": 1},
+          "path": {"type": "string", "minLength": 1},
+          "status": {
+            "type": "string",
+            "enum": ["added", "modified", "deleted", "renamed"]
+          },
+          "renamed_from": {"type": "string"}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"status": {"const": "renamed"}}},
+            "then": {"required": ["renamed_from"]}
+          }
+        ]
+      }
+    },
+    "changed_symbols": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "path", "kind", "name"],
+        "properties": {
+          "repo": {"type": "string"},
+          "path": {"type": "string"},
+          "kind": {
+            "type": "string",
+            "enum": ["rpc", "function", "method", "type", "const", "interface"]
+          },
+          "name": {"type": "string"}
+        }
+      }
+    },
+    "changed_protos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "path"],
+        "properties": {
+          "repo": {"type": "string"},
+          "path": {"type": "string", "description": "Package path, e.g. api/payment/v1"}
+        }
+      }
+    },
+    "changed_env_vars": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "path", "name"],
+        "properties": {
+          "repo": {"type": "string"},
+          "path": {"type": "string"},
+          "name": {"type": "string"}
+        }
+      }
+    },
+    "changed_schemas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "path"],
+        "properties": {
+          "repo": {"type": "string"},
+          "path": {"type": "string"},
+          "name": {"type": "string"}
+        }
+      }
+    },
+    "selected_reviewers": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "codex-baseline",
+          "opus-baseline",
+          "review-server-pr",
+          "security-review-opus",
+          "security-review-codex",
+          "cross-repo"
+        ]
+      }
+    },
+    "why_selected": {
+      "type": "object",
+      "description": "reviewer_id -> rationale string.",
+      "additionalProperties": {"type": "string"}
+    },
+    "global_token_budget": {
+      "type": "integer",
+      "minimum": 1000,
+      "description": "Total token budget for the entire review run (tokens)."
+    },
+    "per_reviewer_budget": {
+      "type": "integer",
+      "minimum": 1000,
+      "description": "Per-reviewer token budget (tokens)."
+    },
+    "must_check_interfaces": {
+      "type": "array",
+      "description": "Interfaces that cross-repo agent must verify. Empty array means cross-repo is not needed.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "name", "source_repo", "source_path", "candidate_repos"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["rpc", "proto", "env_var", "schema", "shared_lib", "feature_flag"]
+          },
+          "name": {"type": "string"},
+          "source_repo": {"type": "string"},
+          "source_path": {"type": "string"},
+          "source_symbol": {"type": "string"},
+          "candidate_repos": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"},
+            "description": "Consumer-side repo candidates (direction: source -> candidate)."
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"input_mode": {"const": "pr"}}},
+      "then": {
+        "required": ["pr_ref"],
+        "properties": {"pr_ref": {"type": "string", "minLength": 1}}
+      }
+    },
+    {
+      "if": {"properties": {"input_mode": {"const": "local-diff"}}},
+      "then": {
+        "required": ["pr_ref"],
+        "properties": {"pr_ref": {"type": "null"}}
+      }
+    }
+  ]
+}

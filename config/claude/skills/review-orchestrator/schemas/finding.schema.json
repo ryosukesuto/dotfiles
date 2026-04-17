@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ryosukesuto/dotfiles/schemas/review/finding.schema.json",
+  "title": "Finding",
+  "description": "A single review finding produced by a reviewer. All reviewers must output an array of these objects.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finding_id",
+    "source_reviewer",
+    "severity",
+    "confidence",
+    "issue_type",
+    "entity_key",
+    "repo",
+    "file",
+    "lines",
+    "claim",
+    "evidence",
+    "why_it_matters"
+  ],
+  "properties": {
+    "finding_id": {
+      "type": "string",
+      "description": "Deterministic ID. Format: {source_reviewer}-{sha6(repo+file+lines+issue_type+entity_key)}. Must match dedupe key inputs.",
+      "pattern": "^[a-z0-9-]+-[a-f0-9]{6}$"
+    },
+    "source_reviewer": {
+      "type": "string",
+      "description": "Fixed reviewer_id that emitted this finding.",
+      "enum": [
+        "codex-baseline",
+        "opus-baseline",
+        "review-server-pr",
+        "security-review-opus",
+        "security-review-codex",
+        "cross-repo"
+      ]
+    },
+    "source_finding_id": {
+      "type": ["string", "null"],
+      "description": "If this finding was derived by normalizer from another, reference original ID."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["must-fix", "should-fix", "watch"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "multipleOf": 0.01,
+      "description": "Reviewer's confidence in the finding. Rounded to 2 decimal places."
+    },
+    "issue_type": {
+      "type": "string",
+      "description": "Dedupe key component. Fixed enum.",
+      "enum": [
+        "concurrency",
+        "security",
+        "contract",
+        "perf",
+        "error-handling",
+        "naming",
+        "test-coverage",
+        "config",
+        "data-migration",
+        "iam",
+        "observability",
+        "other"
+      ]
+    },
+    "entity_key": {
+      "type": "string",
+      "description": "Normalized entity identifier. Format: {repo}:{path}:{symbol} when symbol known, else {repo}:{path}. Used for dedupe across files.",
+      "pattern": "^[^:]+:[^:]+(:[^:]+)?$"
+    },
+    "repo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "file": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repo-relative path."
+    },
+    "lines": {
+      "$ref": "#/$defs/lineRange"
+    },
+    "related_locations": {
+      "type": "array",
+      "description": "Cross-file/cross-repo locations related to the same issue. Used by normalizer to merge caller/callee findings.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repo", "file", "lines"],
+        "properties": {
+          "repo": {"type": "string", "minLength": 1},
+          "file": {"type": "string", "minLength": 1},
+          "lines": {"$ref": "#/$defs/lineRange"}
+        }
+      }
+    },
+    "claim": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short assertion of the problem."
+    },
+    "evidence": {
+      "$ref": "#/$defs/evidence"
+    },
+    "why_it_matters": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Impact. What breaks if not fixed."
+    },
+    "fix_hint": {
+      "type": ["string", "null"],
+      "description": "Concrete suggestion. Optional but recommended for must-fix."
+    }
+  },
+  "$defs": {
+    "lineRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": "integer", "minimum": 1},
+        "end": {"type": "integer", "minimum": 1}
+      },
+      "description": "1-indexed inclusive line range. end >= start."
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_type", "excerpt", "location"],
+      "properties": {
+        "evidence_type": {
+          "type": "string",
+          "enum": ["diff", "code", "log", "config", "static-analysis"]
+        },
+        "excerpt": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim excerpt from the source. Empty or missing excerpt must be dropped by quality filter."
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repo", "file", "lines"],
+          "properties": {
+            "repo": {"type": "string", "minLength": 1},
+            "file": {"type": "string", "minLength": 1},
+            "lines": {"$ref": "#/$defs/lineRange"}
+          }
+        }
+      }
+    }
+  }
+}

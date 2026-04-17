@@ -1,0 +1,112 @@
+# review-orchestrator triage configuration
+# Consumed by review-triage skill. Edit here to tune routing behavior.
+
+# --- Size thresholds (lines changed) ---
+size_thresholds:
+  quick: 50       # < 50 lines → quick
+  standard: 300   # 50-299 lines → standard
+  # >= 300 lines → deep
+
+# --- Critical paths: always treated as deep regardless of line count ---
+critical_paths:
+  - "migration"
+  - "migrations"
+  - "db/migrate"
+  - "auth"
+  - "authentication"
+  - "authorization"
+  - "payment"
+  - "billing"
+  - "iam"
+  - "permission"
+  - "acl"
+  - "proto"
+  - "schema"
+  - "seed"
+
+# --- Path patterns → risk_tags ---
+# Each entry: pattern (glob/prefix) → list of risk tags
+path_risk_rules:
+  - pattern: "*.proto"
+    tags: [breaking-change, cross-repo]
+  - pattern: "proto/**"
+    tags: [breaking-change, cross-repo]
+  - pattern: "api/**"
+    tags: [contract, cross-repo]
+  - pattern: "schema/**"
+    tags: [data-migration, cross-repo]
+  - pattern: "**/migration*"
+    tags: [data-migration]
+  - pattern: "**/migrations/**"
+    tags: [data-migration]
+  - pattern: "terraform/**"
+    tags: [iam, security-sensitive]
+  - pattern: "ops/**"
+    tags: [iam]
+  - pattern: "**/*_iam*"
+    tags: [iam, security-sensitive]
+  - pattern: "**/auth/**"
+    tags: [security-sensitive]
+  - pattern: "**/payment/**"
+    tags: [security-sensitive]
+  - pattern: "**/billing/**"
+    tags: [security-sensitive]
+  - pattern: "*.env*"
+    tags: [security-sensitive, config]
+  - pattern: "**/secret*"
+    tags: [security-sensitive]
+  - pattern: "hack/**"
+    tags: [security-sensitive]
+  - pattern: "script/**"
+    tags: [security-sensitive]
+  - pattern: "tools/**"
+    tags: [security-sensitive]
+  - pattern: "k8s/**"
+    tags: [iam]
+  - pattern: "manifest/**"
+    tags: [iam]
+  - pattern: "**/manifests/**"
+    tags: [iam]
+
+# --- Path patterns → cross-repo candidate repos ---
+cross_repo_rules:
+  - pattern: "*.proto"
+    candidate_repos: [server-config, ops]
+  - pattern: "proto/**"
+    candidate_repos: [server-config, ops]
+  - pattern: "api/**"
+    candidate_repos: [server-config]
+  - pattern: "schema/**"
+    candidate_repos: [server-config]
+  - pattern: "terraform/**"
+    candidate_repos: [server, server-config]
+  - pattern: "k8s/**"
+    candidate_repos: [server, server-config]
+  - pattern: "manifest/**"
+    candidate_repos: [server, server-config]
+
+# --- Reviewer selection rules ---
+# Conditions are evaluated in order; all matching reviewers are added.
+# baseline reviewers are always included (codex-baseline, opus-baseline).
+reviewer_rules:
+  - reviewer: review-server-pr
+    conditions:
+      changed_repos_include: [server]
+      any_tag: [contract, data-migration, security-sensitive]
+
+  - reviewer: security-review-opus
+    conditions:
+      any_tag: [security-sensitive, iam]
+
+  - reviewer: security-review-codex
+    conditions:
+      any_tag: [security-sensitive, iam]
+
+  - reviewer: cross-repo
+    conditions:
+      must_check_interfaces_non_empty: true
+
+# --- Token budgets (tokens) ---
+token_budget:
+  global: 200000
+  per_reviewer: 50000

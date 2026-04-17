@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ryosukesuto/dotfiles/schemas/review/cross-repo-query.schema.json",
+  "title": "Cross-Repo Query",
+  "description": "Pinpoint query issued by lead to cross-repo agent. Agent answers queries only, does not explore repos freely.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "query_id",
+    "repo",
+    "query_type",
+    "source",
+    "target",
+    "reason",
+    "max_queries",
+    "allow_survey"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "query_id": {"type": "string", "minLength": 1},
+    "repo": {
+      "type": "string",
+      "description": "Target repo to search."
+    },
+    "query_type": {
+      "type": "string",
+      "enum": ["pinpoint", "scoped", "survey"],
+      "description": "pinpoint: file+symbol given. scoped: dir+pattern. survey: concept search (last resort)."
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "file"],
+      "description": "The change that triggered this query.",
+      "properties": {
+        "repo": {"type": "string"},
+        "file": {"type": "string"},
+        "lines": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": {
+            "start": {"type": "integer", "minimum": 1},
+            "end": {"type": "integer", "minimum": 1}
+          }
+        },
+        "symbol": {"type": "string"}
+      }
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable description of what to find."
+    },
+    "search_pattern": {
+      "type": "string",
+      "description": "Grep pattern. Required for scoped, optional for pinpoint."
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why this query is needed."
+    },
+    "max_queries": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20,
+      "description": "Hard cap on number of subsidiary queries this agent may run for this task."
+    },
+    "stop_if_found": {
+      "type": "boolean",
+      "default": true,
+      "description": "If true, agent stops at first concrete hit instead of enumerating."
+    },
+    "allow_survey": {
+      "type": "boolean",
+      "default": false,
+      "description": "If false, agent must not escalate to survey even on zero hits."
+    },
+    "expected_output": {
+      "type": "string",
+      "description": "Format hint (e.g., 'file:line + context')."
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"query_type": {"const": "scoped"}}},
+      "then": {"required": ["search_pattern"]}
+    },
+    {
+      "if": {"properties": {"query_type": {"const": "survey"}}},
+      "then": {"properties": {"allow_survey": {"const": true}}}
+    }
+  ]
+}
