@@ -168,7 +168,10 @@ def main():
         except (FileNotFoundError, json.JSONDecodeError):
             pass
 
-    # ── LINE 1: Model | Directory (branch) | Session | Thinking ──
+    # Session name (set via /rename)
+    session_name = data.get("session_name") or data.get("session", {}).get("name")
+
+    # ── LINE 1: Model | Directory (branch) | Session name | Session | Thinking ──
     parts = [f"{BLUE}{model_name}{R}"]
 
     dir_part = f"{CYAN}{dirname}{R}"
@@ -176,6 +179,9 @@ def main():
         wt_label = f" {YELLOW}wt{GREEN}" if is_worktree else ""
         dir_part += f" {GREEN}({git_branch}{RED}{git_dirty}{wt_label}{GREEN}){R}"
     parts.append(dir_part)
+
+    if session_name:
+        parts.append(f"{PURPLE}{session_name}{R}")
 
     if session_duration:
         parts.append(f"{FG}{session_duration}{R}")
