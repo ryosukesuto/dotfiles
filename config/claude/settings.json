@@ -223,6 +223,7 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
+  "model": "sonnet[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -257,6 +258,15 @@
           {
             "type": "command",
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-suggest-compact"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-main-push"
           }
         ]
       }
@@ -428,10 +438,10 @@
     ]
   },
   "showClearContextOnPlanAccept": true,
-  "voiceEnabled": true,
   "channelsEnabled": true,
   "showThinkingSummaries": true,
   "skipAutoPermissionPrompt": true,
+  "voiceEnabled": true,
   "showTurnDuration": true,
   "mcpServers": {
     "slack": {

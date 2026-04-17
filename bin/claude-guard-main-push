@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# PreToolUse hook: Bash で main/master への git push を検査する
+#
+# claude-guard-main-edit が Edit/Write をカバーするのに対し、
+# こちらは Bash 経由の git push をカバーする。
+#
+# wt.allowDirectCommit=true なら "VERIFIED: push to main is allowed" を
+# transcript に出力して exit 0 する。
+# これにより Claude が transcript で許可確認を参照できるようになり、
+# 自己ブロック（Unseen Tool Results rule）を防ぐ。
+#
+# exit 0: push を許可
+# exit 2: push をブロック
+
+command="${CLAUDE_TOOL_INPUT_command}"
+[[ -z "$command" ]] && exit 0
+
+# git push コマンドでなければスキップ
+if ! echo "$command" | grep -qE '^\s*git\s+push'; then
+    exit 0
+fi
+
+# main/master への push か判定
+# 対象パターン: git push [remote] [branch]
+# push 先が main/master か、省略時はカレントブランチで判断
+if echo "$command" | grep -qE '\bmain\b|\bmaster\b'; then
+    target_branch="main"
+else
+    # ブランチ名省略の場合はカレントブランチを取得
+    current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    [[ -z "$current_branch" ]] && exit 0
+    if [[ "$current_branch" != "main" ]] && [[ "$current_branch" != "master" ]]; then
+        exit 0
+    fi
+    target_branch="$current_branch"
+fi
+
+# カレントディレクトリで wt.allowDirectCommit を確認
+allow=$(git config --bool wt.allowDirectCommit 2>/dev/null)
+
+if [[ "$allow" == "true" ]]; then
+    echo "VERIFIED: wt.allowDirectCommit=true — push to ${target_branch} is explicitly allowed for this repository"
+    exit 0
+fi
+
+# opt-out されていなければブロック
+echo "[BLOCKED] ${target_branch}ブランチへの直接 push はできません"
+echo ""
+echo "  worktreeを作成してブランチで作業してください:"
+echo "    git-wt add feature/xxx"
+echo ""
+echo "  除外設定: git config --local wt.allowDirectCommit true"
+exit 2
