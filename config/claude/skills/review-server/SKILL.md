@@ -1,6 +1,6 @@
 ---
 name: review-server
-description: "[review-pr の specialist] WinTicket/server 専用レビュー。review-pr が standard/deep と判定した際に自動で呼び出される。直接呼び出しは非推奨。クリーンアーキテクチャ、コーディング規約、クロスリポジトリ整合性を検証する。"
+description: "[review-pr の specialist] WinTicket/server 専用レビュー。review-pr が standard/deep と判定した際に自動で呼び出される。直接呼び出しは非推奨。クリーンアーキテクチャ、コーディング規約、クロスリポジトリ整合性を検証する。「server レビュー」「review-server」等で起動。"
 user-invocable: true
 allowed-tools:
   - Bash
