@@ -1,6 +1,7 @@
 ---
 name: vibe-plan
 description: バイブコーディング実装計画 - plans.md作成
+model: claude-opus-4-7
 user-invocable: true
 allowed-tools:
   - Read
