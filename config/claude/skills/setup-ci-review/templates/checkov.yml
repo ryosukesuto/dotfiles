@@ -1,0 +1,45 @@
+name: Checkov IaC Security Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  checkov:
+    name: Checkov Scan
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@9b3c5060b03a3a793e8524f62d0bfb15029afe87 # v12
+        with:
+          directory: .
+          framework: terraform
+          soft_fail: false
+          # baseline: .checkov.baseline
+          # 新規導入直後は既存違反を baseline に凍結して新規混入のみ block する。
+          # 初回: checkov -d . --framework terraform --create-baseline
+          # その後: baseline ファイルをコミットし上の行を有効化。
+          skip_check: >-
+            CKV_GCP_62,
+            CKV_GCP_78
+            # CKV_GCP_62: Cloud Storage バケットのログ有効化 — 開発用バケットは除外
+            # CKV_GCP_78: Cloud SQL self-signed cert — 社内CIテスト用のみ
+          output_format: sarif
+          output_file_path: results.sarif
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3
+        with:
+          sarif_file: results.sarif
