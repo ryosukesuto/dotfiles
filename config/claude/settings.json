@@ -223,7 +223,10 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
-  "model": "sonnet[1m]",
+  "skillOverrides": {
+    "review-orchestrator": "user-invocable-only",
+    "review-triage": "user-invocable-only"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -437,10 +440,6 @@
       "cmux"
     ]
   },
-  "skillOverrides": {
-    "review-orchestrator": "user-invocable-only",
-    "review-triage": "user-invocable-only"
-  },
   "showClearContextOnPlanAccept": true,
   "channelsEnabled": true,
   "showThinkingSummaries": true,
@@ -456,5 +455,6 @@
         "callbackPort": 3118
       }
     }
-  }
+  },
+  "model": "sonnet"
 }

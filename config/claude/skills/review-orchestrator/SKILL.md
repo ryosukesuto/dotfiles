@@ -1,6 +1,7 @@
 ---
 name: review-orchestrator
 description: マルチエージェント型コードレビューのオーケストレーター。Opus（lead）がtriageでreviewerを選定し、bundle配布、並列実行、finding-normalizerを経て最終レポートを出力する。「マルチエージェントレビュー」「review orchestrator」「PRレビュー（チーム構成）」等で起動。review-prが内部で呼び出す。
+model: claude-opus-4-7
 user-invocable: true
 allowed-tools:
   - Bash
