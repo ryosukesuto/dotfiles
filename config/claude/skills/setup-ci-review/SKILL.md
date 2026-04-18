@@ -1,6 +1,6 @@
 ---
 name: setup-ci-review
-description: GitHubリポジトリにPRレビュー自動化を対話的に導入する。Claude Code workflow / Greptile / Checkov gating / Renovate Tier policy を bootstrap。既存ファイルの更新はスコープ外。「PRレビュー導入」「setup-ci-review」「コードレビューCI bootstrap」「CIレビュー setup」等で起動。
+description: GitHubリポジトリにPRレビュー自動化を対話的に導入する。Claude Code workflow / Greptile / Checkov gating を bootstrap。既存ファイルの更新はスコープ外。「PRレビュー導入」「setup-ci-review」「コードレビューCI bootstrap」「CIレビュー setup」等で起動。
 user-invocable: true
 allowed-tools:
   - Read
@@ -11,7 +11,6 @@ allowed-tools:
   - Bash(gh:*)
   - Bash(git:*)
   - Bash(jq:*)
-  - Bash(diff:*)
   - AskUserQuestion
   - Bash(~/.claude/skills/setup-ci-review/scripts/*)
 ---
@@ -55,7 +54,6 @@ gh repo view --json nameWithOwner,defaultBranchRef
 | `{{REPO_NAME}}` | 実際のリポジトリ名 |
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」 |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=reference.md の IaC観点カタログ内容 |
-| `{{DATE}}` | 実行日（YYYY-MM-DD） |
 
 生成先（選択されたコンポーネントのみ）:
 - Claude Code workflow: `.github/workflows/claude-review.yml`
