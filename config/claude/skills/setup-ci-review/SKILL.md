@@ -94,6 +94,9 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - Branch Protection は維持したまま、Claude / Greptile の check を Required Check にしない
 - Greptile `statusCheck: true` は状態表示用。Required Check にすると block 相当になるため注意
 - 生成ファイルの確認を促し、コミット・PR作成はユーザーに委ねる
+- 再レビューのトリガー方法を伝える:
+  - 自動: 新しいコミットをpushすると `synchronize` で再レビューが走る
+  - 手動: PRに `@claude re-review` とコメントすると再レビューが走る（GitHub UIの「Re-request review」ボタンはボットに出ないため）
 
 ## Gotchas
 
