@@ -19,6 +19,8 @@
   },
   "permissions": {
     "allow": [
+      "Bash(git push origin main)",
+      "Bash(git push origin master)",
       "Bash(git:*)",
       "Bash(git-wt:*)",
       "Bash(gh:*)",
@@ -223,6 +225,10 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
+  "skillOverrides": {
+    "review-orchestrator": "user-invocable-only",
+    "review-triage": "user-invocable-only"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -257,6 +263,15 @@
           {
             "type": "command",
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-suggest-compact"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-main-push"
           }
         ]
       }
@@ -430,7 +445,6 @@
   "showClearContextOnPlanAccept": true,
   "channelsEnabled": true,
   "showThinkingSummaries": true,
-  "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
   "showTurnDuration": true,
@@ -443,6 +457,5 @@
         "callbackPort": 3118
       }
     }
-  },
-  "model": "sonnet"
+  }
 }
