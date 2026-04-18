@@ -89,7 +89,7 @@ cross_repo_rules:
 # Conditions are evaluated in order; all matching reviewers are added.
 # baseline reviewers are always included (codex-baseline, opus-baseline).
 reviewer_rules:
-  - reviewer: review-server-pr
+  - reviewer: review-server
     conditions:
       changed_repos_include: [server]
       any_tag: [contract, data-migration, security-sensitive]

@@ -31,7 +31,7 @@
       "enum": [
         "codex-baseline",
         "opus-baseline",
-        "review-server-pr",
+        "review-server",
         "security-review-opus",
         "security-review-codex",
         "cross-repo"

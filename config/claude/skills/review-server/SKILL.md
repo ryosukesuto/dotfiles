@@ -1,5 +1,5 @@
 ---
-name: review-server-pr
+name: review-server
 description: "[review-pr の specialist] WinTicket/server 専用レビュー。review-pr が standard/deep と判定した際に自動で呼び出される。直接呼び出しは非推奨。クリーンアーキテクチャ、コーディング規約、クロスリポジトリ整合性を検証する。"
 user-invocable: true
 allowed-tools:
@@ -11,7 +11,7 @@ allowed-tools:
   - mcp__ragent__hybrid_search
 ---
 
-# /review-server-pr - server リポジトリ専用PRレビュー
+# /review-server - server リポジトリ専用PRレビュー
 
 WinTicket/server リポジトリのPRを、プロジェクト固有のルールとクロスリポジトリ整合性の観点でレビューする。
 

@@ -22,7 +22,7 @@ SKILL_DIR = Path(__file__).parent.parent
 OBSERVATION_POINTS = {
     "codex-baseline": "実装詳細、エッジケース（境界値、空入力、ゼロ値、同時実行、権限不足）、シェル/Goスクリプトのロバスト性、nil参照、エラーハンドリング漏れ",
     "opus-baseline": "設計意図、影響範囲、APIコントラクト整合性、既存コードとの一貫性、仕様の曖昧さ、将来の保守性",
-    "review-server-pr": "クリーンアーキテクチャ準拠、レイヤー責務、DBトランザクション境界、サーバー側コーディング規約",
+    "review-server": "クリーンアーキテクチャ準拠、レイヤー責務、DBトランザクション境界、サーバー側コーディング規約",
     "security-review-opus": "認証/認可、入力検証、シークレット露出、権限昇格、監査ログ欠如、OWASP Top10",
     "security-review-codex": "セキュリティ実装の詳細（SQLi/XSS/SSRF/パス traversal）、Semgrep/gosec 相当の静的解析観点",
     "cross-repo": "インターフェース変更の consumer 側影響（pinpoint クエリのみ回答）",
