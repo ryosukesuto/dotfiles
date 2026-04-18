@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: PRを体系的にレビューして実行可能なフィードバックを提供
+description: PRを体系的にレビューして実行可能なフィードバックを提供。PRの規模・リスクを自動判定し、小さいPRは単独レビュー、大きいPRはマルチエージェントレビューに自動ルーティングする。
 user-invocable: true
 allowed-tools:
   - Bash
@@ -15,7 +15,79 @@ allowed-tools:
 
 > バイブコーディング用: `/vibe-review pr`
 
-## 実行手順
+## ルーティング（最初に必ず実行）
+
+PR情報を取得した後、triage でサイズとリスクを判定して実行パスを決定する。
+
+```bash
+# 1. PR の changed_files JSON を生成
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+PR_NUM=$(gh pr view --json number -q .number)
+BASE_SHA=$(gh pr view --json baseRefOid -q .baseRefOid)
+HEAD_SHA=$(gh pr view --json headRefOid -q .headRefOid)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_NAME=$(basename "$REPO")
+
+gh pr view --json files \
+  | python3 -c "
+import json,sys,os
+files=json.load(sys.stdin)['files']
+print(json.dumps([{
+  'repo': os.environ.get('REPO_NAME','server'),
+  'path': f['path'],
+  'status': 'modified',
+  'additions': f['additions'],
+  'deletions': f['deletions']
+} for f in files]))" REPO_NAME="$REPO_NAME" \
+  | uv run --with pyyaml python3 ~/.claude/skills/review-triage/scripts/triage.py \
+    --pr-ref "github.com/$REPO#$PR_NUM" \
+    --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" \
+    --repo "$REPO_NAME:$REPO_ROOT" \
+    -o /tmp/review-pr-triage.json 2>/dev/null
+
+SIZE=$(jq -r '.size' /tmp/review-pr-triage.json 2>/dev/null || echo "quick")
+RISK=$(jq -r '.risk_tags | length' /tmp/review-pr-triage.json 2>/dev/null || echo "0")
+echo "triage: size=$SIZE risk_tags=$RISK"
+```
+
+**判定結果に応じて分岐:**
+
+- `size=quick` かつ `risk_tags=0` → **シンプルパス**（以下の「実行手順」へ）
+- それ以外（`standard` / `deep` / risk あり）→ **オーケストレーターパス**
+
+### オーケストレーターパス
+
+```bash
+# Step 2: bundle 生成
+uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-bundle.py \
+  --triage /tmp/review-pr-triage.json -o /tmp/review-pr-bundle.json
+
+# Step 3: プロンプト自動生成 → subagent 並列起動（general-purpose）
+uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-reviewer-prompt.py \
+  --bundle /tmp/review-pr-bundle.json --triage /tmp/review-pr-triage.json \
+  --reviewer codex-baseline --repo-root "$REPO_NAME:$REPO_ROOT" \
+  -o /tmp/review-pr-prompt-codex.txt
+uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-reviewer-prompt.py \
+  --bundle /tmp/review-pr-bundle.json --triage /tmp/review-pr-triage.json \
+  --reviewer opus-baseline --repo-root "$REPO_NAME:$REPO_ROOT" \
+  -o /tmp/review-pr-prompt-opus.txt
+
+# /tmp/review-pr-prompt-codex.txt と /tmp/review-pr-prompt-opus.txt の内容を
+# general-purpose subagent に渡して並列実行 → 結果を /tmp/raw-codex.json /tmp/raw-opus.json に保存
+
+# Step 4: normalize → report
+uv run python3 ~/.claude/skills/review-orchestrator/scripts/normalize.py \
+  --findings /tmp/raw-codex.json --findings /tmp/raw-opus.json \
+  --adapt -o /tmp/review-pr-report.json
+uv run python3 ~/.claude/skills/review-orchestrator/scripts/report.py \
+  --report /tmp/review-pr-report.json --pr-ref "github.com/$REPO#$PR_NUM"
+```
+
+オーケストレーターパスでは以下の手順へ進まず、report.py の出力をそのまま返す。
+
+---
+
+## 実行手順（シンプルパス: quick かつ risk なし）
 
 ### 0. リファレンス読み込み（必要時のみ）
 

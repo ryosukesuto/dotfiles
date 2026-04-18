@@ -437,6 +437,10 @@
       "cmux"
     ]
   },
+  "skillOverrides": {
+    "review-orchestrator": "user-invocable-only",
+    "review-triage": "user-invocable-only"
+  },
   "showClearContextOnPlanAccept": true,
   "channelsEnabled": true,
   "showThinkingSummaries": true,
