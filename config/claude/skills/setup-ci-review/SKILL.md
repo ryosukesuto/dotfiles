@@ -34,8 +34,8 @@ gh repo view --json nameWithOwner,defaultBranchRef
 - preset: `generic` / `iac`
 - formal-review opt-in: `off` / `on`（presetとは独立した軸）
 - コンポーネント選択（multiSelect）:
-  - `generic`: Claude Code workflow / Greptile / Renovate Tier policy
-  - `iac`: Claude Code workflow / Greptile / Renovate Tier policy / Checkov（IaCのみ候補追加）
+  - `generic`: Claude Code workflow / Greptile
+  - `iac`: Claude Code workflow / Greptile / Checkov（IaCのみ候補追加）
 
 ### 3. 競合検出
 
@@ -67,7 +67,6 @@ gh repo view --json nameWithOwner,defaultBranchRef
   - IaC preset → `rules-iac.md` を `rules.md` として生成
   - generic preset → `rules.md` をそのまま生成
 - Checkov: `.github/workflows/checkov.yml`（IaC preset かつ選択時のみ）
-- Renovate Tier policy: `docs/renovate-tier-policy.md`
 
 ### 5. SHA-pin 検証
 
