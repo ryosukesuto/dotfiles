@@ -34,6 +34,7 @@ gh repo view --json nameWithOwner,defaultBranchRef
   - `generic`: Claude Code workflow / Greptile
   - `iac`: Claude Code workflow / Greptile / Checkov（IaCのみ候補追加）
 - analyze: コードベースを分析して設定を最適化するか（yes/no）
+- model: レビューに使うClaudeモデル（`opus` / `sonnet`、デフォルト `opus`）
 
 ### 3. コードベース分析（analyze=yes の場合のみ）
 
@@ -46,7 +47,7 @@ gh repo view --json nameWithOwner,defaultBranchRef
 - トップレベルディレクトリ一覧（`Bash(ls:*)` で確認）
 
 分析結果から以下をセットする:
-- `REVIEWER_ROLE`: 検出スタックを反映（例: 「Go/TerraformシニアエンジニアとしてPRをレビューしてください」）
+- `REVIEWER_ROLE`: 検出スタックを反映（例: 「Go/Terraformに精通したシニアエンジニア」）
 - `REVIEW_CRITERIA`: スタック固有の観点を追記（IaC presetの場合はIaC観点カタログと統合）
 - Greptile `rules.md` の `<!-- ここにリポジトリ固有の観点を追記 -->` 部分: CLAUDE.mdから抽出したコーディング規約で置換
 - Greptile `files.json` の `focusFiles`: 重要ディレクトリを実際のパスで更新
@@ -60,6 +61,7 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 
 `.greptile/` 配下は3ファイル（config.json / rules.md / files.json）を個別に引数に含める。
 ディレクトリの存在だけで「スキップ」と判定してはいけない。
+`.claude/skills/claude-code-review/SKILL.md` も個別に競合判定する（他のスキル管理と混在するため、ディレクトリ存在だけで判定してはいけない）。
 
 ### 5. テンプレートの読み込みと変数置換、ファイル生成
 
@@ -71,8 +73,13 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」（analyze=yesの場合はスタック反映） |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=IaC観点カタログ（analyze=yesの場合はスタック固有観点を追加） |
 
+`--model` フラグはテンプレートでは `claude-opus-4-7` をデフォルトにしている。質問2で `sonnet` が選ばれた場合は `claude-sonnet-4-6` に置換する。
+
 生成先（選択されたコンポーネントのみ）:
 - Claude Code workflow: `.github/workflows/claude-review.yml`
+- Claude Code review skill: `.claude/skills/claude-code-review/SKILL.md`
+  - `claude-code-review-skill.md` テンプレートを Read し、`{{REVIEWER_ROLE}}` / `{{REVIEW_CRITERIA}}` を置換して `.claude/skills/claude-code-review/SKILL.md` として Write
+  - workflow からは `claude-code-review` スキル名で呼び出されるため、パスは固定（変更禁止）
 - Greptile: `.greptile/config.json` / `.greptile/rules.md` / `.greptile/files.json`
   - IaC preset → `rules-iac.md` を `rules.md` として生成
   - generic preset → `rules.md` をそのまま生成
@@ -95,18 +102,26 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - Greptile `statusCheck: true` は状態表示用。Required Check にすると block 相当になるため注意
 - 生成ファイルの確認を促し、コミット・PR作成はユーザーに委ねる
 - 再レビューのトリガー方法を伝える:
-  - 自動: 新しいコミットをpushすると `synchronize` で再レビューが走る
-  - 手動: PRに `@claude re-review` とコメントすると再レビューが走る（GitHub UIの「Re-request review」ボタンはボットに出ないため）
+  - 自動: 新しいコミットをpushすると `synchronize` で再レビューが走る（force-push も検出してフルレビューに切り替わる）
+  - 手動: PRに `@claude re-review` 等 `@claude` を含むコメントを MEMBER/OWNER/COLLABORATOR が投稿すると再レビューが走る
+- 初回 workflow 追加 PR ではレビューがスキップされる（"Action skipped due to workflow validation error"）。動作確認はマージ後の次の PR で行うこと
+- 増分レビューは `<!-- claude-code-review -->` マーカー付きコメントに追記される仕組み。初回は新規コメント、2回目以降は既存コメントに履歴が蓄積される
 
 ## Gotchas
 
-- `anthropics/claude-code-action` は `--allowedTools` に approve/request-changes を渡した場合に限り APPROVE/REQUEST_CHANGES を出す。渡さなければ advisory のみ
+- **action バージョンは v1.0.72（`cd77b50d2b0808657f8e6774085c8bf54484351c`）に固定**: v1.0.101 以降では `mcp__github_inline_comment__create_inline_comment` が削除されており、インラインコメント投稿ができない。更新提案が来ても鵜呑みにしないこと
+- `--allowedTools` には `mcp__github_inline_comment__create_inline_comment` を必ず含める。これが無いと Claude が分析だけして何も投稿せず終わるケースがある（`display_report: true` はworkflow summaryに出すだけでPRコメントには投稿しない）
+- `--allowedTools` の Bash パターンに空白と複数 `*` を混ぜると Claude CLI の引数解釈が壊れて `Could not resolve authentication credentials` で fail する。`Bash(gh api --method PATCH repos/*/issues/comments/*:*)` は動作確認済みだが、新規パターンを増やすときは単体で動作確認する
 - `anthropics/claude-code-action` は `id-token: write` permission が必須。ANTHROPIC_API_KEY 直接認証の構成でも内部で OIDC token を要求するため、未使用に見えても削除してはいけない（削除すると `Could not fetch an OIDC token` で fail する）。Codex/AI レビュアが「未使用だから削除」と誤指摘することがあるので却下すること
+- `--allowedTools` に `Bash(gh pr review --approve:*)` を渡すと APPROVE を出せるようになる。ただしAIレビュー運用では `--comment` 止まりにして人間の approve を維持することを推奨（テンプレートも `--comment` + `--request-changes` のみ許可）
 - Claude Code workflow を追加する初回 PR 自身では Claude のレビューはスキップされる（"Action skipped due to workflow validation error" / セキュリティ対策）。CI status は pass 扱いだがレビューコメントは付かない。動作確認は**マージ後の次の PR**で行うよう案内すること
 - `.greptile/` は3ファイルを個別に競合判定。ディレクトリ存在だけでスキップ禁止
 - Checkov は IaC preset 選択時のみ候補に出す（Terraform専用）
 - `verify-sha-pin.sh` は生成ファイルのみ対象
 - analyze=yesでCLAUDE.mdが存在しない場合はREADME.mdとディレクトリ構造から推定する
 - private repo で fork は org メンバーに限定されるため、`issue_comment` トリガーの prompt injection リスクは `author_association == MEMBER/OWNER/COLLABORATOR` のチェックで許容範囲とみなしてよい（public repo の場合はより慎重な判断が必要）
+- `allowed_bots: "dependabot[bot],renovate[bot]"` を指定すると bot PR でも Claude がレビューを走らせる。依存更新の破壊的変更チェック用途で有効
+- 増分レビュー（履歴蓄積）は server リポジトリで実運用されている方式。`<!-- claude-code-review -->` マーカー検索 → 存在すれば `gh api --method PATCH` で追記、無ければ新規作成。force-push は `git merge-base --is-ancestor` で検出してフルレビューに切り替える
+- レビュー指示は `.claude/skills/claude-code-review/SKILL.md` に分離している。workflow の prompt からは `claude-code-review` スキル名で呼び出す方式。レビュー観点・投稿ルールを変更する場合は SKILL.md 側を編集する（workflow の再デプロイ不要）
 
 詳細は `${CLAUDE_SKILL_DIR}/reference.md` を参照（必要時のみ読み込む）。
