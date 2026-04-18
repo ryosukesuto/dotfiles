@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 VALID_REVIEWERS = {
-    "codex-baseline", "opus-baseline", "review-server-pr",
+    "codex-baseline", "opus-baseline", "review-server",
     "security-review-opus", "security-review-codex", "cross-repo",
 }
 VALID_ISSUE_TYPES = {

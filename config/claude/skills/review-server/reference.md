@@ -1,6 +1,6 @@
-# review-server-pr リファレンス
+# review-server リファレンス
 
-`/review-server-pr` コマンドの出力フォーマットと補足ガイドライン。
+`/review-server` コマンドの出力フォーマットと補足ガイドライン。
 
 ## 出力フォーマット
 
