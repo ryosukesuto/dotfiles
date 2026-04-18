@@ -151,6 +151,7 @@ git rebase "origin/$DEFAULT_BRANCH"
 
 ## Gotchas
 
+- PR本文に内部プロセス用語を書かない: `Codex レビュー: P0/P1 対応後 OK 判定` などのレビュープロセス詳細、`stash 済` などの実装者の作業状態、`段階2` `案X` などの内部検討名はレビュー者に意味が通じない。Codex 結果はユーザーへの報告のみにとどめ、PR 本文には含めない
 - PR本文で `#NNN` をそのまま書くと別の Issue/PR にリンクされてしまう。Dependabot alert 番号など GitHub 外のIDを書く場合はフル URL リンクにする
 - レビューコメント（Greptile 等）に対応して push した後は、該当スレッドを resolve する。GitHub の suggestion を適用した場合は自動 resolve されるが、手動で修正した場合は GraphQL API `resolveReviewThread` で明示的に resolve する
 

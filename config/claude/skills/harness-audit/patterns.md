@@ -131,7 +131,61 @@ CLAUDE.mdへの追記例:
 
 ---
 
-### P5. カスタムリンターによる制約の自動化
+### P5. GitHub Actions CI ワークフロー（Go）
+
+カテゴリ: B. フィードバックループ
+効果: PR 時に go vet + go test + golangci-lint を自動実行する
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA> # v4
+      - uses: actions/setup-go@<SHA> # v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test ./...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA> # v4
+      - uses: actions/setup-go@<SHA> # v5
+        with:
+          go-version-file: go.mod
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+
+      - name: golangci-lint
+        run: golangci-lint run ./...
+```
+
+SHA の取得方法（テンプレートの `<SHA>` を実際の値に置き換える）:
+
+```bash
+gh api repos/actions/checkout/git/refs/tags/v4 --jq '.object.sha'
+gh api repos/actions/setup-go/git/refs/tags/v5 --jq '.object.sha'
+```
+
+注意:
+- WinTicket を含む多くのリポジトリでは、全 Action をフル長 SHA にピン留めすることが必須。`@v5` のようなタグ参照は CI が即座に失敗するため使用しない
+- `golangci-lint-action` はプリビルドバイナリを使うため、プロジェクトの Go バージョンより古い Go でビルドされていると "Go language version used to build golangci-lint is lower than targeted" で失敗する。`go install` でプロジェクトと同じ Go バージョンからビルドすることで回避できる
+
+---
+
+### P6. カスタムリンターによる制約の自動化
 
 カテゴリ: C. アーキテクチャ制約
 効果: リンターのエラーメッセージが修正指示を兼ねるため、エージェントが自己修正できる
@@ -161,7 +215,7 @@ CLAUDE.mdへの追記例:
 
 ---
 
-### P6. Skill化による反復ワークフローの標準化
+### P7. Skill化による反復ワークフローの標準化
 
 カテゴリ: E. 計画と実行の分離
 効果: 繰り返しのワークフローを1コマンドに集約し、品質のばらつきを排除
@@ -178,7 +232,7 @@ Skill化の判断基準:
 
 ---
 
-### P7. Subagentによるコンテキスト分離
+### P8. Subagentによるコンテキスト分離
 
 カテゴリ: E. 計画と実行の分離
 効果: 中間ノイズが親スレッドに蓄積するのを防止し、コンテキストの品質を保つ
@@ -199,7 +253,7 @@ Subagentを使わない場面:
 
 ---
 
-### P8. mainブランチ保護
+### P9. mainブランチ保護
 
 カテゴリ: F. ガードレール
 効果: エージェントの意図しないmainコミットを物理的にブロック

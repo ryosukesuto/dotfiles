@@ -39,6 +39,7 @@
 | テスト | ユニットテスト・統合テストが存在し実行可能か |
 | CI/CD | PRマージ前にテスト・リンター・型チェックが走るか |
 | E2Eテスト | Playwright / bats-core / Hurl 等が設定されているか |
+| PR自動レビュー（Greptile等） | `.greptile.yaml` が存在し、custom standards でプロジェクト固有ルールが設定されているか |
 
 フィードバックの速度階層（速い順）:
 1. PostToolUse Hook（ミリ秒）
@@ -48,7 +49,8 @@
 5. PreCommit Hook（秒-分）
 6. CI（分）
 7. E2Eテスト（分）
-8. 人間レビュー（時間）
+8. PR自動レビュー（Greptile等）（分-時間）
+9. 人間レビュー（時間）
 
 得点の目安:
 - 5: PostToolUse Hookで即時フィードバック + CI + E2E
