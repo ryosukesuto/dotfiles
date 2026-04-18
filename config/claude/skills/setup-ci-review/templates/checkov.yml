@@ -30,11 +30,9 @@ jobs:
           # 新規導入直後は既存違反を baseline に凍結して新規混入のみ block する。
           # 初回: checkov -d . --framework terraform --create-baseline
           # その後: baseline ファイルをコミットし上の行を有効化。
-          skip_check: >-
-            CKV_GCP_62,
-            CKV_GCP_78
-            # CKV_GCP_62: Cloud Storage バケットのログ有効化 — 開発用バケットは除外
-            # CKV_GCP_78: Cloud SQL self-signed cert — 社内CIテスト用のみ
+          # CKV_GCP_62: Cloud Storage バケットのログ有効化 — 開発用バケットは除外
+          # CKV_GCP_78: Cloud SQL self-signed cert — 社内CIテスト用のみ
+          skip_check: CKV_GCP_62,CKV_GCP_78
           output_format: sarif
           output_file_path: results.sarif
 
