@@ -19,8 +19,6 @@
   },
   "permissions": {
     "allow": [
-      "Bash(git push origin main)",
-      "Bash(git push origin master)",
       "Bash(git:*)",
       "Bash(git-wt:*)",
       "Bash(gh:*)",
