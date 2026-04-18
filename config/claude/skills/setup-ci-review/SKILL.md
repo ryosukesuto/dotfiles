@@ -101,9 +101,12 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 ## Gotchas
 
 - `anthropics/claude-code-action` は `--allowedTools` に approve/request-changes を渡した場合に限り APPROVE/REQUEST_CHANGES を出す。渡さなければ advisory のみ
+- `anthropics/claude-code-action` は `id-token: write` permission が必須。ANTHROPIC_API_KEY 直接認証の構成でも内部で OIDC token を要求するため、未使用に見えても削除してはいけない（削除すると `Could not fetch an OIDC token` で fail する）。Codex/AI レビュアが「未使用だから削除」と誤指摘することがあるので却下すること
+- Claude Code workflow を追加する初回 PR 自身では Claude のレビューはスキップされる（"Action skipped due to workflow validation error" / セキュリティ対策）。CI status は pass 扱いだがレビューコメントは付かない。動作確認は**マージ後の次の PR**で行うよう案内すること
 - `.greptile/` は3ファイルを個別に競合判定。ディレクトリ存在だけでスキップ禁止
 - Checkov は IaC preset 選択時のみ候補に出す（Terraform専用）
 - `verify-sha-pin.sh` は生成ファイルのみ対象
 - analyze=yesでCLAUDE.mdが存在しない場合はREADME.mdとディレクトリ構造から推定する
+- private repo で fork は org メンバーに限定されるため、`issue_comment` トリガーの prompt injection リスクは `author_association == MEMBER/OWNER/COLLABORATOR` のチェックで許容範囲とみなしてよい（public repo の場合はより慎重な判断が必要）
 
 詳細は `${CLAUDE_SKILL_DIR}/reference.md` を参照（必要時のみ読み込む）。
