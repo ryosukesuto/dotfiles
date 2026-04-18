@@ -1,0 +1,9 @@
+{
+  "strictness": 2,
+  "triggerOnUpdates": true,
+  "statusCheck": true,
+  "updateSummaryOnly": false,
+  "fileChangeLimit": 200,
+  "ignorePatterns": "dist/**\nnode_modules/**\n.terraform/**\ntest/**",
+  "rules": []
+}
