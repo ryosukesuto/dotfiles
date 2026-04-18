@@ -14,6 +14,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  # 必須: anthropics/claude-code-action は ANTHROPIC_API_KEY 直接認証でも内部で OIDC token を要求する。削除すると fail する
   id-token: write
 
 jobs:
