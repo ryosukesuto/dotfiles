@@ -6,10 +6,15 @@ on:
   issue_comment:
     types: [created]
 
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
   issues: write
+  id-token: write
 
 jobs:
   review:
@@ -21,13 +26,14 @@ jobs:
        (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR'))
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@8a953dedac4f533f912f13656070914693ed0575 # v1
+      - uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009 # v1.0.101
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          display_report: true
           prompt: |
             あなたは {{REVIEWER_ROLE}} です。このPRをレビューしてください。
 
@@ -53,9 +59,12 @@ jobs:
             - P2/P3 の指摘は合計 5 件以内
             - CI/linter で検出可能な問題はレビュー対象外
             - 自信がない指摘はしない
+            - 問題がなければ approve する。P0/P1 の問題があれば request changes する
 
             ## 出力形式
 
             1行目: サマリ（P0: N件, P1: N件, P2: N件, P3: N件）
             2行目以降: 優先度順に指摘を列挙
-          claude_args: "--max-turns 5"
+          claude_args: |
+            --max-turns 15
+            --allowedTools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr review --approve:*),Bash(gh pr review --request-changes:*),Bash(gh pr review --comment:*),Bash(gh pr comment:*),Bash(find:*),Bash(cat:*),Bash(grep:*),Bash(ls:*),Bash(git diff:*),Bash(git log:*)"
