@@ -1,13 +1,3 @@
-## 業界動向サマリ（2026年）
-
-Advisory → Gating への移行期。現時点での推奨構成は二層。
-
-- Claude / Greptile: 助言層（advisory）。ブロックしない
-- Checkov: gating層（block）。IaC専用、P0相当の静的解析のみ
-
-Greptile は「コード生成エージェントと承認エージェントの分離」を原則とし、自己承認に反対している。
-`statusCheck: true` は状態表示用の設定。これを Required Check に変えると block 相当になるため注意。
-
 ## 役割分担
 
 | ツール | 役割 |
