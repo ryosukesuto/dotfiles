@@ -5,7 +5,6 @@ user-invocable: true
 allowed-tools:
   - Read
   - Write
-  - Glob
   - Bash(ls:*)
   - Bash(mkdir:*)
   - Bash(gh:*)
@@ -28,7 +27,7 @@ gh repo view --json nameWithOwner,defaultBranchRef
 
 ### 2. ユーザーへの質問（1回でまとめて聞く）
 
-`AskUserQuestion` で以下を一度に収集する。
+`AskUserQuestion` で以下を一度に収集する。往復を最小化するため、1回でまとめて聞く。
 
 - preset: `generic` / `iac`
 - コンポーネント選択（multiSelect）:
@@ -37,10 +36,10 @@ gh repo view --json nameWithOwner,defaultBranchRef
 
 ### 3. 競合検出
 
-生成予定ファイルのパスを引数として `${CLAUDE_SKILL_DIR}/scripts/detect-conflicts.sh` を実行する。
+既存ファイルへの無断上書きを防ぐため、生成予定ファイルのパスを引数として `${CLAUDE_SKILL_DIR}/scripts/detect-conflicts.sh` を実行する。
 
 出力を読んでユーザーに提示し、既存ファイルがある場合はマージ判断を仰ぐ。
-**Skillは自動マージも自動上書きもしない。**
+Skillは自動マージも自動上書きもしない（既存設定の意図を判断できないため）。
 
 `.greptile/` 配下は3ファイル（config.json / rules.md / files.json）を個別に引数に含める。
 ディレクトリの存在だけで「スキップ」と判定してはいけない。
@@ -64,7 +63,7 @@ gh repo view --json nameWithOwner,defaultBranchRef
 
 ### 5. SHA-pin 検証
 
-生成した `.yml` ファイルのパスを引数として `${CLAUDE_SKILL_DIR}/scripts/verify-sha-pin.sh` を実行する。
+サプライチェーン攻撃対策として、生成した `.yml` ファイルのパスを引数として `${CLAUDE_SKILL_DIR}/scripts/verify-sha-pin.sh` を実行する。
 
 exit 1 の場合は失敗として報告し、修正を促す。
 local action（`uses: ./...`）と reusable workflow は検証対象外（スクリプト内で除外済み）。
