@@ -32,7 +32,6 @@ gh repo view --json nameWithOwner,defaultBranchRef
 `AskUserQuestion` で以下を一度に収集する。
 
 - preset: `generic` / `iac`
-- formal-review opt-in: `off` / `on`（presetとは独立した軸）
 - コンポーネント選択（multiSelect）:
   - `generic`: Claude Code workflow / Greptile
   - `iac`: Claude Code workflow / Greptile / Checkov（IaCのみ候補追加）
@@ -57,9 +56,6 @@ gh repo view --json nameWithOwner,defaultBranchRef
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」 |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=reference.md の IaC観点カタログ内容 |
 | `{{DATE}}` | 実行日（YYYY-MM-DD） |
-
-- formal-review off → `claude-review.yml` を使用
-- formal-review on → `claude-review-formal.yml` を使用
 
 生成先（選択されたコンポーネントのみ）:
 - Claude Code workflow: `.github/workflows/claude-review.yml`
@@ -86,11 +82,9 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 
 ## Gotchas
 
-- advisory方針のため `claude-review.yml` は既定で `--approve/--request-changes` を使わない
-- formal review が必要な運用は opt-in で明示（`claude-review-formal.yml`）
+- `anthropics/claude-code-action` は advisory のみ（APPROVE/REQUEST_CHANGES を出さない）
 - `.greptile/` は3ファイルを個別に競合判定。ディレクトリ存在だけでスキップ禁止
 - Checkov は IaC preset 選択時のみ候補に出す（Terraform専用）
 - `verify-sha-pin.sh` は生成ファイルのみ対象
-- sticky comment 更新: synchronize ごとにコメントを増やさず PATCH で既存を更新
 
 詳細は `${CLAUDE_SKILL_DIR}/reference.md` を参照（必要時のみ読み込む）。

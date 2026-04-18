@@ -211,7 +211,33 @@ gh api repos/actions/setup-go/git/refs/tags/v5 --jq '.object.sha'
 推奨リンター:
 - TypeScript: Oxlint（高速） + Biome（フォーマット兼用）
 - Python: Ruff（高速、Flake8 + isort + Black の統合）
-- Go: golangci-lint（多数のリンターを統合）
+- Go: golangci-lint v2（多数のリンターを統合）
+
+golangci-lint v2 の設定ファイル形式（`.golangci.yml`）:
+
+```yaml
+version: "2"  # v2 では必須。ないと "unsupported version" エラーで即失敗
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+
+formatters:
+  enable:
+    - gofmt  # v2 では linters ではなく formatters セクションに移動
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+
+issues:
+  exclude-rules:
+    - path: "_test\\.go"
+      linters:
+        - errcheck
+```
 
 ---
 
