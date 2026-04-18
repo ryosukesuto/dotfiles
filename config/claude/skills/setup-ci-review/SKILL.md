@@ -97,7 +97,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 
 ## Gotchas
 
-- `anthropics/claude-code-action` は advisory のみ（APPROVE/REQUEST_CHANGES を出さない）
+- `anthropics/claude-code-action` は `--allowedTools` に approve/request-changes を渡した場合に限り APPROVE/REQUEST_CHANGES を出す。渡さなければ advisory のみ
 - `.greptile/` は3ファイルを個別に競合判定。ディレクトリ存在だけでスキップ禁止
 - Checkov は IaC preset 選択時のみ候補に出す（Terraform専用）
 - `verify-sha-pin.sh` は生成ファイルのみ対象
