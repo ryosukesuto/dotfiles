@@ -1,6 +1,9 @@
 ---
 name: review-triage
-description: PR/git diff を受け取り triage.schema.json 準拠のJSONを出力する。機械判定優先。review-orchestrator が内部で使う。単体でも使用可能。
+description: PR/git diff を受け取り triage.schema.json 準拠のJSONを出力する。機械判定優先でサイズ・リスクタグ・reviewer選定を行う。review-orchestrator / review-pr が内部で呼び出す。単体でも使用可能。「triage」「review-triage」等で起動。
+user-invocable: true
+allowed-tools:
+  - Bash
 ---
 
 # review-triage
@@ -92,3 +95,10 @@ done | jq -s '.'
 - `cross_repo_rules`: パスパターン → candidate_repos のマッピング
 - `reviewer_rules`: reviewer選定条件
 - `token_budget`: global / per_reviewer のトークン上限
+
+## Gotchas
+
+- changed_files JSON は stdin または `--changed-files` で渡す。ファイルが空だとエラー終了する（triage.py が必須チェックを持つため）
+- `status` フィールドは `added|modified|deleted|renamed` のいずれか。GitHub API の `files` レスポンスは `added|modified|removed|renamed` なので `removed` → `deleted` に変換が必要
+- `hack/` `script/` `tools/` パスは `security-sensitive` として判定される（triage-config.yaml で設定済み）
+- triage 結果の `selected_reviewers` は authoritative。後段で reviewer ルールを再評価しない
