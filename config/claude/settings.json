@@ -337,17 +337,6 @@
         ]
       }
     ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmux notify --title 'Claude Code' --subtitle 'ツール失敗' --body 'ツール実行に失敗しました' || true"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "",
