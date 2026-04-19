@@ -1,10 +1,37 @@
 [core]
 	editor = vim
-	pager = less -FRX
+	pager = delta
 	autocrlf = input
 	quotepath = false
 	precomposeunicode = true
 	hooksPath = /Users/s32943/gh/github.com/ryosukesuto/dotfiles/git/hooks
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	features = tokyo-night
+	navigate = true
+	line-numbers = true
+	side-by-side = false
+	syntax-theme = Catppuccin Mocha
+
+[delta "tokyo-night"]
+	minus-style = syntax "#3b2530"
+	minus-emph-style = syntax "#552a3e"
+	plus-style = syntax "#1f3b36"
+	plus-emph-style = syntax "#2b5a4a"
+	line-numbers-minus-style = "#f7768e"
+	line-numbers-plus-style = "#9ece6a"
+	line-numbers-zero-style = "#3b4261"
+	line-numbers-left-style = "#3b4261"
+	line-numbers-right-style = "#3b4261"
+	file-style = "#7aa2f7" bold
+	file-decoration-style = "#7aa2f7" ul
+	hunk-header-style = "#bb9af7" bold
+	hunk-header-decoration-style = "#414868" box
+	hunk-header-file-style = "#7dcfff"
+	hunk-header-line-number-style = "#e0af68"
 
 [color]
 	ui = auto

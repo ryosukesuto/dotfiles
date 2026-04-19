@@ -22,6 +22,7 @@ config/        - アプリ設定
   direnv/          - direnv設定（環境変数自動切替）
   fzf/             - fzf設定
   ghostty/         - Ghosttyターミナル設定
+  lazygit/         - lazygit設定（UI・theme・delta pager）
   git/             - Git設定
   gh/              - GitHub CLI設定
   mise/            - mise設定（node, uv等）
