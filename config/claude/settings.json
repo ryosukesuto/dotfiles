@@ -444,5 +444,6 @@
         "callbackPort": 3118
       }
     }
-  }
+  },
+  "model": "sonnet"
 }
