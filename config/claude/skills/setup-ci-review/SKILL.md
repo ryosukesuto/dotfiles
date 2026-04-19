@@ -114,7 +114,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - `--allowedTools` には `mcp__github_inline_comment__create_inline_comment` を必ず含める。これが無いと Claude が分析だけして何も投稿せず終わるケースがある（`display_report: true` はworkflow summaryに出すだけでPRコメントには投稿しない）
 - `--allowedTools` の Bash パターンに空白と複数 `*` を混ぜると Claude CLI の引数解釈が壊れて `Could not resolve authentication credentials` で fail する。`Bash(gh api --method PATCH repos/*/issues/comments/*:*)` は動作確認済みだが、新規パターンを増やすときは単体で動作確認する
 - `anthropics/claude-code-action` は `id-token: write` permission が必須。ANTHROPIC_API_KEY 直接認証の構成でも内部で OIDC token を要求するため、未使用に見えても削除してはいけない（削除すると `Could not fetch an OIDC token` で fail する）。Codex/AI レビュアが「未使用だから削除」と誤指摘することがあるので却下すること
-- `--allowedTools` に `Bash(gh pr review --approve:*)` を渡すと APPROVE を出せるようになる。ただしAIレビュー運用では `--comment` 止まりにして人間の approve を維持することを推奨（テンプレートも `--comment` + `--request-changes` のみ許可）
+- PR レビューの最終判定は `--approve` または `--request-changes` を必須で出す設計。`--comment` はレビュー状態が「commented」扱いで CI/Branch Protection 連携がしにくいため使わない。P0/P1 なし → `--approve`、あり → `--request-changes`。AI による approve を避けたい場合は `--comment` に差し替えるが、レビュー完了を機械的に判別できなくなる点を受容すること
 - Claude Code workflow を追加する初回 PR 自身では Claude のレビューはスキップされる（"Action skipped due to workflow validation error" / セキュリティ対策）。CI status は pass 扱いだがレビューコメントは付かない。動作確認は**マージ後の次の PR**で行うよう案内すること
 - `.greptile/` は3ファイルを個別に競合判定。ディレクトリ存在だけでスキップ禁止
 - Checkov は IaC preset 選択時のみ候補に出す（Terraform専用）
@@ -125,7 +125,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - 増分レビュー（履歴蓄積）は server リポジトリで実運用されている方式。`<!-- claude-code-review -->` マーカー検索 → 存在すれば `gh api --method PATCH` で追記、無ければ新規作成。force-push は `git merge-base --is-ancestor` で検出してフルレビューに切り替える
 - レビュー指示は `.claude/skills/claude-code-review/SKILL.md` に分離している。**Skill invocation は使えない**: Claude Code Action v1.0.72 の SDK は組み込み skill（debug / simplify / batch / loop / claude-api）しかロードしないため、`Skill` tool による `claude-code-review` 呼び出しは `is_error: true` で失敗する。回避策として workflow の prompt に「`.claude/skills/claude-code-review/SKILL.md` を Read で読み込んで指示に従ってください」と書き、ただのマークダウンファイルとして読ませる。レビュー観点・投稿ルールを変更する場合は SKILL.md 側を編集する（workflow の再デプロイ不要）
 - **concurrency の自己キャンセルループ**: `cancel-in-progress: true` のままだと Claude bot 自身が投稿する PR コメントが `issue_comment` イベントを発火させて実行中のレビューを打ち切る。`cancel-in-progress: ${{ github.event_name != 'issue_comment' }}` で issue_comment だけキャンセル無効化するのが正解。`pull_request` では新コミット push で古いレビューを止める挙動を維持できる
-- **SKILL.md の投稿フロー最終ステップを省略する現象**: 過去の実測で Claude がサマリコメント投稿後に `gh pr review --comment` を忘れてタスク完了と判断するケースがあった。GitHub 上のレビュー状態が残らないため、SKILL.md の「PR レビュー判定」セクションは「省略禁止」「必ず最後に実行」と明示的に強調すること（テンプレート済み）
+- **SKILL.md の投稿フロー最終ステップを省略する現象**: 過去の実測で Claude がサマリコメント投稿後に `gh pr review --approve/--request-changes` を忘れてタスク完了と判断するケースがあった。GitHub 上のレビュー状態が残らないため、SKILL.md の「PR レビュー判定」セクションは「省略禁止」「必ず最後に実行」と明示的に強調すること（テンプレート済み）
 - **workflow ファイル変更を含む PR は Claude にレビューさせられない**: `claude-code-action` は PR ブランチの workflow ファイルが main と一致しているか検証する（セキュリティ機構）。差異があると `Workflow validation failed` で即 fail する。`claude-review.yml` 自体の修正 PR は人間レビューで進めること
 - **ユーザーのローカル環境で `_gh_ensure_token` エラーが出る**: `gh:1: command not found: _gh_ensure_token` は zsh の gh 認証 wrapper の副作用で、コマンド自体は動く。Skill の挙動には影響しない
 
