@@ -77,8 +77,8 @@ jobs:
             FORCE_PUSH: ${{ steps.context.outputs.force_push }}
 
             PR ブランチは既にカレントディレクトリにチェックアウト済みです。
-            `claude-code-review` スキルを使ってこのPRをレビューしてください。
+            `.claude/skills/claude-code-review/SKILL.md` を Read で読み込み、その内容に従ってこのPRをレビューしてください。
           claude_args: |
-            --model claude-opus-4-7
+            --model claude-opus-4-5
             --max-turns 30
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr review --request-changes:*),Bash(gh pr review --comment:*),Bash(gh api repos/*/issues/*/comments:*),Bash(gh api --method PATCH repos/*/issues/comments/*:*),Bash(find:*),Bash(cat:*),Bash(grep:*),Bash(ls:*),Bash(git diff:*),Bash(git log:*),WebSearch,WebFetch(domain:pkg.go.dev),WebFetch(domain:github.com),WebFetch(domain:raw.githubusercontent.com)"
