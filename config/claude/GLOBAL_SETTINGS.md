@@ -52,6 +52,7 @@
 - コード探索・広範な調査: `Explore` agent（"quick" / "medium" / "very thorough"）
 - 実装計画・設計: `Plan` agent
 - 設計判断・難バグ・アーキテクチャ検討: 上記いずれかに `model: "opus"` を追加
+- 定型・機械的な処理（整形・抽出・単純なlist化）: `model: "haiku"` を追加。詳細は `rules/model-selection.md` 参照
 - 会話・単純な質問・短い調査: メイン会話で直接処理（subagentは不要）
 
 ### 作業アプローチ
