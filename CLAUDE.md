@@ -38,6 +38,7 @@ bin/           - カスタムスクリプト
   claude-pre-compact   - コンパクト前処理（PreCompact hook）
   claude-session-end   - セッション終了処理（Stop hook）
   cmux-quad            - cmux 4分割レイアウト
+  cmux-lazygit         - cmuxで現在ペインを分割してlazygit起動
 ```
 
 ## 主要ツール

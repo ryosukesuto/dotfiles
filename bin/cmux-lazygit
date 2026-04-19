@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# cmux-lazygit: 現在のcmuxペインを右に分割してlazygitを起動
+#
+# Usage:
+#   cmux-lazygit          # 右に50%分割してlazygit起動
+#   cmux-lazygit down     # 下に分割
+#   cmux-lazygit left     # 左に分割
+#   cmux-lazygit up       # 上に分割
+#
+# 分割後のペインでは現在のペインの作業ディレクトリ（worktree）が継承される。
+
+set -euo pipefail
+
+DIRECTION="${1:-right}"
+
+if [[ -z "${CMUX_WORKSPACE_ID:-}" ]] || [[ -z "${CMUX_SURFACE_ID:-}" ]]; then
+  echo "error: cmux内で実行してください" >&2
+  exit 1
+fi
+
+if ! command -v lazygit &> /dev/null; then
+  echo "error: lazygit が見つかりません（brew install lazygit）" >&2
+  exit 1
+fi
+
+# 現在のworktree（作業ディレクトリ）
+CWD="$(pwd)"
+
+# 右（または指定方向）に分割
+output=$(cmux new-split "$DIRECTION" --surface "$CMUX_SURFACE_ID")
+new_surface=$(echo "$output" | grep -oE 'surface:[0-9]+' | head -1)
+
+if [[ -z "$new_surface" ]]; then
+  echo "error: 新しいpaneの作成に失敗しました" >&2
+  exit 1
+fi
+
+# 新ペインでlazygitを起動
+cmux send --surface "$new_surface" "cd ${CWD} && lazygit\n"

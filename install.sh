@@ -502,24 +502,6 @@ else
 fi
 
 # ============================================================================
-# Claude Desktopのインストール（Homebrew cask）
-# ============================================================================
-if [ -d "/Applications/Claude.app" ]; then
-    info "Claude Desktop は既にインストールされています"
-elif command -v brew &> /dev/null; then
-    if [ "$DRY_RUN" = true ]; then
-        info "[DRY RUN] Claude Desktop をインストール（brew cask）"
-    else
-        info "Claude Desktop をインストール中..."
-        brew install --cask claude 2>/dev/null && \
-            info "Claude Desktop のインストール完了" || \
-            warn "Claude Desktop のインストールに失敗しました"
-    fi
-else
-    warn "Claude Desktop のインストールにはHomebrewが必要です"
-fi
-
-# ============================================================================
 # Claude Codeのインストール（ネイティブインストール）
 # ============================================================================
 # Note: Codex CLIはmiseで管理（config/mise/config.toml）
@@ -550,103 +532,6 @@ if ! command -v deno &> /dev/null; then
     fi
 else
     info "Deno は既にインストールされています"
-fi
-
-# ============================================================================
-# Biomeのインストール（Homebrew）
-# ============================================================================
-if ! command -v biome &> /dev/null; then
-    if command -v brew &> /dev/null; then
-        if [ "$DRY_RUN" = true ]; then
-            info "[DRY RUN] Biome をインストール（brew）"
-        else
-            info "Biome をインストール中..."
-            brew install biome 2>/dev/null && \
-                info "Biome のインストール完了" || \
-                warn "Biome のインストールに失敗しました"
-        fi
-    else
-        warn "Biome のインストールにはHomebrewが必要です"
-    fi
-else
-    info "Biome は既にインストールされています"
-fi
-
-# ============================================================================
-# pupのインストール（Homebrew tap: datadog-labs/pack）
-# ============================================================================
-if ! command -v pup &> /dev/null; then
-    if command -v brew &> /dev/null; then
-        if [ "$DRY_RUN" = true ]; then
-            info "[DRY RUN] pup をインストール（brew tap datadog-labs/pack）"
-        else
-            info "pup をインストール中..."
-            brew tap datadog-labs/pack 2>/dev/null && \
-                brew install datadog-labs/pack/pup 2>/dev/null && \
-                info "pup のインストール完了" || \
-                warn "pup のインストールに失敗しました"
-        fi
-    else
-        warn "pup のインストールにはHomebrewが必要です"
-    fi
-else
-    info "pup は既にインストールされています"
-fi
-
-# ============================================================================
-# ArgoCD CLIのインストール（Homebrew）
-# ============================================================================
-if ! command -v argocd &> /dev/null; then
-    if command -v brew &> /dev/null; then
-        if [ "$DRY_RUN" = true ]; then
-            info "[DRY RUN] ArgoCD CLI をインストール（brew）"
-        else
-            info "ArgoCD CLI をインストール中..."
-            brew install argocd 2>/dev/null && \
-                info "ArgoCD CLI のインストール完了" || \
-                warn "ArgoCD CLI のインストールに失敗しました"
-        fi
-    else
-        warn "ArgoCD CLI のインストールにはHomebrewが必要です"
-    fi
-else
-    info "ArgoCD CLI は既にインストールされています"
-fi
-
-# ============================================================================
-# Docker Desktopのインストール（Homebrew cask）
-# ============================================================================
-if [ -d "/Applications/Docker.app" ]; then
-    info "Docker Desktop は既にインストールされています"
-elif command -v brew &> /dev/null; then
-    if [ "$DRY_RUN" = true ]; then
-        info "[DRY RUN] Docker Desktop をインストール（brew cask）"
-    else
-        info "Docker Desktop をインストール中..."
-        brew install --cask docker 2>/dev/null && \
-            info "Docker Desktop のインストール完了" || \
-            warn "Docker Desktop のインストールに失敗しました"
-    fi
-else
-    warn "Docker Desktop のインストールにはHomebrewが必要です"
-fi
-
-# ============================================================================
-# Figmaのインストール（Homebrew cask）
-# ============================================================================
-if [ -d "/Applications/Figma.app" ]; then
-    info "Figma は既にインストールされています"
-elif command -v brew &> /dev/null; then
-    if [ "$DRY_RUN" = true ]; then
-        info "[DRY RUN] Figma をインストール（brew cask）"
-    else
-        info "Figma をインストール中..."
-        brew install --cask figma 2>/dev/null && \
-            info "Figma のインストール完了" || \
-            warn "Figma のインストールに失敗しました"
-    fi
-else
-    warn "Figma のインストールにはHomebrewが必要です"
 fi
 
 # ============================================================================
@@ -699,44 +584,6 @@ if ! command -v pipectl &> /dev/null; then
     fi
 else
     info "pipectl は既にインストールされています"
-fi
-
-# ============================================================================
-# 1Password CLIのインストール（Homebrew）
-# ============================================================================
-if ! command -v op &> /dev/null; then
-    if command -v brew &> /dev/null; then
-        if [ "$DRY_RUN" = true ]; then
-            info "[DRY RUN] 1Password CLI をインストール（brew）"
-        else
-            info "1Password CLI をインストール中..."
-            brew install 1password-cli 2>/dev/null && \
-                info "1Password CLI のインストール完了" || \
-                warn "1Password CLI のインストールに失敗しました"
-        fi
-    else
-        warn "1Password CLI のインストールにはHomebrewが必要です"
-    fi
-else
-    info "1Password CLI は既にインストールされています"
-fi
-
-# ============================================================================
-# Notionのインストール（Homebrew cask）
-# ============================================================================
-if [ -d "/Applications/Notion.app" ]; then
-    info "Notion は既にインストールされています"
-elif command -v brew &> /dev/null; then
-    if [ "$DRY_RUN" = true ]; then
-        info "[DRY RUN] Notion をインストール（brew cask）"
-    else
-        info "Notion をインストール中..."
-        brew install --cask notion 2>/dev/null && \
-            info "Notion のインストール完了" || \
-            warn "Notion のインストールに失敗しました"
-    fi
-else
-    warn "Notion のインストールにはHomebrewが必要です"
 fi
 
 echo ""
