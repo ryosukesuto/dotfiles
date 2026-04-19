@@ -34,7 +34,7 @@ gh repo view --json nameWithOwner,defaultBranchRef
   - `generic`: Claude Code workflow / Greptile
   - `iac`: Claude Code workflow / Greptile / Checkov（IaCのみ候補追加）
 - analyze: コードベースを分析して設定を最適化するか（yes/no）
-- model: レビューに使うClaudeモデル（`opus` / `sonnet`、デフォルト `opus`）
+- model: レビューに使うClaudeモデル（`default` = action既定 / `opus-4-5` / その他、デフォルト `default`）
 
 ### 3. コードベース分析（analyze=yes の場合のみ）
 
@@ -73,7 +73,7 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」（analyze=yesの場合はスタック反映） |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=IaC観点カタログ（analyze=yesの場合はスタック固有観点を追加） |
 
-`--model` フラグはテンプレートでは `claude-opus-4-7` をデフォルトにしている。質問2で `sonnet` が選ばれた場合は `claude-sonnet-4-6` に置換する。
+`--model` フラグはテンプレートで `claude-opus-4-5` をデフォルト指定している。v1.0.72 は旧 `thinking.type.enabled` API を使うため、新しい `claude-opus-4-7` / `claude-sonnet-4-6` を指定すると 400 エラーになる。`--model` を外すと action のデフォルト（Sonnet）になるため、深いレビューが欲しい場合は旧 API 対応の Opus を明示する。軽量運用なら `--model` 行を削除して Sonnet に任せる。
 
 生成先（選択されたコンポーネントのみ）:
 - Claude Code workflow: `.github/workflows/claude-review.yml`
@@ -110,6 +110,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 ## Gotchas
 
 - **action バージョンは v1.0.72（`cd77b50d2b0808657f8e6774085c8bf54484351c`）に固定**: v1.0.101 以降では `mcp__github_inline_comment__create_inline_comment` が削除されており、インラインコメント投稿ができない。更新提案が来ても鵜呑みにしないこと
+- **v1.0.72 は旧 thinking API のみ対応**: `--model claude-opus-4-7` や `claude-sonnet-4-6` を指定すると `"thinking.type.enabled" is not supported for this model` で 400 エラー。新モデルは `thinking.type.adaptive` を要求するため、v1.0.72 では互換性がない。`--model` フラグを外して action 既定に委ねるか、`claude-opus-4-5` 等の旧 API 対応モデルを使うこと
 - `--allowedTools` には `mcp__github_inline_comment__create_inline_comment` を必ず含める。これが無いと Claude が分析だけして何も投稿せず終わるケースがある（`display_report: true` はworkflow summaryに出すだけでPRコメントには投稿しない）
 - `--allowedTools` の Bash パターンに空白と複数 `*` を混ぜると Claude CLI の引数解釈が壊れて `Could not resolve authentication credentials` で fail する。`Bash(gh api --method PATCH repos/*/issues/comments/*:*)` は動作確認済みだが、新規パターンを増やすときは単体で動作確認する
 - `anthropics/claude-code-action` は `id-token: write` permission が必須。ANTHROPIC_API_KEY 直接認証の構成でも内部で OIDC token を要求するため、未使用に見えても削除してはいけない（削除すると `Could not fetch an OIDC token` で fail する）。Codex/AI レビュアが「未使用だから削除」と誤指摘することがあるので却下すること
@@ -122,6 +123,6 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - private repo で fork は org メンバーに限定されるため、`issue_comment` トリガーの prompt injection リスクは `author_association == MEMBER/OWNER/COLLABORATOR` のチェックで許容範囲とみなしてよい（public repo の場合はより慎重な判断が必要）
 - `allowed_bots: "dependabot[bot],renovate[bot]"` を指定すると bot PR でも Claude がレビューを走らせる。依存更新の破壊的変更チェック用途で有効
 - 増分レビュー（履歴蓄積）は server リポジトリで実運用されている方式。`<!-- claude-code-review -->` マーカー検索 → 存在すれば `gh api --method PATCH` で追記、無ければ新規作成。force-push は `git merge-base --is-ancestor` で検出してフルレビューに切り替える
-- レビュー指示は `.claude/skills/claude-code-review/SKILL.md` に分離している。workflow の prompt からは `claude-code-review` スキル名で呼び出す方式。レビュー観点・投稿ルールを変更する場合は SKILL.md 側を編集する（workflow の再デプロイ不要）
+- レビュー指示は `.claude/skills/claude-code-review/SKILL.md` に分離している。**Skill invocation は使えない**: Claude Code Action v1.0.72 の SDK は組み込み skill（debug / simplify / batch / loop / claude-api）しかロードしないため、`Skill` tool による `claude-code-review` 呼び出しは `is_error: true` で失敗する。回避策として workflow の prompt に「`.claude/skills/claude-code-review/SKILL.md` を Read で読み込んで指示に従ってください」と書き、ただのマークダウンファイルとして読ませる。レビュー観点・投稿ルールを変更する場合は SKILL.md 側を編集する（workflow の再デプロイ不要）
 
 詳細は `${CLAUDE_SKILL_DIR}/reference.md` を参照（必要時のみ読み込む）。
