@@ -3,6 +3,7 @@
 
 # Taps
 # (homebrew/cask-fonts は廃止、homebrew-cask に統合済み)
+tap "datadog-labs/pack"  # pup（Datadog CLI）用
 
 # ===== 必須 =====
 brew "git"
@@ -22,6 +23,7 @@ brew "fd"            # find代替
 brew "jq"            # JSON処理
 brew "ghq"           # リポジトリ管理
 brew "k1LoW/tap/git-wt"  # git worktree管理
+brew "lazygit"       # Git TUI（worktreeごとのdiffレビュー用）
 brew "terminal-notifier"  # macOS通知
 
 # ===== バージョン管理 =====
@@ -32,6 +34,13 @@ brew "terraform"     # fmt/validate/補完用（apply/planはGitOps経由）
 brew "tflint"        # Terraform linter
 brew "trivy"         # セキュリティスキャナ
 brew "kubeconform"   # K8sマニフェスト検証
+brew "argocd"        # ArgoCD CLI（K8s GitOps）
+
+# ===== Lint/Format =====
+brew "biome"         # JS/TS linter & formatter
+
+# ===== 監視・運用 =====
+brew "datadog-labs/pack/pup"  # Datadog CLI（要 tap: datadog-labs/pack）
 
 # ===== クラウドCLI =====
 brew "awscli"        # AWS CLI
@@ -43,7 +52,7 @@ brew "poppler"       # PDF処理（pdftotext等）
 
 # ===== 開発環境 =====
 # Node.js / Codex CLIはmiseで管理（config/mise/config.toml）
-cask "docker"        # Docker Desktop（CLI + Compose V2 + GUI）
+cask "docker-desktop" # Docker Desktop（CLI + Compose V2 + GUI、旧 cask "docker" からリネーム）
 cask "devpod"        # Dev Container管理
 brew "go-task"       # タスクランナー
 brew "protobuf"      # Protocol Buffers
@@ -68,6 +77,7 @@ cask "microsoft-teams"     # コミュニケーション
 cask "obsidian"            # ノートアプリ
 cask "google-japanese-ime" # 日本語入力
 cask "alt-tab"             # ウィンドウスイッチャー
+cask "raycast"             # ランチャー・ホットキー管理
 cask "claude"              # Claude Desktop
 cask "cloudflare-warp"     # VPNクライアント
 cask "notion"              # ドキュメント管理
