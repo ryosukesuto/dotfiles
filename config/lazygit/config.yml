@@ -1,0 +1,53 @@
+gui:
+  nerdFontsVersion: "3"
+  showRandomTip: false
+  showCommandLog: false
+  showBottomLine: false
+  mainPanelSplitMode: flexible
+  sidePanelWidth: 0.3333
+  showFileTree: true
+  showListFooter: false
+  language: en
+  theme:
+    activeBorderColor:
+      - "#7aa2f7"
+      - bold
+    inactiveBorderColor:
+      - "#414868"
+    searchingActiveBorderColor:
+      - "#e0af68"
+      - bold
+    optionsTextColor:
+      - "#7dcfff"
+    selectedLineBgColor:
+      - "#283457"
+    cherryPickedCommitBgColor:
+      - "#7aa2f7"
+    cherryPickedCommitFgColor:
+      - "#1a1b26"
+    markedBaseCommitBgColor:
+      - "#bb9af7"
+    markedBaseCommitFgColor:
+      - "#1a1b26"
+    unstagedChangesColor:
+      - "#f7768e"
+    defaultFgColor:
+      - "#c0caf5"
+  authorColors:
+    "*": "#bb9af7"
+git:
+  pagers:
+    - colorArg: always
+      pager: delta --paging=never
+  autoFetch: true
+  autoRefresh: true
+  branchLogCmd: git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName}} --
+  mainBranches:
+    - main
+    - master
+  overrideGpg: false
+  log:
+    order: topo-order
+    showGraph: always
+confirmOnQuit: false
+disableStartupPopups: true

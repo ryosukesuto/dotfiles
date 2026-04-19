@@ -397,6 +397,9 @@ create_symlink "$DOTFILES_DIR/config/uv/uv.toml" "$HOME/.config/uv/uv.toml"
 # Ghostty設定
 create_symlink "$DOTFILES_DIR/config/ghostty/config" "$HOME/.config/ghostty/config"
 
+# lazygit設定
+create_symlink "$DOTFILES_DIR/config/lazygit/config.yml" "$HOME/.config/lazygit/config.yml"
+
 # Codex CLI設定
 if [ ! -d "$HOME/.codex" ]; then
     if [ "$DRY_RUN" = true ]; then

@@ -24,6 +24,7 @@ brew "jq"            # JSON処理
 brew "ghq"           # リポジトリ管理
 brew "k1LoW/tap/git-wt"  # git worktree管理
 brew "lazygit"       # Git TUI（worktreeごとのdiffレビュー用）
+brew "git-delta"     # 構文ハイライト付きdiff viewer（lazygitのpagerに使用）
 brew "terminal-notifier"  # macOS通知
 
 # ===== バージョン管理 =====
