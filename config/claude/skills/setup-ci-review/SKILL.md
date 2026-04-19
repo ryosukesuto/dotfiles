@@ -124,5 +124,9 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - `allowed_bots: "dependabot[bot],renovate[bot]"` を指定すると bot PR でも Claude がレビューを走らせる。依存更新の破壊的変更チェック用途で有効
 - 増分レビュー（履歴蓄積）は server リポジトリで実運用されている方式。`<!-- claude-code-review -->` マーカー検索 → 存在すれば `gh api --method PATCH` で追記、無ければ新規作成。force-push は `git merge-base --is-ancestor` で検出してフルレビューに切り替える
 - レビュー指示は `.claude/skills/claude-code-review/SKILL.md` に分離している。**Skill invocation は使えない**: Claude Code Action v1.0.72 の SDK は組み込み skill（debug / simplify / batch / loop / claude-api）しかロードしないため、`Skill` tool による `claude-code-review` 呼び出しは `is_error: true` で失敗する。回避策として workflow の prompt に「`.claude/skills/claude-code-review/SKILL.md` を Read で読み込んで指示に従ってください」と書き、ただのマークダウンファイルとして読ませる。レビュー観点・投稿ルールを変更する場合は SKILL.md 側を編集する（workflow の再デプロイ不要）
+- **concurrency の自己キャンセルループ**: `cancel-in-progress: true` のままだと Claude bot 自身が投稿する PR コメントが `issue_comment` イベントを発火させて実行中のレビューを打ち切る。`cancel-in-progress: ${{ github.event_name != 'issue_comment' }}` で issue_comment だけキャンセル無効化するのが正解。`pull_request` では新コミット push で古いレビューを止める挙動を維持できる
+- **SKILL.md の投稿フロー最終ステップを省略する現象**: 過去の実測で Claude がサマリコメント投稿後に `gh pr review --comment` を忘れてタスク完了と判断するケースがあった。GitHub 上のレビュー状態が残らないため、SKILL.md の「PR レビュー判定」セクションは「省略禁止」「必ず最後に実行」と明示的に強調すること（テンプレート済み）
+- **workflow ファイル変更を含む PR は Claude にレビューさせられない**: `claude-code-action` は PR ブランチの workflow ファイルが main と一致しているか検証する（セキュリティ機構）。差異があると `Workflow validation failed` で即 fail する。`claude-review.yml` 自体の修正 PR は人間レビューで進めること
+- **ユーザーのローカル環境で `_gh_ensure_token` エラーが出る**: `gh:1: command not found: _gh_ensure_token` は zsh の gh 認証 wrapper の副作用で、コマンド自体は動く。Skill の挙動には影響しない
 
 詳細は `${CLAUDE_SKILL_DIR}/reference.md` を参照（必要時のみ読み込む）。

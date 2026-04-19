@@ -7,8 +7,11 @@ on:
     types: [created]
 
 concurrency:
+  # issue_comment では cancel-in-progress を無効化する。
+  # Claude bot 自身のコメントが issue_comment をトリガーし、実行中のレビューを
+  # キャンセルする自己キャンセルループが発生するのを防ぐ。
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
 
 permissions:
   contents: read
