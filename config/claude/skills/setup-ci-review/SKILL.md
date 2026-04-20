@@ -114,7 +114,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 
 ## 既存インストールの更新
 
-テンプレート（`claude-review.yml` / `claude-code-review/SKILL.md`）を変更した場合、既にこの
+テンプレート（`claude-review.yml` / `claude-code-review/SKILL.md` / `.greptile/config.json`）を変更した場合、既にこの
 skill で導入済みのリポジトリには自動では反映されない。`scripts/update-existing.sh` を使って差分を当てる。
 
 ```bash
@@ -128,12 +128,16 @@ bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 挙動:
 - `claude-review.yml` は最新テンプレートで完全上書き
 - `SKILL.md` は最新テンプレートで完全上書き。ただし `REVIEWER_ROLE` / `REVIEW_CRITERIA` は既存ファイルから抽出して保持する（`setup-ci-review` が analyze=yes で埋めた値は消えない）
+- `.greptile/config.json` は preset を自動判定して `config.json` / `config-iac.json` のいずれかで全置換
+  - IaC preset 判定: `.github/workflows/checkov.yml` の有無、または既存 `rules[]` に `iam-no-basic-roles` / `wif-attribute-condition` / `iam-use-member-not-binding` などのIaC用 rule id が含まれるか
+  - `.greptile/rules.md` / `files.json` は analyze=yes で埋めた内容を壊さないよう対象外（手動で追随）
 - 各ファイルごとに差分を表示して y/N 確認（`--yes` で省略可）
 - コミット・push は行わない
 
 注意:
 - 既存 SKILL.md に `REVIEWER_ROLE` / `REVIEW_CRITERIA` 以外の手動カスタマイズがある場合、全置換で失われる。差分を必ず目視確認すること
 - 抽出ロジックは「あなたは ... です。このPRをレビューします。」パターンと「3. 既存コードとの一貫性チェック ... 」から「## 優先度ラベル」の間で REVIEW_CRITERIA を識別する。SKILL.md の骨格を手動で大きく変えている場合は抽出失敗して WARN を出す（この場合は skip される）
+- `.greptile/config.json` の `strictness` / `fileChangeLimit` / `ignorePatterns` / `rules[]` を個別調整している場合、全置換で失われる。差分目視必須
 - PR ブランチが古い main 上にいると、そのブランチの `SKILL.md` は更新前のまま。`git rebase origin/main` してから再レビューを走らせる必要がある。テンプレート冒頭に rebase ガイドが入っているので Claude 自身も古い PR で rebase を促す
 
 ## Gotchas
