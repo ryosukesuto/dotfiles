@@ -1,6 +1,6 @@
 ---
 name: setup-ci-review
-description: GitHubリポジトリにPRレビュー自動化を対話的に導入する。Claude Code workflow / Greptile / Checkov gating を bootstrap。既存ファイルの更新はスコープ外。「PRレビュー導入」「setup-ci-review」「コードレビューCI bootstrap」「CIレビュー setup」等で起動。
+description: GitHubリポジトリにPRレビュー自動化を対話的に導入する。Claude Code workflow / Greptile / Checkov gating を bootstrap。生成時に既存ファイルは無断上書きしない（既存インストールの更新は update-existing.sh で対応）。「PRレビュー導入」「setup-ci-review」「コードレビューCI bootstrap」「CIレビュー setup」等で起動。
 user-invocable: true
 allowed-tools:
   - Read
@@ -50,7 +50,7 @@ gh repo view --json nameWithOwner,defaultBranchRef
 - `REVIEWER_ROLE`: 検出スタックを反映（例: 「Go/Terraformに精通したシニアエンジニア」）
 - `REVIEW_CRITERIA`: スタック固有の観点を追記（IaC presetの場合はIaC観点カタログと統合）
 - Greptile `rules.md` の `<!-- ここにリポジトリ固有の観点を追記 -->` 部分: CLAUDE.mdから抽出したコーディング規約で置換
-- Greptile `files.json` の `focusFiles`: 重要ディレクトリを実際のパスで更新
+- Greptile `files.json` の `files[]`: 重要ファイル・ディレクトリを `{path, description, scope?}` オブジェクトとして追加（scope 省略時は全レビュー対象）
 
 ### 4. 競合検出
 
@@ -58,6 +58,11 @@ gh repo view --json nameWithOwner,defaultBranchRef
 
 出力を読んでユーザーに提示し、既存ファイルがある場合はマージ判断を仰ぐ。
 Skillは自動マージも自動上書きもしない（既存設定の意図を判断できないため）。
+
+衝突検出後の動作は `.new` 退避＋他ファイル継続 が既定フロー。
+- 衝突したファイルへは書かない。`detect-conflicts.sh` が生成した `<file>.new` プレースホルダに新内容を書き込み、ユーザーに `mv <file>.new <file>` での適用を委ねる
+- その他の非衝突ファイルは通常通り生成して続行する（全停止はしない）
+- 注意: `<file>.new` は `detect-conflicts.sh` が `touch` で空ファイルとして先に作成している。`Write` ツールは未 Read のファイルへの書き込みを拒否するため、`.new` への書き込み前に一度 `Read` を挟む
 
 `.greptile/` 配下は3ファイル（config.json / rules.md / files.json）を個別に引数に含める。
 ディレクトリの存在だけで「スキップ」と判定してはいけない。
@@ -69,7 +74,6 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 
 | 変数 | 置換先 |
 |------|--------|
-| `{{REPO_NAME}}` | 実際のリポジトリ名 |
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」（analyze=yesの場合はスタック反映） |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=IaC観点カタログ（analyze=yesの場合はスタック固有観点を追加） |
 
@@ -83,7 +87,7 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 - Greptile: `.greptile/config.json` / `.greptile/rules.md` / `.greptile/files.json`
   - IaC preset → `rules-iac.md` を `rules.md` として生成
   - generic preset → `rules.md` をそのまま生成
-  - analyze=yesの場合 → rules.md のプレースホルダーを分析結果で置換、files.json の focusFiles を実パスで更新
+  - analyze=yesの場合 → rules.md のプレースホルダーを分析結果で置換、files.json の `files[]` に実際の重要ファイルを `{path, description}` で追記（公式スキーマ準拠）
 - Checkov: `.github/workflows/checkov.yml`（IaC preset かつ選択時のみ）
 
 ### 6. SHA-pin 検証

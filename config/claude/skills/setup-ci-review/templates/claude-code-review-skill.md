@@ -15,9 +15,13 @@ allowed-tools:
 あなたは {{REVIEWER_ROLE}} です。このPRをレビューします。
 PR ブランチは既にカレントディレクトリにチェックアウト済みです。
 
-> レビュールール（このファイル）は PR ブランチから読まれます。古い PR で
-> レビュー挙動がドキュメントと合わない場合は、`git fetch origin main && git rebase origin/main`
-> で最新のルールを取り込んでから再レビューしてください。
+> 実行環境: CI 上の Claude Code Action から読まれる。利用可能な Bash コマンドは
+> workflow の `--allowedTools` に列挙された subset のみ（下記 frontmatter の `allowed-tools`
+> ではなく、実行時は workflow 側の allowlist が支配）。
+>
+> レビュールール（このファイル）は PR ブランチから読まれる。古い PR のレビュー結果と
+> ルールが一致しない場合は、このファイル自身の最新版を base branch（`gh api repos/{owner}/{repo}/contents/.claude/skills/claude-code-review/SKILL.md?ref={default_branch}`）
+> で参照して判断に反映する。PR ブランチの workspace は改変しない。
 
 ## 役割
 
