@@ -85,9 +85,10 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
   - `claude-code-review-skill.md` テンプレートを Read し、`{{REVIEWER_ROLE}}` / `{{REVIEW_CRITERIA}}` を置換して `.claude/skills/claude-code-review/SKILL.md` として Write
   - workflow からは `claude-code-review` スキル名で呼び出されるため、パスは固定（変更禁止）
 - Greptile: `.greptile/config.json` / `.greptile/rules.md` / `.greptile/files.json`
-  - IaC preset → `rules-iac.md` を `rules.md` として生成
-  - generic preset → `rules.md` をそのまま生成
+  - IaC preset → `config-iac.json` を `config.json`、`rules-iac.md` を `rules.md` として生成
+  - generic preset → `config.json` / `rules.md` をそのまま生成
   - analyze=yesの場合 → rules.md のプレースホルダーを分析結果で置換、files.json の `files[]` に実際の重要ファイルを `{path, description}` で追記（公式スキーマ準拠）
+  - 構造化ルール: IaC preset の `config.json` には `rules[]` に `id` / `severity` / `scope` 付きのIaC観点が含まれる。サブディレクトリで一部ルールを無効化したい場合は、そのディレクトリに `.greptile/config.json` を置いて `disabledRules: ["<id>"]` を指定する（cascading で親ルールを継承）
 - Checkov: `.github/workflows/checkov.yml`（IaC preset かつ選択時のみ）
 
 ### 6. SHA-pin 検証

@@ -1,0 +1,59 @@
+{
+  "strictness": 2,
+  "commentTypes": ["logic", "syntax"],
+  "triggerOnUpdates": true,
+  "statusCheck": true,
+  "updateExistingSummaryComment": true,
+  "fileChangeLimit": 200,
+  "ignorePatterns": "dist/**\nnode_modules/**\n.terraform/**",
+  "rules": [
+    {
+      "id": "iam-no-basic-roles",
+      "rule": "IAM は最小権限の原則に従い、roles/editor は使用禁止。roles/owner は必要な場合のみ明示的に管理してください。",
+      "severity": "high",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "iam-no-public-principals",
+      "rule": "IAM バインディングに allUsers / allAuthenticatedUsers を指定しないでください。公開が意図的な場合はコメントで根拠を明示してください。",
+      "severity": "high",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "wif-attribute-condition",
+      "rule": "Workload Identity Federation の provider には attribute_condition でリポジトリ・ブランチ制限を必ず設定してください。",
+      "severity": "high",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "terraform-declarative-state",
+      "rule": "State 変更は import / moved / removed ブロックで宣言的に記述してください。terraform state rm などの手動コマンド依存は避けてください。",
+      "severity": "medium",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "gcp-api-disable-on-destroy",
+      "rule": "google_project_service には disable_on_destroy = true を設定してください。他リソースへの巻き込み破壊を防止します。",
+      "severity": "medium",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "project-prevent-destroy",
+      "rule": "プロジェクトや本番データを保持するリソースには lifecycle.prevent_destroy = true を設定してください。",
+      "severity": "high",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "terraform-naming",
+      "rule": "Terraform 識別子は snake_case、クラウドリソース名はハイフン区切りに統一してください。",
+      "severity": "low",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "iam-use-member-not-binding",
+      "rule": "IAM 管理には加算的な google_*_iam_member を使用してください。google_*_iam_binding / google_*_iam_policy は既存権限を上書きするため禁止です。",
+      "severity": "high",
+      "scope": ["**/*.tf"]
+    }
+  ]
+}
