@@ -148,6 +148,15 @@ Agent(subagent_type="general-purpose"):
 
 適用場面: ドキュメント生成、PRレビュー、設計書作成など、出力の品質が重要なSkill。
 
+### Empirical Prompt Tuning（重要度の高いskill向け）
+
+Reader Testingは1発の静的チェック。頻繁に使うskillや自動化の中核プロンプトは、`empirical-prompt-tuning` skillでシナリオベースの反復評価を回す。
+
+- 軽いskill・一発もの: Reader Testingで十分
+- 高頻度skill・堅牢化したいもの: empirical-prompt-tuningで反復改善（subagent dispatchでシナリオ実行→両面評価→差分適用）
+
+新規作成直後のベースライン計測に使うと、書き手バイアスで気づけない曖昧さを初期に潰せる。詳細は `~/.claude/skills/empirical-prompt-tuning/SKILL.md` を参照。
+
 ### 「なぜそうするのか」を書く
 
 Claudeが状況判断できるよう、手順だけでなく理由を書く。理由がわかれば、想定外の状況でも適切に判断できる。
