@@ -47,11 +47,31 @@ def format_finding(f: dict, idx: int) -> str:
 
     fix_block = f"\n**修正方法**: {fix}" if fix else ""
 
+    # 複数 reviewer が corroborate したときは sources を見せる
+    sources = f.get("sources") or []
+    reviewer_label = reviewer
+    if len(sources) > 1:
+        reviewer_label = " + ".join(sources) + f" (lead: {reviewer})"
+
+    arbitration_block = ""
+    arb = f.get("arbitration") or {}
+    rejected = arb.get("rejected_alternatives") or []
+    if rejected:
+        parts = []
+        for r in rejected:
+            src = r.get("source_reviewer", "?")
+            sev_r = r.get("severity", "?")
+            conf_r = r.get("confidence")
+            conf_s = f"{conf_r:.0%}" if isinstance(conf_r, (int, float)) else "?"
+            it = r.get("issue_type", "?")
+            parts.append(f"`{src}` → severity={sev_r}, issue_type={it}, confidence={conf_s}")
+        arbitration_block = "\n<details><summary>🔀 別観点の指摘（裁定で不採用）</summary>\n\n" + "\n".join(f"- {p}" for p in parts) + "\n\n</details>\n"
+
     return f"""**{idx}. {claim}**
-`{line_ref}` | {reviewer} | {issue_type} | confidence {confidence_bar(conf)} {conf:.0%}
+`{line_ref}` | {reviewer_label} | {issue_type} | confidence {confidence_bar(conf)} {conf:.0%}
 {lines_block}
 {why}{fix_block}
-
+{arbitration_block}
 """
 
 

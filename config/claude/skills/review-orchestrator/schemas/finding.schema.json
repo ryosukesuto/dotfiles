@@ -117,6 +117,36 @@
     "fix_hint": {
       "type": ["string", "null"],
       "description": "Concrete suggestion. Optional but recommended for must-fix."
+    },
+    "sources": {
+      "type": "array",
+      "description": "Set by normalizer only. Reviewers that corroborated this finding. First element is the winning reviewer.",
+      "items": {"type": "string"}
+    },
+    "arbitration": {
+      "type": "object",
+      "description": "Set by normalizer only. Arbitration metadata when dedupe merged conflicting findings.",
+      "additionalProperties": false,
+      "properties": {
+        "winner_score": {"type": "number"},
+        "rejected_alternatives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["source_reviewer", "reason"],
+            "properties": {
+              "source_reviewer": {"type": "string"},
+              "severity": {"type": ["string", "null"]},
+              "issue_type": {"type": ["string", "null"]},
+              "confidence": {"type": ["number", "null"]},
+              "score": {"type": ["number", "null"]},
+              "claim": {"type": ["string", "null"]},
+              "reason": {"type": "string"}
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {

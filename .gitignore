@@ -84,6 +84,10 @@ claude_desktop_config.json.local
 .zcompdump*
 *.zwc
 
+# Python
+__pycache__/
+*.pyc
+
 # Makefileで作成されるバックアップ
 backups/
 
