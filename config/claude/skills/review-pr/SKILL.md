@@ -57,12 +57,26 @@ echo "triage: size=$SIZE risk_tags=$RISK"
 
 ### オーケストレーターパス
 
+**前提: このパスは親 Claude Code セッションからのみ実行する。** subagent の内部から review-pr を呼ばれた場合は Agent tool の再帰呼び出しを避けるため、下のシンプルパス骨格にフォールバックする。
+
+**事前準備: レビュー対象リポジトリがローカルに無い場合**
+
+```bash
+# REPO_ROOT が空 or 該当リポジトリでないなら clone or worktree で取得
+if [ ! -d "$REPO_ROOT/.git" ] || ! git -C "$REPO_ROOT" remote get-url origin | grep -q "$REPO"; then
+  # ghq 経由で未取得なら clone、あれば pr checkout
+  ghq get "github.com/$REPO" 2>/dev/null || true
+  REPO_ROOT=$(ghq root)/github.com/$REPO
+  (cd "$REPO_ROOT" && gh pr checkout "$PR_NUM" --repo "$REPO")
+fi
+```
+
 ```bash
 # Step 2: bundle 生成
 uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-bundle.py \
   --triage /tmp/review-pr-triage.json -o /tmp/review-pr-bundle.json
 
-# Step 3: プロンプト自動生成 → subagent 並列起動（general-purpose）
+# Step 3a: reviewer プロンプトを 2 本生成
 uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-reviewer-prompt.py \
   --bundle /tmp/review-pr-bundle.json --triage /tmp/review-pr-triage.json \
   --reviewer codex-baseline --repo-root "$REPO_NAME:$REPO_ROOT" \
@@ -71,10 +85,33 @@ uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-reviewer-promp
   --bundle /tmp/review-pr-bundle.json --triage /tmp/review-pr-triage.json \
   --reviewer opus-baseline --repo-root "$REPO_NAME:$REPO_ROOT" \
   -o /tmp/review-pr-prompt-opus.txt
+```
 
-# /tmp/review-pr-prompt-codex.txt と /tmp/review-pr-prompt-opus.txt の内容を
-# general-purpose subagent に渡して並列実行 → 結果を /tmp/raw-codex.json /tmp/raw-opus.json に保存
+**Step 3b: Agent tool で並列起動（同一メッセージ内で2本同時発行）**
 
+各 subagent に次を指示する:
+1. `/tmp/review-pr-prompt-codex.txt`（または opus 版）を Read で読む
+2. 指示通り findings を JSON で生成する
+3. 返却 JSON を所定のパスに Write する
+
+呼び出し例:
+
+```
+Agent(
+  subagent_type="general-purpose",
+  description="review-pr codex-baseline",
+  prompt="Read /tmp/review-pr-prompt-codex.txt then follow it. Write findings JSON to /tmp/raw-codex.json."
+)
+Agent(
+  subagent_type="general-purpose",
+  description="review-pr opus-baseline",
+  prompt="Read /tmp/review-pr-prompt-opus.txt then follow it. Write findings JSON to /tmp/raw-opus.json."
+)
+```
+
+両方が完了したら Step 4 へ進む。
+
+```bash
 # Step 4: normalize → report
 uv run python3 ~/.claude/skills/review-orchestrator/scripts/normalize.py \
   --findings /tmp/raw-codex.json --findings /tmp/raw-opus.json \
@@ -105,3 +142,6 @@ uv run python3 ~/.claude/skills/review-orchestrator/scripts/report.py \
 - triage 判定は PR 取得後に行う。PR URL や PR 番号が引数として渡されていれば `gh pr view` のカレントブランチ判定に頼らず明示的に `--repo org/repo` と `PR番号` を指定する
 - オーケストレーターパスは `report.py` の出力をそのまま返す。その後に手動でレビューを追記しない
 - Codex が「サポートしていない」「動作しない」系の主張をしたら実際にコードを読んで確認してから採用する。未確認の指摘を P0 として出すと信頼性を損なう
+- subagent 内から review-pr が呼ばれた場合、triage の `size` / `risk_tags` に関わらずシンプルパス骨格にフォールバックする（Agent tool の再帰呼び出し禁止のため）。出力は `review-pr-reference.md` のフォーマットに従い、`risk_tags` の内容は「注意事項」節に転記する
+- triage の `reviewers` が null の場合、オーケストレーターパスでは `codex-baseline` と `opus-baseline` の 2 本を固定で使う
+- `build-reviewer-prompt.py` の出力プロンプトに diff セクションが空（「(diff 取得不可)」など）のときは、`git diff $BASE_SHA..$HEAD_SHA` を実行してプロンプトに追記してから subagent に渡す。未対応のまま渡すと findings が生成できない
