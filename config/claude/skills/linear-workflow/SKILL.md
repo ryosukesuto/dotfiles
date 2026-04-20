@@ -163,6 +163,48 @@ update_issue(id="PF-xxx", cycle="next")
 ### チームID
 - `~/.claude/rules/service-environments.local.md` を参照
 
+## 会議系issueのテンプレート
+
+キックオフ・レビュー会議などを Linear に登録するときの description テンプレート。
+
+### テンプレート
+
+```markdown
+## 目的
+
+<会議の目的を1行>
+
+## 日時
+
+YYYY-MM-DD（曜）HH:MM-HH:MM（NN分）
+
+## 資料
+
+[<タイトル>](<Kibela URL>)
+
+## 参加者
+
+- @username1
+- @username2
+- @suto_ryosuke_xa
+
+## アジェンダ
+
+1. <議題1>
+2. <議題2>
+
+## 次のアクション
+
+- [ ] <アクション1>
+- [ ] <アクション2>
+```
+
+### 注意点
+
+- Kibelaリンクは必ずMarkdownリンク形式 `[タイトル](URL)` で書く。URL単体（`Kibela: https://...`）だとLinearが attachments に自動吸収して description 本文から消える
+- attachments欄に自動で追加される分はそのまま利用してOK。description内のMarkdownリンクと併存できる
+- 参加者は `meeting-minutes` スキルの `convert-participants.py` で NASCAテキストから変換できる
+
 ## やらないこと
 
 運用が目的化するのを防ぐため、以下は意図的に入れない：
