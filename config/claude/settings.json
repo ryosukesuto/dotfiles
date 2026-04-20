@@ -359,17 +359,6 @@
         ]
       }
     ],
-    "PermissionDenied": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmux notify --title 'Claude Code' --subtitle '権限拒否' --body \"auto modeが拒否しました: $CLAUDE_TOOL_NAME\" || true"
-          }
-        ]
-      }
-    ],
     "PermissionRequest": [
       {
         "matcher": "",
@@ -412,7 +401,8 @@
   "enabledPlugins": {
     "slack@claude-plugins-official": false,
     "figma@claude-plugins-official": true,
-    "codex@openai-codex": true
+    "codex@openai-codex": true,
+    "vercel@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "openai-codex": {
@@ -444,6 +434,5 @@
         "callbackPort": 3118
       }
     }
-  },
-  "model": "sonnet"
+  }
 }
