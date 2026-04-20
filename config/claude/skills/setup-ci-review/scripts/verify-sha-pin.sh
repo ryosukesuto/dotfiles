@@ -19,17 +19,17 @@ for FILE in "$@"; do
   fi
 
   while IFS= read -r LINE; do
-    # Extract uses: value
-    USES=$(echo "$LINE" | grep -oP 'uses:\s*\K\S+' || true)
+    # Extract uses: value (POSIX portable; GNU grep -P is not available on BSD/macOS)
+    USES=$(printf '%s\n' "$LINE" | sed -nE 's/.*uses:[[:space:]]*([^[:space:]#]+).*/\1/p')
     [ -z "$USES" ] && continue
 
     # Skip local actions and reusable workflows
-    if [[ "$USES" == ./* ]]; then
-      continue
-    fi
+    case "$USES" in
+      ./*) continue ;;
+    esac
 
     # Check SHA-pin: owner/repo@<40-char hex>
-    if ! echo "$USES" | grep -qP '@[0-9a-f]{40}'; then
+    if ! printf '%s\n' "$USES" | grep -qE '@[0-9a-f]{40}$|@[0-9a-f]{40}[^0-9a-f]'; then
       echo "NOT SHA-PINNED in $FILE: uses: $USES" >&2
       FAILED=1
     fi

@@ -1,11 +1,3 @@
 {
-  "patternRepositories": [],
-  "focusFiles": [],
-  "ignoreFiles": [
-    "**/.terraform/**",
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/*.tfstate",
-    "**/*.tfstate.backup"
-  ]
+  "files": []
 }

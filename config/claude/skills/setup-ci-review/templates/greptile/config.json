@@ -1,9 +1,10 @@
 {
   "strictness": 2,
+  "commentTypes": ["logic", "syntax"],
   "triggerOnUpdates": true,
   "statusCheck": true,
-  "updateSummaryOnly": false,
+  "updateExistingSummaryComment": true,
   "fileChangeLimit": 200,
-  "ignorePatterns": "dist/**\nnode_modules/**\n.terraform/**\ntest/**",
+  "ignorePatterns": "dist/**\nnode_modules/**\n.terraform/**",
   "rules": []
 }
