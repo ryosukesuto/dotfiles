@@ -9,12 +9,15 @@ Usage:
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 
 CONTEXT_LINES = 30  # relevant_snippets の前後行数
+SYMBOL_INDEX_MAX_HITS = 30  # symbol 1 つあたりの最大保持件数（ノイズ抑制）
+SYMBOL_INDEX_GLOB_DEFAULT = "!{vendor,node_modules,third_party,.git}/**"
 
 
 def run_git(args: list[str], cwd: str) -> str:
@@ -179,6 +182,112 @@ def build_interface_changes(triage: dict) -> dict:
     }
 
 
+def _rg_available() -> bool:
+    try:
+        subprocess.run(["rg", "--version"], capture_output=True, check=False)
+        return True
+    except FileNotFoundError:
+        return False
+
+
+def _rg_search(root: str, pattern: str) -> list[dict]:
+    """
+    ripgrep で pattern を検索し、[{file, line, text}] を返す。
+    ファイル外・バイナリ・vendor は除外。word-boundary 固定で偽陽性を抑える。
+    """
+    if not Path(root).exists():
+        return []
+    try:
+        result = subprocess.run(
+            [
+                "rg", "-n", "--no-heading", "--color=never",
+                "--word-regexp",
+                "-g", "!vendor",
+                "-g", "!node_modules",
+                "-g", "!third_party",
+                "-g", "!.git",
+                pattern,
+                root,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return []
+
+    hits = []
+    for line in result.stdout.splitlines():
+        # <file>:<line>:<text>
+        parts = line.split(":", 2)
+        if len(parts) < 3:
+            continue
+        file_abs, lineno, text = parts
+        try:
+            lineno_i = int(lineno)
+        except ValueError:
+            continue
+        try:
+            rel = str(Path(file_abs).resolve().relative_to(Path(root).resolve()))
+        except ValueError:
+            rel = file_abs
+        hits.append({"file": rel, "line": lineno_i, "text": text.strip()[:200]})
+    return hits
+
+
+_GO_DEF_RE = re.compile(r"^\s*(func(\s*\([^)]+\))?|type|const|var)\s")
+
+
+def _classify_hit(hit: dict) -> str:
+    """Go の定義行っぽければ definition、そうでなければ reference。"""
+    text = hit.get("text", "")
+    if _GO_DEF_RE.match(text):
+        return "definition"
+    return "reference"
+
+
+def build_symbol_index(triage: dict, repo_roots: dict) -> dict:
+    """
+    changed_symbols の各 symbol について、repo_roots 配下で定義・参照をインデックス化。
+    ripgrep が無ければ空オブジェクトを返す。
+    """
+    if not _rg_available():
+        return {}
+
+    index: dict[str, list[dict]] = {}
+    for sym in triage.get("changed_symbols", []) or []:
+        name = sym.get("name", "")
+        if not name or len(name) < 3:
+            continue
+        key = f"{sym.get('repo', '')}:{name}"
+        for repo_name, root in repo_roots.items():
+            hits = _rg_search(root, name)
+            for h in hits[:SYMBOL_INDEX_MAX_HITS]:
+                index.setdefault(key, []).append({
+                    "repo": repo_name,
+                    "file": h["file"],
+                    "line": h["line"],
+                    "kind": _classify_hit(h),
+                    "excerpt": h["text"],
+                })
+    return index
+
+
+def load_static_analysis(path: str | None) -> dict:
+    """外部生成済みの静的解析 JSON を読み込んでそのまま bundle にマージする。"""
+    if not path:
+        return {}
+    p = Path(path)
+    if not p.exists():
+        print(f"WARN: static-analysis file not found: {path}", file=sys.stderr)
+        return {}
+    try:
+        return json.loads(p.read_text())
+    except json.JSONDecodeError as e:
+        print(f"WARN: invalid JSON in {path}: {e}", file=sys.stderr)
+        return {}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build review bundle from triage output")
     parser.add_argument("--triage", required=True, help="Path to triage.json")
@@ -187,6 +296,16 @@ def main():
         "--skip-snippets",
         action="store_true",
         help="Skip building relevant_snippets (faster, for testing)",
+    )
+    parser.add_argument(
+        "--symbol-index",
+        action="store_true",
+        help="Build symbol_index using ripgrep across repo_roots (extra, PoC後の拡張項目)",
+    )
+    parser.add_argument(
+        "--static-analysis",
+        metavar="PATH",
+        help="Merge pre-generated static analysis JSON into bundle.static_analysis_summary",
     )
     args = parser.parse_args()
 
@@ -218,6 +337,16 @@ def main():
         "review_slices": review_slices,
         "path_reason_map": path_reason_map,
     }
+
+    if args.symbol_index:
+        sym_idx = build_symbol_index(triage, repo_roots)
+        if sym_idx:
+            bundle["symbol_index"] = sym_idx
+
+    if args.static_analysis:
+        sa = load_static_analysis(args.static_analysis)
+        if sa:
+            bundle["static_analysis_summary"] = sa
 
     output = json.dumps(bundle, ensure_ascii=False, indent=2)
 

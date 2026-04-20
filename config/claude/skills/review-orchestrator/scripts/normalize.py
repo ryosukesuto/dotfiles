@@ -27,6 +27,16 @@ VALID_ISSUE_TYPES = {
 ENTITY_KEY_RE = re.compile(r"^[^:]+:[^:]+(:[^:]+)?$")
 LINE_RANGE_PROXIMITY = 20  # dedupe時に±N行を同一とみなす（reviewer間の行指定ずれを吸収）
 
+SEVERITY_ORDER = {"must-fix": 0, "should-fix": 1, "watch": 2}
+
+EVIDENCE_TYPE_WEIGHT = {
+    "diff": 1.0,
+    "code": 1.0,
+    "static-analysis": 0.9,
+    "log": 0.7,
+    "config": 0.7,
+}
+
 
 def sha6(s: str) -> str:
     return hashlib.sha256(s.encode()).hexdigest()[:6]
@@ -104,22 +114,122 @@ def dedup_key(f: dict) -> str:
     return f"{repo}:{file}:{lines}:{entity_key}"
 
 
-def merge_findings(a: dict, b: dict) -> dict:
-    """同一 dedupe key の findings をマージ。confidence が高い方を base に。"""
-    if b.get("confidence", 0) > a.get("confidence", 0):
-        a, b = b, a
-    # related_locations を統合
-    locs = a.get("related_locations", []) + b.get("related_locations", [])
-    seen_locs = set()
-    deduped_locs = []
+def evidence_specificity(f: dict) -> float:
+    """
+    evidence の具体性を 0.0-1.0 でスコア化する。
+    - evidence_type: diff/code が最高、log/config は中、欠落は 0
+    - excerpt 長さ: 200文字で満点
+    - location の repo/file が finding 本体と一致するか
+    """
+    evidence = f.get("evidence", {})
+    if not isinstance(evidence, dict):
+        return 0.0
+
+    etype = evidence.get("evidence_type", "")
+    type_score = EVIDENCE_TYPE_WEIGHT.get(etype, 0.0)
+    if type_score == 0.0:
+        return 0.0
+
+    excerpt = evidence.get("excerpt", "") or ""
+    length_score = min(len(excerpt.strip()) / 200.0, 1.0)
+
+    loc = evidence.get("location", {}) if isinstance(evidence, dict) else {}
+    loc_match = 0.0
+    if isinstance(loc, dict):
+        if loc.get("repo") == f.get("repo") and loc.get("file") == f.get("file"):
+            loc_match = 1.0
+
+    # 重み: 種別 50%、長さ 30%、位置一致 20%
+    return round(type_score * 0.5 + length_score * 0.3 + loc_match * 0.2, 3)
+
+
+def arbitration_score(f: dict) -> float:
+    """confidence × (0.6 + 0.4 × evidence_specificity)。"""
+    conf = f.get("confidence", 0.0) or 0.0
+    spec = evidence_specificity(f)
+    return round(conf * (0.6 + 0.4 * spec), 4)
+
+
+def _is_conflict(a: dict, b: dict) -> bool:
+    """severity / issue_type / fix_hint の食い違いがあれば衝突とみなす。"""
+    return (
+        a.get("severity") != b.get("severity")
+        or a.get("issue_type") != b.get("issue_type")
+    )
+
+
+def _merge_related_locations(a: dict, b: dict) -> list[dict]:
+    locs = list(a.get("related_locations", [])) + list(b.get("related_locations", []))
+    seen = set()
+    out = []
     for loc in locs:
         k = f"{loc.get('repo')}:{loc.get('file')}:{loc.get('lines', {})}"
-        if k not in seen_locs:
-            seen_locs.add(k)
-            deduped_locs.append(loc)
-    result = dict(a)
-    if deduped_locs:
-        result["related_locations"] = deduped_locs
+        if k not in seen:
+            seen.add(k)
+            out.append(loc)
+    return out
+
+
+def merge_findings(a: dict, b: dict) -> dict:
+    """
+    同一 dedupe key の findings をマージ。arbitration_score で勝者を決定。
+    衝突時は敗者を rejected_alternatives に退避。同一指摘の場合は sources に追補。
+    """
+    score_a = arbitration_score(a)
+    score_b = arbitration_score(b)
+    if score_b > score_a:
+        winner, loser = b, a
+        winner_score, loser_score = score_b, score_a
+    else:
+        winner, loser = a, b
+        winner_score, loser_score = score_a, score_b
+
+    result = dict(winner)
+
+    # sources: 両 reviewer を記録。既に sources があればマージ
+    sources = list(result.get("sources", []))
+    if not sources:
+        sources = [winner.get("source_reviewer", "")]
+    for src in [loser.get("source_reviewer", "")] + list(loser.get("sources", [])):
+        if src and src not in sources:
+            sources.append(src)
+    result["sources"] = sources
+
+    # related_locations を統合
+    merged_locs = _merge_related_locations(winner, loser)
+    if merged_locs:
+        result["related_locations"] = merged_locs
+
+    conflict = _is_conflict(winner, loser)
+
+    arbitration = dict(result.get("arbitration", {}))
+    arbitration["winner_score"] = winner_score
+
+    rejected = list(arbitration.get("rejected_alternatives", []))
+    # loser が元々 rejected を抱えていたら引き継ぐ
+    for prior in loser.get("arbitration", {}).get("rejected_alternatives", []):
+        rejected.append(prior)
+
+    if conflict:
+        rejected.append({
+            "source_reviewer": loser.get("source_reviewer", ""),
+            "severity": loser.get("severity"),
+            "issue_type": loser.get("issue_type"),
+            "confidence": loser.get("confidence"),
+            "score": loser_score,
+            "claim": loser.get("claim", ""),
+            "reason": "severity_or_issue_type_differs",
+        })
+    else:
+        # 同一指摘の corroboration: confidence を最大値+0.05 でブースト（上限 1.0）
+        boosted = min(1.0, max(winner.get("confidence", 0.0), loser.get("confidence", 0.0)) + 0.05)
+        result["confidence"] = round(boosted, 2)
+
+    if rejected:
+        arbitration["rejected_alternatives"] = rejected
+    if arbitration:
+        result["arbitration"] = arbitration
+
     return result
 
 
