@@ -12,14 +12,8 @@
 - 指摘には具体的な修正案またはコード例を含める
 - P2 の指摘は合計 5 件以内
 
-## レビュー観点（IaC固有）
+## レビュー観点
 
-- IAM: 最小権限の原則、roles/editor禁止、roles/ownerは明示管理のみ、allUsers/allAuthenticatedUsers禁止
-- WIF: attribute_conditionによるリポジトリ制限を必ず設定
-- State: import/moved/removedブロックの宣言的記述
-- API: disable_on_destroy = true の設定
-- Project: lifecycle.prevent_destroy = true の設定
-- 命名: Terraform識別子はsnake_case、リソース名はハイフン区切り
-- IAM管理: iam_member（加算的）を使用、iam_binding/iam_policyは禁止
+IaC固有の観点（IAM / WIF / State / API / lifecycle / 命名 / iam_member 強制 など）は `config.json` の構造化ルールで管理しています。severity と scope で制御したい場合はそちらを編集してください。
 
 <!-- ここにリポジトリ固有の観点を追記 -->
