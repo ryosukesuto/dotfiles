@@ -107,6 +107,25 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - 初回 workflow 追加 PR ではレビューがスキップされる（"Action skipped due to workflow validation error"）。動作確認はマージ後の次の PR で行うこと
 - 増分レビューは `<!-- claude-code-review -->` マーカー付きコメントに追記される仕組み。初回は新規コメント、2回目以降は既存コメントに履歴が蓄積される
 
+## 既存インストールの更新
+
+テンプレート（`claude-review.yml` / `claude-code-review/SKILL.md`）を変更した場合、既にこの
+skill で導入済みのリポジトリには自動では反映されない。`scripts/update-existing.sh` を使って差分を当てる。
+
+```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo
+# 差分を確認 → コミット → push
+```
+
+挙動:
+- `claude-review.yml` は丸ごと置換
+- `SKILL.md` は「## 投稿ルール」以降のみ置換（REVIEWER_ROLE / REVIEW_CRITERIA は保持）
+- コミット・push は行わない
+
+注意:
+- PR ブランチが古い main 上にいると、そのブランチの `SKILL.md` は更新前のまま。`git rebase origin/main` してから再レビューを走らせる必要がある
+- 既にテンプレート冒頭に rebase ガイドを入れてあるので、Claude 自身も古い PR で rebase を促すはず
+
 ## Gotchas
 
 - **action バージョンは v1.0.72（`cd77b50d2b0808657f8e6774085c8bf54484351c`）に固定**: v1.0.101 以降では `mcp__github_inline_comment__create_inline_comment` が削除されており、インラインコメント投稿ができない。更新提案が来ても鵜呑みにしないこと
