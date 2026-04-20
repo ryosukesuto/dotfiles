@@ -8,12 +8,19 @@
 #   - .github/workflows/claude-review.yml を最新に置き換え
 #   - .claude/skills/claude-code-review/SKILL.md を最新テンプレートで全置換
 #     （REVIEWER_ROLE / REVIEW_CRITERIA は既存ファイルから抽出して保持）
+#   - .greptile/config.json を最新テンプレートで全置換（preset自動判定）
+#     IaC preset 判定: .github/workflows/checkov.yml の有無、または既存 rules[] に
+#     テンプレート由来のIaC用 rule id が含まれるか
 #   - 差分を表示してから y/N で確認（--yes で省略可）
 #   - コミット・push は行わない
 #
 # 注意:
 #   SKILL.md に REVIEWER_ROLE / REVIEW_CRITERIA 以外の手動カスタマイズがある場合、
 #   全置換で失われる。差分を必ず目視確認すること。
+#   .greptile/config.json の strictness / fileChangeLimit / ignorePatterns 等を
+#   個別調整している場合も上書きで失われるため差分確認必須。
+#   .greptile/rules.md と files.json は analyze=yes で埋めた内容を壊さないよう、
+#   本スクリプトの対象外（手動で追随させる）。
 
 set -euo pipefail
 
@@ -153,12 +160,52 @@ else
   echo "WARN: $SKILL_DST not found — skipping" >&2
 fi
 
+# 3) .greptile/config.json を preset 判定して全置換
+GREPTILE_DST="$TARGET/.greptile/config.json"
+if [ -f "$GREPTILE_DST" ]; then
+  # IaC preset 判定（どちらかに該当すれば IaC とみなす）:
+  #   a) .github/workflows/checkov.yml が存在する
+  #   b) 既存 rules[] に config-iac.json 由来の rule id が含まれる
+  if [ -f "$TARGET/.github/workflows/checkov.yml" ] \
+     || grep -qE '"id"[[:space:]]*:[[:space:]]*"(iam-no-basic-roles|wif-attribute-condition|iam-use-member-not-binding)"' "$GREPTILE_DST" 2>/dev/null; then
+    GREPTILE_SRC="$SKILL_DIR/templates/greptile/config-iac.json"
+    GREPTILE_PRESET="iac"
+  else
+    GREPTILE_SRC="$SKILL_DIR/templates/greptile/config.json"
+    GREPTILE_PRESET="generic"
+  fi
+
+  if [ ! -f "$GREPTILE_SRC" ]; then
+    echo "WARN: $GREPTILE_SRC not found — skipping greptile config update" >&2
+  elif ! cmp -s "$GREPTILE_SRC" "$GREPTILE_DST"; then
+    echo ""
+    echo "=== diff: $GREPTILE_DST (preset=$GREPTILE_PRESET) ==="
+    diff -u "$GREPTILE_DST" "$GREPTILE_SRC" || true
+    echo ""
+    echo "注意: strictness / fileChangeLimit / ignorePatterns 等のローカル調整は上書きで失われます。"
+    if confirm ".greptile/config.json を最新テンプレートで上書きしますか？"; then
+      cp "$GREPTILE_SRC" "$GREPTILE_DST"
+      updated+=(".greptile/config.json")
+    else
+      echo ".greptile/config.json の更新をスキップしました。"
+    fi
+  fi
+fi
+
 if [ ${#updated[@]} -eq 0 ]; then
   echo "既に最新です。更新不要です。"
 else
   echo ""
   echo "更新完了: ${updated[*]}"
   echo "確認のうえ、以下でコミットしてください:"
-  echo "  git -C '$TARGET' add .github/workflows/claude-review.yml .claude/skills/claude-code-review/SKILL.md"
+  add_paths=()
+  for f in "${updated[@]}"; do
+    case "$f" in
+      "claude-review.yml") add_paths+=(".github/workflows/claude-review.yml") ;;
+      "claude-code-review/SKILL.md") add_paths+=(".claude/skills/claude-code-review/SKILL.md") ;;
+      ".greptile/config.json") add_paths+=(".greptile/config.json") ;;
+    esac
+  done
+  echo "  git -C '$TARGET' add ${add_paths[*]}"
   echo "  git -C '$TARGET' commit -m 'chore: setup-ci-review の最新テンプレートに追随'"
 fi
