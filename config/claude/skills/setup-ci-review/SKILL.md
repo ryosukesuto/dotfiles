@@ -114,17 +114,22 @@ skill で導入済みのリポジトリには自動では反映されない。`s
 
 ```bash
 bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo
-# 差分を確認 → コミット → push
+# 差分を目視確認 → y で適用 → ユーザー側で commit & push
+
+# 確認プロンプトをスキップしたい場合
+bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 ```
 
 挙動:
-- `claude-review.yml` は丸ごと置換
-- `SKILL.md` は「## 投稿ルール」以降のみ置換（REVIEWER_ROLE / REVIEW_CRITERIA は保持）
+- `claude-review.yml` は最新テンプレートで完全上書き
+- `SKILL.md` は最新テンプレートで完全上書き。ただし `REVIEWER_ROLE` / `REVIEW_CRITERIA` は既存ファイルから抽出して保持する（`setup-ci-review` が analyze=yes で埋めた値は消えない）
+- 各ファイルごとに差分を表示して y/N 確認（`--yes` で省略可）
 - コミット・push は行わない
 
 注意:
-- PR ブランチが古い main 上にいると、そのブランチの `SKILL.md` は更新前のまま。`git rebase origin/main` してから再レビューを走らせる必要がある
-- 既にテンプレート冒頭に rebase ガイドを入れてあるので、Claude 自身も古い PR で rebase を促すはず
+- 既存 SKILL.md に `REVIEWER_ROLE` / `REVIEW_CRITERIA` 以外の手動カスタマイズがある場合、全置換で失われる。差分を必ず目視確認すること
+- 抽出ロジックは「あなたは ... です。このPRをレビューします。」パターンと「3. 既存コードとの一貫性チェック ... 」から「## 優先度ラベル」の間で REVIEW_CRITERIA を識別する。SKILL.md の骨格を手動で大きく変えている場合は抽出失敗して WARN を出す（この場合は skip される）
+- PR ブランチが古い main 上にいると、そのブランチの `SKILL.md` は更新前のまま。`git rebase origin/main` してから再レビューを走らせる必要がある。テンプレート冒頭に rebase ガイドが入っているので Claude 自身も古い PR で rebase を促す
 
 ## Gotchas
 
