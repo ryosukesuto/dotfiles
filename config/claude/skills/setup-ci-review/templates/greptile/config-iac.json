@@ -2,10 +2,14 @@
   "strictness": 2,
   "commentTypes": ["logic", "syntax"],
   "triggerOnUpdates": true,
+  "triggerOnDrafts": false,
   "statusCheck": true,
-  "updateExistingSummaryComment": true,
-  "fileChangeLimit": 200,
-  "ignorePatterns": "dist/**\nnode_modules/**\n.terraform/**",
+  "summarySection": true,
+  "issuesTableSection": true,
+  "confidenceScoreSection": true,
+  "sequenceDiagramSection": false,
+  "ignorePatterns": "dist/**\nnode_modules/**\n.terraform/**\n**/*.tfstate\n**/*.tfstate.backup",
+  "instructions": "{{PROJECT_INSTRUCTIONS}}",
   "rules": [
     {
       "id": "iam-no-basic-roles",
@@ -85,5 +89,6 @@
       "severity": "medium",
       "scope": ["**/*.tf"]
     }
-  ]
+  ],
+  "disabledRules": []
 }

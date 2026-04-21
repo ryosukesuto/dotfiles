@@ -17,7 +17,7 @@
 # 注意:
 #   SKILL.md に REVIEWER_ROLE / REVIEW_CRITERIA 以外の手動カスタマイズがある場合、
 #   全置換で失われる。差分を必ず目視確認すること。
-#   .greptile/config.json の strictness / fileChangeLimit / ignorePatterns 等を
+#   .greptile/config.json の strictness / ignorePatterns / instructions / rules[] 等を
 #   個別調整している場合も上書きで失われるため差分確認必須。
 #   .greptile/rules.md と files.json は analyze=yes で埋めた内容を壊さないよう、
 #   本スクリプトの対象外（手動で追随させる）。
@@ -182,7 +182,7 @@ if [ -f "$GREPTILE_DST" ]; then
     echo "=== diff: $GREPTILE_DST (preset=$GREPTILE_PRESET) ==="
     diff -u "$GREPTILE_DST" "$GREPTILE_SRC" || true
     echo ""
-    echo "注意: strictness / fileChangeLimit / ignorePatterns 等のローカル調整は上書きで失われます。"
+    echo "注意: strictness / ignorePatterns / instructions / rules[] 等のローカル調整は上書きで失われます。"
     if confirm ".greptile/config.json を最新テンプレートで上書きしますか？"; then
       cp "$GREPTILE_SRC" "$GREPTILE_DST"
       updated+=(".greptile/config.json")

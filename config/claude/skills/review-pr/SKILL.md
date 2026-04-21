@@ -87,16 +87,30 @@ fi
 PR情報を取得した後、triage でサイズとリスクを判定して実行パスを決定する。
 
 ```bash
-# 1. PR メタ情報を取得（gh pr view ベース、gh repo view は引数を受け取れないので使わない）
-REPO=$(gh pr view $PR_ARGS --json baseRepository -q '.baseRepository.owner.login + "/" + .baseRepository.name')
-PR_NUM=$(gh pr view $PR_ARGS --json number -q .number)
-BASE_SHA=$(gh pr view $PR_ARGS --json baseRefOid -q .baseRefOid)
-HEAD_SHA=$(gh pr view $PR_ARGS --json headRefOid -q .headRefOid)
+# 1. PR メタ情報を一括取得（一部 gh バージョンは baseRepository フィールド非対応のため URL から REPO を抽出する）
+_META=$(gh pr view $PR_ARGS --json number,url,baseRefOid,headRefOid 2>/dev/null)
+PR_NUM=$(echo "$_META" | jq -r '.number')
+PR_URL=$(echo "$_META" | jq -r '.url')
+REPO=$(echo "$PR_URL" | sed -E 's#https://github.com/([^/]+/[^/]+)/pull/.*#\1#')
+BASE_SHA=$(echo "$_META" | jq -r '.baseRefOid')
+HEAD_SHA=$(echo "$_META" | jq -r '.headRefOid')
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
 REPO_NAME=$(basename "$REPO")
 
+# 取得失敗時は明示停止（PR_NUM が空 = gh pr view が失敗している）
+if [ -z "$PR_NUM" ] || [ "$PR_NUM" = "null" ] || [ -z "$REPO" ]; then
+  echo "ERROR: failed to resolve PR metadata. Check gh auth / PR_ARGS." >&2
+  exit 1
+fi
+
+# 中間ファイルは PR_NUM 付きの一意パスにする（同時複数セッションでの上書き事故を防ぐ）
+WORK="/tmp/review-pr-${PR_NUM}"
+TRIAGE="${WORK}-triage.json"
+BUNDLE="${WORK}-bundle.json"
+REPORT="${WORK}-report.json"
+
 # 2. files JSON を triage 用フォーマットに変換し、status を正しくマッピング
-gh pr view $PR_ARGS --json files \
+gh pr view $PR_ARGS --json files 2>/dev/null \
   | REPO_NAME="$REPO_NAME" python3 -c "
 import json,sys,os
 status_map = {
@@ -123,21 +137,21 @@ print(json.dumps(out))" \
     --pr-ref "github.com/$REPO#$PR_NUM" \
     --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" \
     --repo "$REPO_NAME:$REPO_ROOT" \
-    -o /tmp/review-pr-triage.json
+    -o "$TRIAGE"
 # ↑ stderr は握りつぶさない。失敗したら明示的に止めて原因調査する
 
 # triage 失敗判定（空ファイル / JSON 不正 / size キー欠損のいずれも明示停止）
-if [ ! -s /tmp/review-pr-triage.json ] || ! jq -e '.size' /tmp/review-pr-triage.json >/dev/null 2>&1; then
-  echo "ERROR: triage failed. /tmp/review-pr-triage.json is empty or invalid." >&2
+if [ ! -s "$TRIAGE" ] || ! jq -e '.size' "$TRIAGE" >/dev/null 2>&1; then
+  echo "ERROR: triage failed. $TRIAGE is empty or invalid." >&2
   echo "ヒント: gh pr view が成功しているか、uv/pyyaml が入っているか確認" >&2
   exit 1
   # ↑ Claude が Bash tool 経由で実行する場合は、exit 後は以降の手順を実行せず、
   #   ユーザーに「triage 失敗」を報告して原因を一緒に調査する
 fi
 
-SIZE=$(jq -r '.size' /tmp/review-pr-triage.json)
-RISK=$(jq -r '.risk_tags | length' /tmp/review-pr-triage.json)
-echo "triage: size=$SIZE risk_tags=$RISK"
+SIZE=$(jq -r '.size' "$TRIAGE")
+RISK=$(jq -r '.risk_tags | length' "$TRIAGE")
+echo "triage: size=$SIZE risk_tags=$RISK (work=$WORK)"
 ```
 
 silent fallback で安易に quick 扱いすると本来オーケストレーターが必要な PR を取りこぼすため、必ず明示停止する。
@@ -163,28 +177,33 @@ if [ ! -d "$REPO_ROOT/.git" ] || ! git -C "$REPO_ROOT" remote get-url origin | g
 fi
 ```
 
+中間ファイルはルーティングで定義済みの `$WORK` プレフィックス（`/tmp/review-pr-${PR_NUM}`）を使う。triage の `selected_reviewers` に含まれる reviewer を対象とする（null の場合は `codex-baseline` と `opus-baseline` の 2 本を固定）。
+
 ```bash
 # Step 2: bundle 生成
 uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-bundle.py \
-  --triage /tmp/review-pr-triage.json -o /tmp/review-pr-bundle.json
+  --triage "$TRIAGE" -o "$BUNDLE"
 
-# Step 3a: reviewer プロンプトを 2 本生成
+# Step 3a: reviewer プロンプトを selected_reviewers 分生成
+#   例: codex-baseline と opus-baseline の 2 本のみの場合
 uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-reviewer-prompt.py \
-  --bundle /tmp/review-pr-bundle.json --triage /tmp/review-pr-triage.json \
+  --bundle "$BUNDLE" --triage "$TRIAGE" \
   --reviewer codex-baseline --repo-root "$REPO_NAME:$REPO_ROOT" \
-  -o /tmp/review-pr-prompt-codex.txt
+  -o "${WORK}-prompt-codex-baseline.txt"
 uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-reviewer-prompt.py \
-  --bundle /tmp/review-pr-bundle.json --triage /tmp/review-pr-triage.json \
+  --bundle "$BUNDLE" --triage "$TRIAGE" \
   --reviewer opus-baseline --repo-root "$REPO_NAME:$REPO_ROOT" \
-  -o /tmp/review-pr-prompt-opus.txt
+  -o "${WORK}-prompt-opus-baseline.txt"
+# selected_reviewers に security-review-opus / security-review-codex / cross-repo 等が入っていれば
+# 同じ要領で ${WORK}-prompt-<reviewer>.txt に出力する
 ```
 
-**Step 3b: Agent tool で並列起動（同一メッセージ内で2本同時発行）**
+**Step 3b: Agent tool で並列起動（同一メッセージ内で全 reviewer 同時発行）**
 
 各 subagent に次を指示する:
-1. `/tmp/review-pr-prompt-codex.txt`（または opus 版）を Read で読む
+1. `${WORK}-prompt-<reviewer>.txt` を Read で読む
 2. 指示通り findings を JSON で生成する
-3. 返却 JSON を所定のパスに Write する
+3. 返却 JSON を `${WORK}-raw-<reviewer>.json` に Write する
 
 呼び出し例:
 
@@ -192,24 +211,27 @@ uv run python3 ~/.claude/skills/review-orchestrator/scripts/build-reviewer-promp
 Agent(
   subagent_type="general-purpose",
   description="review-pr codex-baseline",
-  prompt="Read /tmp/review-pr-prompt-codex.txt then follow it. Write findings JSON to /tmp/raw-codex.json."
+  prompt="Read ${WORK}-prompt-codex-baseline.txt then follow it. Write findings JSON to ${WORK}-raw-codex-baseline.json."
 )
 Agent(
   subagent_type="general-purpose",
   description="review-pr opus-baseline",
-  prompt="Read /tmp/review-pr-prompt-opus.txt then follow it. Write findings JSON to /tmp/raw-opus.json."
+  prompt="Read ${WORK}-prompt-opus-baseline.txt then follow it. Write findings JSON to ${WORK}-raw-opus-baseline.json."
 )
 ```
 
-両方が完了したら Step 4 へ進む。
+`${WORK}` はリテラルに展開した実パス（例 `/tmp/review-pr-6919-prompt-codex-baseline.txt`）を Agent の prompt に渡す。subagent は shell 変数を読まないためここで変数を残してはいけない。
+
+全 reviewer が完了したら Step 4 へ進む。
 
 ```bash
-# Step 4: normalize → report
+# Step 4: normalize → report（--findings は生成した raw JSON 全てを列挙する）
 uv run python3 ~/.claude/skills/review-orchestrator/scripts/normalize.py \
-  --findings /tmp/raw-codex.json --findings /tmp/raw-opus.json \
-  --adapt -o /tmp/review-pr-report.json
+  --findings "${WORK}-raw-codex-baseline.json" \
+  --findings "${WORK}-raw-opus-baseline.json" \
+  --adapt -o "$REPORT"
 uv run python3 ~/.claude/skills/review-orchestrator/scripts/report.py \
-  --report /tmp/review-pr-report.json --pr-ref "github.com/$REPO#$PR_NUM"
+  --report "$REPORT" --pr-ref "github.com/$REPO#$PR_NUM"
 ```
 
 オーケストレーターパスでは以下の手順へ進まず、report.py の出力をそのまま返す。
@@ -234,8 +256,11 @@ uv run python3 ~/.claude/skills/review-orchestrator/scripts/report.py \
 ## Gotchas
 
 - triage 判定は PR 取得後に行う。PR URL や PR 番号が引数として渡されていれば `gh pr view` のカレントブランチ判定に頼らず明示的に `--repo org/repo` と `PR番号` を指定する
+- 中間ファイルは必ず PR 番号付きの `${WORK}` プレフィックスを使う。`/tmp/review-pr-triage.json` などの固定パスは複数セッションで衝突するため使用禁止
+- `gh pr view --json baseRepository` は一部 gh バージョンで `Unknown JSON field` になる。REPO は `--json url` の PR URL から正規表現で抽出する（ルーティング節のスニペット参照）
+- `gh` 実行時に shell profile 由来の noise（例: `gh:1: command not found: _gh_ensure_token`）が stderr に混ざる環境では `2>/dev/null` を付けて stdout の jq パースが壊れないようにする
 - オーケストレーターパスは `report.py` の出力をそのまま返す。その後に手動でレビューを追記しない
 - Codex が「サポートしていない」「動作しない」系の主張をしたら実際にコードを読んで確認してから採用する。未確認の指摘を P0 として出すと信頼性を損なう
 - subagent 内から review-pr が呼ばれた場合、triage の `size` / `risk_tags` に関わらずシンプルパス骨格にフォールバックする（Agent tool の再帰呼び出し禁止のため）。出力は `review-pr-reference.md` のフォーマットに従い、`risk_tags` の内容は「注意事項」節に転記する
-- triage の `reviewers` が null の場合、オーケストレーターパスでは `codex-baseline` と `opus-baseline` の 2 本を固定で使う
+- triage の `selected_reviewers` が null または空の場合、オーケストレーターパスでは `codex-baseline` と `opus-baseline` の 2 本を固定で使う。非 null の場合はその全員分のプロンプトを生成して並列起動する
 - `build-reviewer-prompt.py` の出力プロンプトに diff セクションが空（「(diff 取得不可)」など）のときは、`git diff $BASE_SHA..$HEAD_SHA` を実行してプロンプトに追記してから subagent に渡す。未対応のまま渡すと findings が生成できない

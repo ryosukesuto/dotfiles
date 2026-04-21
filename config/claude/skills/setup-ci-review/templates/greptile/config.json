@@ -2,9 +2,14 @@
   "strictness": 2,
   "commentTypes": ["logic", "syntax"],
   "triggerOnUpdates": true,
+  "triggerOnDrafts": false,
   "statusCheck": true,
-  "updateExistingSummaryComment": true,
-  "fileChangeLimit": 200,
-  "ignorePatterns": "dist/**\nnode_modules/**\n.terraform/**",
-  "rules": []
+  "summarySection": true,
+  "issuesTableSection": true,
+  "confidenceScoreSection": true,
+  "sequenceDiagramSection": false,
+  "ignorePatterns": "dist/**\nnode_modules/**\nvendor/**\n.terraform/**",
+  "instructions": "{{PROJECT_INSTRUCTIONS}}",
+  "rules": [],
+  "disabledRules": []
 }
