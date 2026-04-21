@@ -97,7 +97,7 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 - Greptile `files.json` の `description`: 1行・日本語・20〜60文字で「用途と重点確認ポイント」を書く（例: `"本番VPC定義。CIDR変更・ピアリング変更は要承認"`）
 - Write は存在しないディレクトリに書き込めない環境があるため、生成前に `mkdir -p .github/workflows .claude/skills/claude-code-review .greptile` で事前作成する
 
-`--model` フラグはテンプレートで `claude-opus-4-5` をデフォルト指定している。v1.0.72 は旧 `thinking.type.enabled` API を使うため、新しい `claude-opus-4-7` / `claude-sonnet-4-6` を指定すると 400 エラーになる。`--model` を外すと action のデフォルト（Sonnet）になるため、深いレビューが欲しい場合は旧 API 対応の Opus を明示する。軽量運用なら `--model` 行を削除して Sonnet に任せる。
+`--model` フラグはテンプレートで `claude-opus-4-5` をデフォルト指定している。`--model` を外すと action のデフォルト（Sonnet）になるため、深いレビューが欲しい場合は Opus を明示する。軽量運用なら `--model` 行を削除して Sonnet に任せる。
 
 生成先（選択されたコンポーネントのみ）:
 - Claude Code workflow: `.github/workflows/claude-review.yml`
@@ -172,8 +172,8 @@ bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 
 ## Gotchas
 
-- **action バージョンは v1.0.72（`cd77b50d2b0808657f8e6774085c8bf54484351c`）に固定**: v1.0.101 以降では `mcp__github_inline_comment__create_inline_comment` が削除されており、インラインコメント投稿ができない。更新提案が来ても鵜呑みにしないこと
-- **v1.0.72 は旧 thinking API のみ対応**: `--model claude-opus-4-7` や `claude-sonnet-4-6` を指定すると `"thinking.type.enabled" is not supported for this model` で 400 エラー。新モデルは `thinking.type.adaptive` を要求するため、v1.0.72 では互換性がない。`--model` フラグを外して action 既定に委ねるか、`claude-opus-4-5` 等の旧 API 対応モデルを使うこと
+- **action バージョンは v1.0.94（`1c8b699d43e9bfed42b48ef15da85d89bab70960`）を pin**: `mcp__github_inline_comment__create_inline_comment` は v1.0.94 / v1.0.101 いずれも引き続き使用可能（過去の「v1.0.101 で削除」という記述は誤り）。v1.0.94 では PR branch 上の `.claude/` と `.mcp.json` を base branch から自動 restore する防御が入り、attacker が PR branch でレビュー指示を改ざんする経路を塞いでいる。SKILL.md はこの挙動を前提に書くこと（PR branch 上の SKILL.md 改変は効かず base branch の内容が読まれる）
+- **`--max-turns` は 50 以上を推奨**: SKILL.md が長い（コンテキスト補正ルール / ERROR-WHY-FIX / 追記テンプレート等）と、既定の 30 ターンでは Claude が `gh pr review` 投稿前に `error_max_turns` で打ち切られる。最低 50、SKILL.md を大幅に拡張した場合はさらに増やす
 - `--allowedTools` には `mcp__github_inline_comment__create_inline_comment` を必ず含める。これが無いと Claude が分析だけして何も投稿せず終わるケースがある（`display_report: true` はworkflow summaryに出すだけでPRコメントには投稿しない）
 - `--allowedTools` の Bash パターンに空白と複数 `*` を混ぜると Claude CLI の引数解釈が壊れて `Could not resolve authentication credentials` で fail する。`Bash(gh api --method PATCH repos/*/issues/comments/*:*)` は動作確認済みだが、新規パターンを増やすときは単体で動作確認する
 - `anthropics/claude-code-action` は `id-token: write` permission が必須。ANTHROPIC_API_KEY 直接認証の構成でも内部で OIDC token を要求するため、未使用に見えても削除してはいけない（削除すると `Could not fetch an OIDC token` で fail する）。Codex/AI レビュアが「未使用だから削除」と誤指摘することがあるので却下すること
