@@ -127,7 +127,13 @@ jobs:
 
           # 最後の commit section（--- 以降の直近ブロック）から P0/P1 件数をパース
           # フォーマット例: "サマリ: P0: 0件 / P1: 0件 / P2: 0件 / P3: 0件"
-          LAST_SECTION=$(printf '%s\n' "$COMMENT_BODY" | awk 'BEGIN{RS="\n---\n"} END{print}')
+          # ubuntu-latest の /usr/bin/awk は mawk で、複数文字 RS が動作しないため
+          # 行単位で --- 行を検出して buffer をリセットする互換実装を使う
+          LAST_SECTION=$(printf '%s\n' "$COMMENT_BODY" | awk '
+            /^---[[:space:]]*$/ { buf = ""; next }
+            { buf = (buf == "" ? $0 : buf "\n" $0) }
+            END { print buf }
+          ')
           P0=$(printf '%s' "$LAST_SECTION" | grep -oE 'P0:[[:space:]]*[0-9]+' | head -1 | grep -oE '[0-9]+' || echo "0")
           P1=$(printf '%s' "$LAST_SECTION" | grep -oE 'P1:[[:space:]]*[0-9]+' | head -1 | grep -oE '[0-9]+' || echo "0")
           P0="${P0:-0}"
