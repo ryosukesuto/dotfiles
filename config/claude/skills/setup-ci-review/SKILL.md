@@ -23,7 +23,15 @@ gh repo view --json nameWithOwner,defaultBranchRef
 ```
 
 失敗した場合は `git remote get-url origin` でフォールバック。
-`REPO_NAME` を取得しておく。
+
+`REPO_NAME` は `owner/repo` 形式に正規化する（SSH / HTTPS / `.git` 付きの揺らぎを吸収）。以下で一括処理可能:
+
+```bash
+REPO_NAME=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null \
+  || git remote get-url origin | sed -E 's#^git@github\.com:##; s#^https?://github\.com/##; s#\.git$##')
+```
+
+`REPO_NAME` は完了ガイド表示や workflow の identity 確認用途のみで、テンプレート置換には使わない（テンプレートは相対パスで動作する）。
 
 ### 2. ユーザーへの質問（1回でまとめて聞く）
 
@@ -77,6 +85,17 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」（analyze=yesの場合はスタック反映） |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=IaC観点カタログ（analyze=yesの場合はスタック固有観点を追加） |
 
+置換ルール（iteration 検証で曖昧と出た箇所を明文化）:
+
+- `{{REVIEW_CRITERIA}}` はテンプレート `claude-code-review-skill.md` 中で `## 役割` と `## 優先度ラベル` の間に独立配置されている。置換時はこの「独立ブロック」として扱う:
+  - 空文字（generic preset + analyze=no）: プレースホルダを含む行ごと削除。前後に `##` 節があるので空行1行は残って構わない（結果的に二重空行になった場合だけ1行に詰める）
+  - 本文を入れる（iac preset または analyze=yes）: `## レビュー観点` という独立見出しを付けて差し込む（テンプレ上は `## 役割` → `## レビュー観点` → `## 優先度ラベル` の流れになる）。見出しを省略すると直前の `## 役割` 節に観点が吸収されて読みにくくなるので、必ず独立見出しを付ける
+- analyze=yes で CLAUDE.md から規約を抽出する場合: 原文を引用せず「観点のリスト」に再構成する（CLAUDE.md は数十〜数百行あり原文引用は情報過多になる。3-7 項目の箇条書きに圧縮する）
+- `{{REVIEWER_ROLE}}` 命名規則: 検出スタック名を形容詞化して並べる（例: 「Go/Terraform に精通したシニアエンジニア」「Next.js/TypeScript に精通したシニアエンジニア」「Terraform/GCP に精通したIaCシニアレビュアー」）。単一スタックでも同形式。
+- Greptile `files.json` の `scope` フィールド: 特定のパスパターンでのみレビュー対象にしたい場合に付ける。デフォルトは省略（全件対象）でよい。例: テストファイルのみの観点は `scope: "**/*_test.go"` のように限定する
+- Greptile `files.json` の `description`: 1行・日本語・20〜60文字で「用途と重点確認ポイント」を書く（例: `"本番VPC定義。CIDR変更・ピアリング変更は要承認"`）
+- Write は存在しないディレクトリに書き込めない環境があるため、生成前に `mkdir -p .github/workflows .claude/skills/claude-code-review .greptile` で事前作成する
+
 `--model` フラグはテンプレートで `claude-opus-4-5` をデフォルト指定している。v1.0.72 は旧 `thinking.type.enabled` API を使うため、新しい `claude-opus-4-7` / `claude-sonnet-4-6` を指定すると 400 エラーになる。`--model` を外すと action のデフォルト（Sonnet）になるため、深いレビューが欲しい場合は旧 API 対応の Opus を明示する。軽量運用なら `--model` 行を削除して Sonnet に任せる。
 
 生成先（選択されたコンポーネントのみ）:
@@ -95,12 +114,18 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 
 サプライチェーン攻撃対策として、生成した `.yml` ファイルのパスを引数として `${CLAUDE_SKILL_DIR}/scripts/verify-sha-pin.sh` を実行する。
 
+検証対象は「最終的にリポジトリに採用される可能性のある全 .yml」。具体的には:
+- 通常生成した `.yml`（例: `.github/workflows/claude-review.yml`, `.github/workflows/checkov.yml`）
+- 衝突で `.new` プレースホルダに書いた `.yml` も対象（ユーザーが `mv *.new` で採用する前提のため、検証漏れを防ぐ）
+
+複数 .yml は **1コマンドでまとめて渡す**（例: `verify-sha-pin.sh a.yml b.yml c.yml`）。個別実行は不要。
+
 exit 1 の場合は失敗として報告し、修正を促す。
 local action（`uses: ./...`）と reusable workflow は検証対象外（スクリプト内で除外済み）。
 
 ### 7. 完了ガイド表示
 
-以下をユーザーに伝える。
+全工程完了後、**最終応答テキスト（チャットに返すメッセージ）** として以下をまとめて表示する。stdout echo や追加ファイル生成はしない。箇条書きで提示。
 
 - 必要な Secret: `ANTHROPIC_API_KEY`（リポジトリ Settings > Secrets > Actions）
 - Branch Protection は維持したまま、Claude / Greptile の check を Required Check にしない
