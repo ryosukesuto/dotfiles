@@ -183,6 +183,33 @@ gh api repos/actions/setup-go/git/refs/tags/v5 --jq '.object.sha'
 - WinTicket を含む多くのリポジトリでは、全 Action をフル長 SHA にピン留めすることが必須。`@v5` のようなタグ参照は CI が即座に失敗するため使用しない
 - `golangci-lint-action` はプリビルドバイナリを使うため、プロジェクトの Go バージョンより古い Go でビルドされていると "Go language version used to build golangci-lint is lower than targeted" で失敗する。`go install` でプロジェクトと同じ Go バージョンからビルドすることで回避できる
 
+Shell/bash リポジトリ向けテンプレ:
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA> # v4
+      - name: Install shellcheck / shfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          curl -fsSL -o /usr/local/bin/shfmt https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.8.0_linux_amd64
+          chmod +x /usr/local/bin/shfmt
+      - run: shfmt -d -i 4 $(git ls-files '*.sh' 'bin/*' 'hooks/*' | xargs -I{} sh -c 'head -1 "{}" | grep -q "^#!.*sh" && echo "{}"')
+      - run: shellcheck $(git ls-files '*.sh')
+```
+
+TypeScript / Node.js 向けテンプレは P2 の構造（`tsc --noEmit` + `biome check` + `vitest run`）を CI に移植する。
+
 ---
 
 ### P6. カスタムリンターによる制約の自動化
