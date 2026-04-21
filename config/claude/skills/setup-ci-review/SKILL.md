@@ -84,6 +84,7 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 |------|--------|
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」（analyze=yesの場合はスタック反映） |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=IaC観点カタログ（analyze=yesの場合はスタック固有観点を追加） |
+| `{{PROJECT_INSTRUCTIONS}}` | Greptile `.greptile/config.json` の `instructions` フィールドに入る自然文。analyze=yes=リポジトリ概要（1〜3文、CLAUDE.md 要約＋重要な制約）/ analyze=no=プレースホルダのまま残す場合は該当行を削除して空のままにする |
 
 置換ルール（iteration 検証で曖昧と出た箇所を明文化）:
 
@@ -106,8 +107,11 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 - Greptile: `.greptile/config.json` / `.greptile/rules.md` / `.greptile/files.json`
   - IaC preset → `config-iac.json` を `config.json`、`rules-iac.md` を `rules.md` として生成
   - generic preset → `config.json` / `rules.md` をそのまま生成
-  - analyze=yesの場合 → rules.md のプレースホルダーを分析結果で置換、files.json の `files[]` に実際の重要ファイルを `{path, description}` で追記（公式スキーマ準拠）
+  - analyze=yesの場合 → rules.md のプレースホルダーを分析結果で置換、files.json の `files[]` に実際の重要ファイルを `{path, description}` で追記（公式スキーマ準拠）、config.json の `instructions` にリポジトリ概要（1〜3文）を埋める
+  - analyze=noの場合 → `instructions: "{{PROJECT_INSTRUCTIONS}}"` の行ごと削除（プレースホルダを残したまま Greptile に送らない）
+  - 公式フィールドのみ使用: `strictness` / `commentTypes` / `triggerOnUpdates` / `triggerOnDrafts` / `statusCheck` / `summarySection` / `issuesTableSection` / `confidenceScoreSection` / `sequenceDiagramSection` / `ignorePatterns` / `instructions` / `rules` / `disabledRules`。`updateExistingSummaryComment` / `updateSummaryOnly` / `fileChangeLimit` は公式ドキュメントに記載がないため追加しない
   - 構造化ルール: IaC preset の `config.json` には `rules[]` に `id` / `severity` / `scope` 付きのIaC観点が含まれる。サブディレクトリで一部ルールを無効化したい場合は、そのディレクトリに `.greptile/config.json` を置いて `disabledRules: ["<id>"]` を指定する（cascading で親ルールを継承）
+  - Provider本体・ライブラリ等の Go/TS/Python コードベース: `generic` preset を選んで analyze=yes で `instructions` と `rules[]` を埋める。IaC preset は `**/*.tf` スコープなので `.tf` が存在しないリポジトリでは発火しない
 - Checkov: `.github/workflows/checkov.yml`（IaC preset かつ選択時のみ）
 
 ### 6. SHA-pin 検証
@@ -162,7 +166,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 注意:
 - 既存 SKILL.md に `REVIEWER_ROLE` / `REVIEW_CRITERIA` 以外の手動カスタマイズがある場合、全置換で失われる。差分を必ず目視確認すること
 - 抽出ロジックは「あなたは ... です。このPRをレビューします。」パターンと「3. 既存コードとの一貫性チェック ... 」から「## 優先度ラベル」の間で REVIEW_CRITERIA を識別する。SKILL.md の骨格を手動で大きく変えている場合は抽出失敗して WARN を出す（この場合は skip される）
-- `.greptile/config.json` の `strictness` / `fileChangeLimit` / `ignorePatterns` / `rules[]` を個別調整している場合、全置換で失われる。差分目視必須
+- `.greptile/config.json` の `strictness` / `ignorePatterns` / `instructions` / `rules[]` を個別調整している場合、全置換で失われる。差分目視必須
 - PR ブランチが古い main 上にいると、そのブランチの `SKILL.md` は更新前のまま。`git rebase origin/main` してから再レビューを走らせる必要がある。テンプレート冒頭に rebase ガイドが入っているので Claude 自身も古い PR で rebase を促す
 
 ## Gotchas
@@ -176,6 +180,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 - Claude Code workflow を追加する初回 PR 自身では Claude のレビューはスキップされる（"Action skipped due to workflow validation error" / セキュリティ対策）。CI status は pass 扱いだがレビューコメントは付かない。動作確認は**マージ後の次の PR**で行うよう案内すること
 - `.greptile/` は3ファイルを個別に競合判定。ディレクトリ存在だけでスキップ禁止
 - Checkov は IaC preset 選択時のみ候補に出す（Terraform専用）
+- **商用 IaC scanner が既に動いているリポジトリには Checkov を入れない**: Wiz / Prisma Cloud / Snyk IaC などが CI で動作している場合、Checkov は機能重複でノイズの二重化・baseline / skip_check の二重メンテが発生する。ステップ3（analyze）で `.github/workflows/` を確認し、`wiz-cli` / `prisma-cloud-scan` / `snyk-iac` 等の step が存在する、または `Wiz IaC Scanner` などの status check が既に PR に付いている場合は、ステップ2のコンポーネント選択で Checkov をデフォルト非選択にして、その旨を option の description に明記する（例: 「Wiz IaC Scanner が検出されたため非推奨」）
 - `verify-sha-pin.sh` は生成ファイルのみ対象
 - analyze=yesでCLAUDE.mdが存在しない場合はREADME.mdとディレクトリ構造から推定する
 - private repo で fork は org メンバーに限定されるため、`issue_comment` トリガーの prompt injection リスクは `author_association == MEMBER/OWNER/COLLABORATOR` のチェックで許容範囲とみなしてよい（public repo の場合はより慎重な判断が必要）
