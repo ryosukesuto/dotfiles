@@ -104,6 +104,69 @@ sleep 30 && ${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh capture 100
 
 キャプチャした内容からCodexの返答を抽出し、ユーザーに報告。
 
+## 判断ガイド
+
+### 環境検知
+
+最初に `pane-manager.sh status` を叩くのが最も正確（バックエンドを自動判定し、tmux/cmux 外なら即エラーで返る）。`echo $TMUX` は tmux は見れるが cmux は判定できないため非推奨。
+
+tmux/cmux 外と判明した場合:
+- 代替案A: 別ターミナルで `tmux new -s review` を起動し、その中で Claude Code を再起動（環境変数 `$TMUX` はシェル起動時に継承されるため、Claude Code の再起動が必須）
+- 代替案B: cmux ターミナルに切り替える
+- 代替案C: skill を使わず、このセッション内で Claude 自身がセカンドオピニオンを返す
+
+### diff の範囲
+
+「現在ブランチのレビュー」と依頼された場合の既定:
+
+```bash
+git diff origin/main...HEAD
+```
+
+`...`（三点）を使うと merge-base からの差分になり、`origin/main` の進行に影響されない。デフォルトブランチが `main` 以外（`master` / `develop` 等）の場合は置換する。
+
+stage 済み変更のみレビューしたい旨が明示された場合のみ `git diff --staged`。
+
+### 送信パターン
+
+短文・単一行 → `send "msg"`。
+複数行・特殊文字・diff 等の長文 → `send -` + heredoc。
+
+```bash
+{
+  cat <<'EOF'
+<プロンプト本文>
+
+diff:
+EOF
+  git diff origin/main...HEAD
+} | ${CLAUDE_SKILL_DIR}/scripts/pane-manager.sh send -
+```
+
+heredoc 引用符は `'EOF'` にすること（バッククォートや `$` の展開を防ぐ）。
+
+### wait_response のタイムアウト目安
+
+デフォルトは 120 秒。diff 規模に応じて調整:
+
+| diff 規模 | 推奨タイムアウト |
+|---|---|
+| 100 行未満 | 60 秒 |
+| 100-500 行 | 120 秒（デフォルト） |
+| 500 行超 | 300 秒 |
+
+指定方法: `pane-manager.sh wait_response 300`。タイムアウト後に capture した結果がまだ応答中（末尾に `esc to interrupt` が残る）なら、`wait_response` を追加で叩くか、ユーザーに「続行 or 途中出力共有」を選択してもらう。
+
+### 応答抽出
+
+`capture` の生出力には送信メッセージと Codex の応答が混在する。切り出し規約:
+
+- Codex の応答行: `›` プロンプト直前までが最新応答
+- ユーザー送信行: `> ` で始まる行（または直前に送ったメッセージ本文）
+- 「esc to interrupt」が末尾にあれば応答生成中
+
+抽出した応答はそのまま貼らず、P0/P1 を冒頭に配置して要約する。キャプチャ行数は通常 100 行で足りるが、長文レビュー時は `capture 300` まで増やす。
+
 ## 出力形式
 
 ```
