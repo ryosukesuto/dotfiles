@@ -54,6 +54,16 @@ SKILL.md の手順4で `{{REVIEW_CRITERIA}}` に展開する内容。
 | 高コストリソースの新規作成（Spanner, GKE node pool, BigQuery reserved slot 等） | P1 | 月次コストへの大きな影響 |
 | 既存リソースのスペック2倍以上のスケールアップ | P2 | コストレビュー推奨、意図を確認 |
 | 通常リソースの追加・変更 | P3 | 影響軽微 |
+
+### 監視・メッセージング・CDN の判断基準
+
+| 変更内容 | 重要度 | 区分 | 判断理由 |
+|---------|--------|------|---------|
+| Datadog Monitor の削除・無効化 | P1 | 文脈依存 | 本番監視対象前提。テスト用Monitorなら影響なし |
+| Pub/Sub subscription の delivery設定変更（ack_deadline / dead_letter_policy）| P1 | 文脈依存 | 本番Pub/Sub前提。未使用 subscription なら影響なし |
+| Fastly / Cloudflare CDN のキャッシュルール変更 | P1 | 文脈依存 | 本番CDN前提。未リリース環境なら影響限定的 |
+| Wiz / PagerDuty 設定の変更 | P2 | 絶対 | セキュリティ検知・オンコール体制に影響、意図を確認 |
+| アラート閾値の緩和 | P1 | 文脈依存 | 本番アラート前提。dev用なら影響なし |
 ```
 
 ## Checkov設定方針
