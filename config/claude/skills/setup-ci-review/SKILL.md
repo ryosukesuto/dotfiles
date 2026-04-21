@@ -134,6 +134,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - 必要な Secret: `ANTHROPIC_API_KEY`（リポジトリ Settings > Secrets > Actions）
 - Branch Protection は維持したまま、Claude / Greptile の check を Required Check にしない
 - Greptile `statusCheck: true` は状態表示用。Required Check にすると block 相当になるため注意
+- **Required review count は 2 以上を推奨（human + AI の 2 Approve 制）**: Claude のコンテキスト補正ルールにより「文脈依存P0 + PR本文の申告」でAI Approveに至る経路がある。AI単独マージを防ぐため、Branch Protection で `Require a pull request before merging` → `Required approvals: 2` を設定し、少なくとも1件は human reviewer の Approve を必須にすること
 - 生成ファイルの確認を促し、コミット・PR作成はユーザーに委ねる
 - 再レビューのトリガー方法を伝える:
   - 自動: 新しいコミットをpushすると `synchronize` で再レビューが走る（force-push も検出してフルレビューに切り替わる）
