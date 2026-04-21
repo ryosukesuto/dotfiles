@@ -105,7 +105,8 @@ jobs:
           fi
 
           # 既に APPROVED / CHANGES_REQUESTED のレビューが存在すれば skip（重複回避）
-          EXISTING=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+          # --paginate 必須: gh api はデフォルトで最大30件しか返さず、長期PRで取得漏れが起きる
+          EXISTING=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --paginate \
             --jq '[.[] | select(.state == "APPROVED" or .state == "CHANGES_REQUESTED")] | length' 2>/dev/null || echo "0")
           if [ "${EXISTING:-0}" -gt 0 ]; then
             echo "A review decision already exists ($EXISTING). Skipping."
