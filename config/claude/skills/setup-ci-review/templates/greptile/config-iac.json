@@ -54,6 +54,36 @@
       "rule": "IAM 管理には加算的な google_*_iam_member を使用してください。google_*_iam_binding / google_*_iam_policy は既存権限を上書きするため禁止です。",
       "severity": "high",
       "scope": ["**/*.tf"]
+    },
+    {
+      "id": "datadog-monitor-delete-disable",
+      "rule": "Datadog Monitor の削除や無効化（enabled=false 等）は本番監視対象の場合 P1 です。テスト用 Monitor である旨が明示されていない限り、意図と代替監視を確認してください。",
+      "severity": "medium",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "pubsub-delivery-settings",
+      "rule": "Pub/Sub subscription の ack_deadline / dead_letter_policy / retry_policy 変更はメッセージ配送挙動に影響します。本番 subscription の場合は意図と影響範囲を確認してください。",
+      "severity": "medium",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "cdn-cache-rule-change",
+      "rule": "Fastly / Cloudflare のキャッシュルール・バックエンド設定変更はユーザー影響が大きいため、本番CDN前提で P1 扱いにしてください。未リリース環境なら影響を明示してください。",
+      "severity": "medium",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "security-oncall-settings",
+      "rule": "Wiz / PagerDuty 設定（エスカレーションポリシー・escalation_rule・スケジュール）の変更はセキュリティ検知・オンコール体制に影響します。意図を明示してください。",
+      "severity": "medium",
+      "scope": ["**/*.tf"]
+    },
+    {
+      "id": "alert-threshold-relax",
+      "rule": "アラート閾値の緩和（より緩い方向への変更）は検知漏れのリスクがあります。本番アラート前提で P1 扱いとし、緩和根拠を確認してください。",
+      "severity": "medium",
+      "scope": ["**/*.tf"]
     }
   ]
 }
