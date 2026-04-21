@@ -15,40 +15,132 @@ allowed-tools:
 
 > バイブコーディング用: `/vibe-review pr`
 
-## ルーティング（最初に必ず実行）
+## Prerequisites
+
+実行前に確認する。無い場合の振る舞いを併記。
+
+| ツール | 用途 | 無い場合 |
+|---|---|---|
+| `gh` | PR情報取得 | 必須。エラーで停止 |
+| `uv` `python3` | triage 実行 | 必須。エラーで停止 |
+| `jq` | triage 結果のパース | 必須。エラーで停止 |
+| `tmux` または `cmux` セッション | Codex pane起動 | スキップして単独レビュー |
+| Codex CLI (`~/.claude/skills/codex-review/scripts/pane-manager.sh`) | 並列分析 | スキップして単独レビュー |
+| `ghq` | リポジトリ取得（オーケストレーターパス） | 必須。無い環境では事前準備スニペットの `ghq get` を `git clone https://github.com/$REPO $HOME/src/github.com/$REPO` で置き換える |
+
+呼び出し元（subagent vs 親セッション）を判定する手段は無い。subagent 経由で呼ぶ場合は **呼び出し側が prompt 冒頭または環境変数で `IS_SUBAGENT=1` を渡す**。Claude はこれを検出した時点でシンプルパス骨格にフォールバックする（Agent tool の再帰呼び出し禁止のため）。判定ロジックは下の「subagent 内呼び出しのフォールバック判定」節を参照。
+
+## 変数の役割（混同注意）
+
+| 変数 | 値の例 | 用途 |
+|---|---|---|
+| `$REPO` | `org/repo`（nameWithOwner） | `gh` API への引数、`--pr-ref` のキー |
+| `$REPO_NAME` | `repo`（basename） | `--repo` 引数の名前部分、bundle 内の repo フィールド |
+| `$REPO_ROOT` | `/Users/.../repo` | ローカルのファイルシステムパス |
+
+## PR の特定
+
+`gh pr view` はカレントブランチで PR を解決する。引数で URL または PR 番号が渡された場合はそちらを優先する。
+
+Claude が Bash tool で実行する場合は、user message から PR 番号 / URL を抽出して `set -- "<value>"` で位置パラメータに入れてから下のスニペットを流す。何も渡されないときは `set --` で空にする。以降の `$PR_ARGS` は **クオートしない** こと（`--repo X 123` のように複数トークンを含むため、`"$PR_ARGS"` で囲うと単一引数化されて壊れる）。
+
+```bash
+# $1 に渡された値で PR_ARGS を組み立てる
+case "${1:-}" in
+  https://github.com/*)
+    # URL 例: https://github.com/org/repo/pull/123
+    _owner_repo=$(echo "$1" | sed -E 's#https://github.com/([^/]+/[^/]+)/pull/.*#\1#')
+    _pr_num=$(echo "$1" | sed -E 's#.*/pull/([0-9]+).*#\1#')
+    PR_ARGS="--repo $_owner_repo $_pr_num"
+    ;;
+  ''|-*)
+    # 引数なし、またはオプションのみ → カレントブランチで解決
+    PR_ARGS=""
+    ;;
+  *)
+    # 数字のみ → カレントリポジトリの PR 番号
+    PR_ARGS="$1"
+    ;;
+esac
+```
+
+以降のスニペットは `gh pr view $PR_ARGS` の形で呼び出す前提で読む。
+
+## subagent 内呼び出しのフォールバック判定
+
+呼び出し側 prompt に「subagent 内である」という明示があるか、Agent tool 経由で起動された自覚がある場合は、ルーティングをスキップしてシンプルパスへ直行する。Agent tool の再帰呼び出し禁止のため、triage が standard/deep を返してもオーケストレーターパスは選ばない。
+
+```bash
+# 呼び出し側が IS_SUBAGENT=1 を渡している、または prompt 内で明示している場合
+IS_SUBAGENT="${IS_SUBAGENT:-0}"
+if [ "$IS_SUBAGENT" = "1" ]; then
+  echo "subagent context: skipping triage, going to simple path"
+  # → そのままシンプルパス手順 1 へ
+else
+  # → 下のルーティング節へ
+  :
+fi
+```
+
+## ルーティング（subagent 外でのみ実行）
 
 PR情報を取得した後、triage でサイズとリスクを判定して実行パスを決定する。
 
 ```bash
-# 1. PR の changed_files JSON を生成
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-PR_NUM=$(gh pr view --json number -q .number)
-BASE_SHA=$(gh pr view --json baseRefOid -q .baseRefOid)
-HEAD_SHA=$(gh pr view --json headRefOid -q .headRefOid)
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# 1. PR メタ情報を取得（gh pr view ベース、gh repo view は引数を受け取れないので使わない）
+REPO=$(gh pr view $PR_ARGS --json baseRepository -q '.baseRepository.owner.login + "/" + .baseRepository.name')
+PR_NUM=$(gh pr view $PR_ARGS --json number -q .number)
+BASE_SHA=$(gh pr view $PR_ARGS --json baseRefOid -q .baseRefOid)
+HEAD_SHA=$(gh pr view $PR_ARGS --json headRefOid -q .headRefOid)
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
 REPO_NAME=$(basename "$REPO")
 
-gh pr view --json files \
-  | python3 -c "
+# 2. files JSON を triage 用フォーマットに変換し、status を正しくマッピング
+gh pr view $PR_ARGS --json files \
+  | REPO_NAME="$REPO_NAME" python3 -c "
 import json,sys,os
-files=json.load(sys.stdin)['files']
-print(json.dumps([{
-  'repo': os.environ.get('REPO_NAME','server'),
-  'path': f['path'],
-  'status': 'modified',
-  'additions': f['additions'],
-  'deletions': f['deletions']
-} for f in files]))" REPO_NAME="$REPO_NAME" \
+status_map = {
+    'added': 'added',
+    'modified': 'modified',
+    'removed': 'deleted',
+    'renamed': 'renamed',
+    'copied': 'modified',
+    'changed': 'modified',
+}
+files = json.load(sys.stdin)['files']
+out = []
+for f in files:
+    raw = f.get('status') or 'modified'
+    out.append({
+        'repo': os.environ['REPO_NAME'],
+        'path': f['path'],
+        'status': status_map.get(raw, 'modified'),
+        'additions': f['additions'],
+        'deletions': f['deletions'],
+    })
+print(json.dumps(out))" \
   | uv run --with pyyaml python3 ~/.claude/skills/review-triage/scripts/triage.py \
     --pr-ref "github.com/$REPO#$PR_NUM" \
     --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" \
     --repo "$REPO_NAME:$REPO_ROOT" \
-    -o /tmp/review-pr-triage.json 2>/dev/null
+    -o /tmp/review-pr-triage.json
+# ↑ stderr は握りつぶさない。失敗したら明示的に止めて原因調査する
 
-SIZE=$(jq -r '.size' /tmp/review-pr-triage.json 2>/dev/null || echo "quick")
-RISK=$(jq -r '.risk_tags | length' /tmp/review-pr-triage.json 2>/dev/null || echo "0")
+# triage 失敗判定（空ファイル / JSON 不正 / size キー欠損のいずれも明示停止）
+if [ ! -s /tmp/review-pr-triage.json ] || ! jq -e '.size' /tmp/review-pr-triage.json >/dev/null 2>&1; then
+  echo "ERROR: triage failed. /tmp/review-pr-triage.json is empty or invalid." >&2
+  echo "ヒント: gh pr view が成功しているか、uv/pyyaml が入っているか確認" >&2
+  exit 1
+  # ↑ Claude が Bash tool 経由で実行する場合は、exit 後は以降の手順を実行せず、
+  #   ユーザーに「triage 失敗」を報告して原因を一緒に調査する
+fi
+
+SIZE=$(jq -r '.size' /tmp/review-pr-triage.json)
+RISK=$(jq -r '.risk_tags | length' /tmp/review-pr-triage.json)
 echo "triage: size=$SIZE risk_tags=$RISK"
 ```
+
+silent fallback で安易に quick 扱いすると本来オーケストレーターが必要な PR を取りこぼすため、必ず明示停止する。
 
 **判定結果に応じて分岐:**
 
@@ -131,10 +223,12 @@ uv run python3 ~/.claude/skills/review-orchestrator/scripts/report.py \
 
 骨格:
 
-1. `gh pr view --comments` / `gh pr diff` / `gh pr checks` で PR 情報取得
+1. `gh pr view $PR_ARGS --comments` / `gh pr diff $PR_ARGS` / `gh pr checks $PR_ARGS` で PR 情報取得
 2. 既存レビューコメントを確認し重複指摘を避ける
-3. Codex を起動（`~/.claude/skills/codex-review/scripts/pane-manager.sh`）しながら自分も diff 分析（並列）
-4. Codex 指摘を検証してから採用（技術的主張は必ず裏取り）
+3. Codex pane manager を起動して並列分析を試みる:
+   - tmux/cmux セッション内、かつ `~/.claude/skills/codex-review/scripts/pane-manager.sh` が存在し、起動が成功した場合 → 並列で Codex の指摘を待ちつつ、自分も diff 分析
+   - tmux/cmux 外、Codex CLI 不在、起動失敗、subagent 内呼び出しのいずれかに該当する場合 → Codex は使わず単独で diff 分析する。スキップ理由を最終出力の「注意事項」節に 1 行で明示
+4. Codex を使った場合: 指摘を検証してから採用（技術的主張は必ず裏取り）。使わなかった場合: ステップ 4 はスキップ
 5. reference.md の出力フォーマットで統合レビューを作成
 
 ## Gotchas
