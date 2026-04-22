@@ -99,27 +99,42 @@ CLAUDE.mdに書かないもの:
 ### P4. ループ検出と自動中断
 
 カテゴリ: F. ガードレール
-効果: エージェントが同じエラーで無限ループに陥るのを防止
+効果: エージェントが同じエラーで無限ループに陥るのを検出し、アプローチの切替を促す
 
-Stop Hookでの検出例:
+検出の基本方針:
 
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "# 直近のgit diffが空なら「変更なしで完了宣言」を検出\nif [ -z \"$(git diff HEAD)\" ]; then echo 'WARNING: No changes detected. Review if the task is actually complete.' > /dev/stderr; fi"
-          }
-        ]
-      }
-    ]
-  }
-}
+ドゥームループは「変更の有無」ではなく「同一エラーの再発」で判定する。以下のシグナルを組み合わせる。
+
+- 同一コマンド（lint / test / build）が同一エラーメッセージで N 回連続失敗
+- 同一ファイルのハッシュが M 回連続で「修正 → 失敗 → 戻す」を繰り返している
+- PostToolUse Hook のリトライ回数が閾値（例: 3）を超える
+
+PostToolUse Hook での検出スクリプト例（擬似コード）:
+
+```bash
+#!/bin/bash
+# .claude/hooks/detect-loop.sh
+STATE_FILE=".claude/.loop-state"
+ERROR_SIG=$(tail -n 5 "$CLAUDE_LAST_COMMAND_LOG" 2>/dev/null | sha1sum | cut -d' ' -f1)
+LAST_SIG=$(cut -d: -f1 "$STATE_FILE" 2>/dev/null)
+COUNT=$(cut -d: -f2 "$STATE_FILE" 2>/dev/null || echo 0)
+
+if [ "$ERROR_SIG" = "$LAST_SIG" ]; then
+  COUNT=$((COUNT + 1))
+  if [ "$COUNT" -ge 3 ]; then
+    echo "LOOP DETECTED: same error repeated $COUNT times. Change approach." >&2
+    exit 2  # ブロック
+  fi
+else
+  COUNT=1
+fi
+echo "$ERROR_SIG:$COUNT" > "$STATE_FILE"
 ```
+
+注意:
+- Stop Hook で「git diff が空なら警告」を出す簡易版は、レビュー・調査・read-only タスクで誤警告するため本番運用しない
+- 誤検知対策として、success 時に `$STATE_FILE` をリセットする PostToolUse も合わせて設定する
+- retry 上限は言語・プロジェクト特性で調整（Go のテスト flake が多いなら 5、TS の type エラーなら 3 など）
 
 CLAUDE.mdへの追記例:
 
@@ -208,7 +223,7 @@ jobs:
       - run: shellcheck $(git ls-files '*.sh')
 ```
 
-TypeScript / Node.js 向けテンプレは P2 の構造（`tsc --noEmit` + `biome check` + `vitest run`）を CI に移植する。
+TypeScript / Node.js 向けは `tsc --noEmit` + `biome check` + `vitest run` の3段を CI に移植する。
 
 ---
 
@@ -340,10 +355,27 @@ fi
 
 ---
 
-### P10. PR 2-Approve ハーネス（人間 + AI）
+### P10. PR 2-Approve ハーネス（人間 + AI）※上級者向けオプション
 
-カテゴリ: B. フィードバックループ / F. ガードレール
+カテゴリ: F. ガードレール（副次的に B. フィードバックループにも寄与）
+位置付け: デフォルト推奨ではない。既に人間2名レビューが機能しているチームが運用コストを下げたい場合の段階的導入オプション
 効果: PR マージのゲーティングを人間1名 + AI1名で構成し、AI が本番リスクの検出を担う。人間レビュアーの負荷を下げつつ、誤マージを防ぐ
+
+導入条件（全て満たすまで導入しない）:
+- Linter / 型チェック / テストが CI で強制されている（B ≥ 4）
+- Secret scanning と main 保護が動いている（F ≥ 4）
+- 評価者の独立性が確保できる（書くセッションとレビューするセッションが分離）
+- Approve 判定の誤判定時にロールバックできる手段が明文化されている
+
+計測期間:
+- 導入前に 2-4 週間は「AI が Request Changes 提案のみ行い、Approve は必ず人間」のシャドーモードで運用する
+- 誤 Approve（= AI が Approve したが本番で問題が発覚した PR）がゼロであることを確認してから Approve 権限を委譲する
+- 誤判定率が計測できないチームは導入しない
+
+ロールバック手順:
+- AI の Approve 権限を剥奪し、人間2名レビューに戻す（GitHub 設定・CODEOWNERS 変更で数分）
+- 過去の AI Approve PR を一覧化し、リスクレビューを再実施
+- 原因分析（プロンプト / 補正ルール / コンテキスト不足）を行い、修正後に再試行
 
 構成:
 
