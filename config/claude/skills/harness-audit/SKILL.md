@@ -21,48 +21,58 @@ user-invocable: true
 
 ### 1. 現状収集
 
-以下を並行で調査する。ファイルが存在しない項目はスキップし、「未構成」として記録する。
+以下を並行で調査する。ファイルが存在しない項目はスキップし、「未構成」として記録する。Claude 固有パスは例示であり、他エージェント（Cursor / Cline / Codex / Aider など）の等価成果物も同等に扱う。
 
 ```
-# コンテキスト設計
-CLAUDE.md, .claude/, .claude/rules/, docs/
+# コンテキスト設計 (A)
+agent-docs: CLAUDE.md, AGENTS.md, .cursor/rules/, .cursorrules, .clinerules
+ルール集: .claude/rules/, docs/, docs/adr/
+スキル/プロンプト: .claude/skills/*/SKILL.md, .cursor/commands/
 
-# フィードバックループ
-.claude/settings.json (hooks), .husky/, .lefthook.yml,
-lint設定 (.eslintrc*, biome.json, .ruff.toml, .golangci.yml),
-テスト設定 (jest.config*, vitest.config*, pytest.ini, go test)
+# フィードバックループ (B)
+Hooks: .claude/settings.json, .husky/, .lefthook.yml, lefthook.yml, pre-commit (.pre-commit-config.yaml)
+Linter: .eslintrc*, biome.json, .ruff.toml, .golangci.yml, rubocop.yml
+テスト: jest.config*, vitest.config*, pytest.ini, go test, cargo test
+CI: .github/workflows/, .gitlab-ci.yml, .circleci/, azure-pipelines.yml
 
-# アーキテクチャ制約
-tsconfig.json, Makefile, CI設定 (.github/workflows/), pre-commitフック
+# アーキテクチャ制約 (C)
+型: tsconfig.json, mypy.ini, pyrightconfig.json
+構造: Makefile, 依存チェック設定 (depcheck, dependency-cruiser, archunit 等)
+ADR: docs/adr/, docs/decisions/
 
-# スキル・自動化
-.claude/skills/*/SKILL.md
+# エントロピー管理 (D)
+鮮度: docs 鮮度スクリプト、renovate.json / dependabot.yml
+衛生: .gitignore, .editorconfig
 
-# 状態管理
-.claude/memory/, git hooks
+# 計画と実行の分離 (E)
+Skills: .claude/skills/, ~/.claude/skills/
+Subagent / worktree 運用: git-wt 等のラッパー、plans/ ディレクトリ
+
+# ガードレール (F)
+権限: allowed-tools 設定、MCP 許可リスト
+main 保護: git hooks (pre-commit), GitHub branch protection
+Secret: gitleaks.toml, .github/workflows/secret-scan*, git-secrets 設定
+ループ検出: Stop hook, retry 上限ラッパー
 ```
 
 ### 2. 6カテゴリ評価
 
-チェックリストの詳細は `${CLAUDE_SKILL_DIR}/checklist.md` を参照。
+チェックリストと共通0-5ラダーの詳細は `${CLAUDE_SKILL_DIR}/checklist.md` を参照。
 
 | カテゴリ | 観点 |
 |---------|------|
-| A. コンテキスト設計 | CLAUDE.md の品質・サイズ・段階的開示 |
+| A. コンテキスト設計 | agent-docs の品質・サイズ・段階的開示 |
 | B. フィードバックループ | Hooks・リンター・テスト・CIの多層構造 |
-| C. アーキテクチャ制約 | 型チェック・構造テスト・依存方向の強制 |
+| C. アーキテクチャ制約 | 型システムの厳格さ・構造テスト・依存方向の強制 |
 | D. エントロピー管理 | ドキュメント鮮度・デッドルール・リポジトリ衛生 |
 | E. 計画と実行の分離 | Skills・Subagent・レビューフロー |
-| F. ガードレール | 権限制御・安全制約・ループ検出 |
+| F. ガードレール | 権限制御・main 保護・ループ検出・secret scan・評価者独立性 |
 
-各カテゴリを 0-5 で採点する。
+各カテゴリを共通0-5ラダーで採点する（checklist.md 冒頭参照）。
 
-- 5: 成熟（自動化・強制・継続的改善のサイクルが回っている）
-- 4: 整備済み（主要な仕組みが揃い、運用されている）
-- 3: 基本構成あり（最低限の仕組みはあるが改善余地が大きい）
-- 2: 部分的（一部のみ対応、抜けが目立つ）
-- 1: 最小限（CLAUDE.mdがある程度）
-- 0: 未構成
+- 0: 未構成 / 1: 形骸化 / 2: 手動運用 / 3: ローカル自動化 / 4: 強制ゲート / 5: 継続改善と計測
+
+各項目は単一カテゴリに割り当てる。横断的に見える項目の主カテゴリは checklist.md の対応表で確認する。
 
 ### 3. レポート出力
 
@@ -73,16 +83,16 @@ tsconfig.json, Makefile, CI設定 (.github/workflows/), pre-commitフック
 監査日: {YYYY-MM-DD}
 総合スコア: {sum}/30
 
-| カテゴリ | スコア | 状態 |
-|---------|--------|------|
-| A. コンテキスト設計 | N | {成熟度ラベル}: {1行サマリ} |
+| カテゴリ | スコア | Confidence | Evidence | 状態 |
+|---------|--------|------------|----------|------|
+| A. コンテキスト設計 | N | High/Medium/Low | {根拠ファイル:行} | {成熟度ラベル}: {1行サマリ} |
 | ...全6カテゴリ... |
 
 ### 検出された課題（優先度順）
 
 1. [カテゴリ] 課題の説明
-   現状: ...
-   推奨: ...
+   現状: ... (Evidence: {ファイル・設定名})
+   推奨: ... (該当パターン: P{N})
    効果: ...
 
 ### Quick Wins（すぐに実行可能な改善）
@@ -97,7 +107,9 @@ tsconfig.json, Makefile, CI設定 (.github/workflows/), pre-commitフック
 テーブル書式の指定:
 - 監査日は `YYYY-MM-DD` 固定（`date "+%Y-%m-%d"` で取得）
 - リポジトリ名は `basename $(git rev-parse --show-toplevel)` で取得（取得不能時は作業ディレクトリ名）
-- 「状態」列は `{成熟度ラベル}: {1行サマリ}` 形式。成熟度ラベルは得点に対応（5:成熟 / 4:整備済み / 3:基本構成あり / 2:部分的 / 1:最小限 / 0:未構成）。1行サマリは根拠となる実ファイル・設定名を1-2件含める
+- `Evidence` 列には採点の根拠となるファイルパス・設定名を1件以上含める。空欄にしない。スコア0の場合は `searched: {探索したパス}; none found` 形式で記録する
+- `Confidence` 列は High / Medium / Low。Low の場合はその理由（探索不足・運用実態未確認など）を「状態」列に追記する
+- 「状態」列は `{成熟度ラベル}: {1行サマリ}` 形式。成熟度ラベルは得点に対応（5:成熟 / 4:整備済み / 3:基本構成あり / 2:部分的 / 1:最小限 / 0:未構成）
 - 総合スコアには評価ラベルを付けない（数値のみ）。解釈は読み手に委ねる
 
 Quick Wins と中期的改善の切り分け:
@@ -118,12 +130,14 @@ Quick Wins と中期的改善の切り分け:
 5. E. 計画と実行の分離（Skill・Subagent整備）
 6. D. エントロピー管理
 
-ただし、深刻度が高い課題（例: 認証情報のハードコード検出）は優先順位を跳ね上げる。カテゴリ順は同点時のタイブレーカーとして使う。
+ただし、深刻度が高い課題（例: 認証情報のハードコード検出・secret の git 履歴残存）は優先順位を跳ね上げる。カテゴリ順は同点時のタイブレーカーとして使う。
 
 ## Gotchas
 
-- CLAUDE.mdのサイズだけで品質を判断しない。50行でも必要十分な場合がある
-- Hooks設定はsettings.jsonにあるため、リポジトリルートのファイルだけ見て「未構成」と判断しない
+- agent-docs のサイズだけで品質を判断しない。50行でも必要十分な場合がある
+- Hooks 設定は `settings.json` や `lefthook.yml` など複数箇所に分散する。ルート直下だけ見て「未構成」と判断しない
 - リポジトリ固有の技術選定を否定しない。ハーネスは既存の選択に寄り添う
-- 全カテゴリを一度に改善しようとしない。Quick Winsから段階的に
+- Claude Code 前提の仕組みがないからといって低く採点しない。他エージェント向けの等価成果物があれば同点で扱う
+- 全カテゴリを一度に改善しようとしない。Quick Wins から段階的に
 - モデルの進化で不要になる制約もある。過剰なハーネスも問題
+- Confidence Low のカテゴリは追加調査を勧め、誤った改善着手を避ける
