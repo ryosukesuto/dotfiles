@@ -155,18 +155,18 @@ def main():
         except (ValueError, TypeError):
             pass
 
-    # Thinking status — check MAX_THINKING_TOKENS env or settings.json env
-    thinking_on = False
-    if os.environ.get("MAX_THINKING_TOKENS"):
-        thinking_on = True
+    # Thinking status — prefer stdin `thinking.enabled` (v2.1.119+), fall back to env
+    thinking_field = data.get("thinking")
+    if isinstance(thinking_field, dict) and "enabled" in thinking_field:
+        thinking_on = bool(thinking_field.get("enabled"))
     else:
-        settings_path = os.path.expanduser("~/.claude/settings.json")
-        try:
-            with open(settings_path) as f:
-                settings = json.load(f)
-                thinking_on = bool(settings.get("env", {}).get("MAX_THINKING_TOKENS"))
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
+        thinking_on = bool(os.environ.get("MAX_THINKING_TOKENS"))
+
+    # Effort level from stdin (v2.1.119+): low/medium/high
+    effort_level = ""
+    effort_field = data.get("effort")
+    if isinstance(effort_field, dict):
+        effort_level = str(effort_field.get("level") or "")
 
     # Session name (set via /rename)
     session_name = data.get("session_name") or data.get("session", {}).get("name")
@@ -190,6 +190,10 @@ def main():
         parts.append(f"{PURPLE}thinking{R}")
     else:
         parts.append(f"{COMMENT}thinking{R}")
+
+    if effort_level:
+        color = RED if effort_level == "high" else (YELLOW if effort_level == "medium" else COMMENT)
+        parts.append(f"{color}{effort_level}{R}")
 
     line1 = SEP.join(parts)
 
