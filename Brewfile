@@ -8,6 +8,7 @@ tap "datadog-labs/pack"  # pup（Datadog CLI）用
 # ===== 必須 =====
 brew "git"
 brew "git-filter-repo"   # git履歴からの機密情報除去
+brew "gitleaks"          # 機密情報（APIキー・トークン等）検出
 brew "zsh"
 brew "tmux"
 brew "vim"            # gitconfigのeditor、vimrcでプラグイン使用
