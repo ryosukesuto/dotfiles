@@ -132,6 +132,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 全工程完了後、**最終応答テキスト（チャットに返すメッセージ）** として以下をまとめて表示する。stdout echo や追加ファイル生成はしない。箇条書きで提示。
 
 - 必要な Secret: `ANTHROPIC_API_KEY`（リポジトリ Settings > Secrets > Actions）
+- **Claude Code GitHub App のインストールが必須**: https://github.com/apps/claude を開き、対象リポジトリに個別インストールする。workflow 投入だけでは動かず、App が無いと `401 Unauthorized - Claude Code is not installed on this repository` で workflow が 3回リトライして失敗する。OAuth 同意が必要なユーザー手動作業
 - Branch Protection は維持したまま、Claude / Greptile の check を Required Check にしない
 - Greptile `statusCheck: true` は状態表示用。Required Check にすると block 相当になるため注意
 - **Required review count は 2 以上を推奨（human + AI の 2 Approve 制）**: Claude のコンテキスト補正ルールにより「文脈依存P0 + PR本文の申告」でAI Approveに至る経路がある。AI単独マージを防ぐため、Branch Protection で `Require a pull request before merging` → `Required approvals: 2` を設定し、少なくとも1件は human reviewer の Approve を必須にすること
@@ -192,5 +193,6 @@ bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 - **SKILL.md の投稿フロー最終ステップを省略する現象**: 過去の実測で Claude がサマリコメント投稿後に `gh pr review --approve/--request-changes` を忘れてタスク完了と判断するケースがあった。GitHub 上のレビュー状態が残らないため、SKILL.md の「PR レビュー判定」セクションは「省略禁止」「必ず最後に実行」と明示的に強調すること（テンプレート済み）
 - **workflow ファイル変更を含む PR は Claude にレビューさせられない**: `claude-code-action` は PR ブランチの workflow ファイルが main と一致しているか検証する（セキュリティ機構）。差異があると `Workflow validation failed` で即 fail する。`claude-review.yml` 自体の修正 PR は人間レビューで進めること
 - **ユーザーのローカル環境で `_gh_ensure_token` エラーが出る**: `gh:1: command not found: _gh_ensure_token` は zsh の gh 認証 wrapper の副作用で、コマンド自体は動く。Skill の挙動には影響しない
+- **Claude Code GitHub App のインストール忘れで CI が 401 で失敗する**: workflow 投入後に Claude Review が `401 Unauthorized - Claude Code is not installed on this repository. Please install the Claude Code GitHub App at https://github.com/apps/claude` で 3回リトライ失敗するパターン。App インストールは workflow ファイルとは別管理のため、新規リポジトリでは必ず https://github.com/apps/claude から対象リポジトリにインストールする必要がある。完了ガイドで明示するが、ユーザーが見落としやすいので症状を見たら真っ先に疑うこと
 
 詳細は `${CLAUDE_SKILL_DIR}/reference.md` を参照（必要時のみ読み込む）。
