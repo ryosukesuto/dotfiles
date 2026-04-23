@@ -284,6 +284,10 @@
           {
             "type": "command",
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-main-push"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-pr-writing"
           }
         ]
       }

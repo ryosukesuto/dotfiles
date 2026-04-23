@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# PreToolUse(Bash) hook: block `gh pr create` / `gh pr edit` commands that
+# reference personal, non-team-shared resources in --title / --body.
+#
+# Blocklist is derived dynamically from ~/.claude/skills/ directory names
+# (user-scoped skills are by definition not accessible to reviewers) plus
+# a small set of fixed personal paths.
+#
+# Exit 2 blocks the tool call and surfaces stderr to the agent.
+
+set -euo pipefail
+
+payload=$(cat)
+command=$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')
+
+# Only inspect gh pr create / gh pr edit invocations.
+case "$command" in
+  *"gh pr create"*|*"gh pr edit"*) ;;
+  *) exit 0 ;;
+esac
+
+# Build blocklist.
+skill_dir="${HOME}/.claude/skills"
+terms=()
+
+if [ -d "$skill_dir" ]; then
+  while IFS= read -r name; do
+    # Skip very short names (< 4 chars) to avoid false positives like "til".
+    [ ${#name} -ge 4 ] || continue
+    terms+=("$name")
+  done < <(find -L "$skill_dir" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
+fi
+
+# Fixed personal paths / resources that must not appear in shared PRs.
+terms+=("dotfiles-private")
+terms+=("obsidian-notes")
+terms+=(".claude/rules/")
+terms+=("~/.claude/")
+
+hits=()
+for term in "${terms[@]}"; do
+  if printf '%s' "$command" | grep -qiF -- "$term"; then
+    hits+=("$term")
+  fi
+done
+
+if [ ${#hits[@]} -eq 0 ]; then
+  exit 0
+fi
+
+{
+  echo "[guard-pr-writing] PR title/body に個人スコープの語彙が含まれています:"
+  for h in "${hits[@]}"; do echo "  - $h"; done
+  echo ""
+  echo "チーム外から参照できないリソースは PR に書かないでください。"
+  echo "詳細: ~/.claude/rules/pr-writing.md"
+  echo ""
+  echo "対処: --title / --body から該当語を削除し、必要ならチーム共有リソース"
+  echo "       (org リポの先行事例 / Kibela / ADR / Linear) に言い換えてください。"
+} >&2
+
+exit 2
