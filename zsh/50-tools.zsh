@@ -41,7 +41,7 @@ fi
 
 # Claude Code
 if (( $+commands[claude] )); then
-  alias claude='claude --effort high'
+  alias claude='claude --effort high --permission-mode auto'
   _claude_ctx="$HOME/.claude/contexts"
   alias claude-review='claude --system-prompt "$(cat "$_claude_ctx/review.md" 2>/dev/null)"'
   alias claude-research='claude --system-prompt "$(cat "$_claude_ctx/research.md" 2>/dev/null)"'
