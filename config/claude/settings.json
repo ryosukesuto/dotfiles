@@ -204,7 +204,21 @@
       "Bash(docker push:*)",
       "Read(**/.env)",
       "Read(**/.env.*)",
-      "Read(**/*.tfstate)"
+      "Read(**/*.tfstate)",
+      "Bash(lefthook install:*)",
+      "Bash(lefthook install)",
+      "Bash(lefthook uninstall:*)",
+      "Bash(lefthook uninstall)",
+      "Bash(lefthook run:*)",
+      "Bash(lefthook run)",
+      "Bash(lefthook add:*)",
+      "Bash(lefthook:*)",
+      "Bash(husky install:*)",
+      "Bash(husky install)",
+      "Bash(pre-commit install:*)",
+      "Bash(pre-commit install)",
+      "Bash(pre-commit run:*)",
+      "Bash(pre-commit run)"
     ],
     "ask": [
       "Bash(git push:*)",
