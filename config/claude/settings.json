@@ -440,9 +440,9 @@
   "showClearContextOnPlanAccept": true,
   "channelsEnabled": true,
   "showThinkingSummaries": true,
+  "showTurnDuration": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
-  "showTurnDuration": true,
   "mcpServers": {
     "slack": {
       "type": "http",
@@ -452,5 +452,6 @@
         "callbackPort": 3118
       }
     }
-  }
+  },
+  "theme": "dark-ansi"
 }
