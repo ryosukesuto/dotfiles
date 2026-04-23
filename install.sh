@@ -128,6 +128,7 @@ check_dependencies() {
         "aws"
         "mise"
         "git-filter-repo"
+        "gitleaks"
         "op"
     )
     
