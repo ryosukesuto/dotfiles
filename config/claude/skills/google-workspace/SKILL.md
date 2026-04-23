@@ -155,9 +155,30 @@ eval "$(mise activate zsh)" && gws-personal drive files list --params '{"q": "'\
 eval "$(mise activate zsh)" && gws-personal drive files get --params '{"fileId": "FILE_ID", "alt": "media"}' --output /tmp/filename.pdf
 ```
 
-ファイルアップロード:
+ファイルアップロード（指定フォルダへ、任意のファイル名で）:
 ```bash
-eval "$(mise activate zsh)" && gws drive +upload --file /path/to/file
+eval "$(mise activate zsh)" && gws-personal drive +upload /path/to/file
+eval "$(mise activate zsh)" && gws-personal drive +upload /path/to/file --parent FOLDER_ID
+eval "$(mise activate zsh)" && gws-personal drive +upload /path/to/file --parent FOLDER_ID --name 'アップロード後のファイル名.pdf'
+```
+
+ファイルの移動（parentを差し替え）:
+```bash
+eval "$(mise activate zsh)" && gws-personal drive files update --params '{"fileId": "FILE_ID", "addParents": "NEW_FOLDER_ID", "removeParents": "OLD_FOLDER_ID", "fields": "id,name,parents"}'
+```
+
+ファイルのリネーム（必要なら移動と同時に）:
+```bash
+# リネームのみ
+eval "$(mise activate zsh)" && gws-personal drive files update --params '{"fileId": "FILE_ID", "fields": "id,name"}' --json '{"name": "新しいファイル名.pdf"}'
+
+# 移動 + リネーム同時
+eval "$(mise activate zsh)" && gws-personal drive files update --params '{"fileId": "FILE_ID", "addParents": "NEW_FOLDER_ID", "removeParents": "OLD_FOLDER_ID", "fields": "id,name,parents"}' --json '{"name": "新しいファイル名.pdf"}'
+```
+
+フォルダの移動（ファイルと同じAPIで可能。個人アカウント所有のフォルダで動作確認済み）:
+```bash
+eval "$(mise activate zsh)" && gws-personal drive files update --params '{"fileId": "FOLDER_ID", "addParents": "NEW_PARENT_ID", "removeParents": "OLD_PARENT_ID", "fields": "id,name,parents"}'
 ```
 
 ### Docs
@@ -201,8 +222,9 @@ eval "$(mise activate zsh)" && gws slides presentations get --params '{"presenta
 ## 既知の制約
 
 - Gmail（仕事用）: API 無効化済み（誤送信リスク対策）。Gmail は `gws-personal` のみ
-- Drive書き込み不可: OAuthアプリが未検証のため、既存ファイルのリネーム・移動・削除はブロックされる（`appNotAuthorizedToFile` エラー）。gwsで新規作成したファイルのみ書き込み可能
-- Drive整理が必要な場合: Google Apps Script（clasp or ブラウザ）経由で実行する。GASはアプリ検証制限を受けない
+- Drive書き込みは `gws` / `gws-personal` どちらでも可能（2026-04-24検証）
+  - `gws-personal`: 自分が所有者のファイル・フォルダは作成・アップロード・移動・リネーム・削除すべてOK
+  - `gws`（仕事）: 新規作成したファイル・フォルダについて同じ操作すべてOK（テストフォルダで検証済み）。既存の他人所有ファイルについては未検証
 - GCPプロジェクト: `~/.claude/rules/gcp-accounts.local.md` を参照
 
 ## 注意事項
@@ -220,3 +242,4 @@ eval "$(mise activate zsh)" && gws slides presentations get --params '{"presenta
 - `gws-personal` で `events list` 等の生API呼び出しは `plasma-creek-116906` の権限エラーになる場合がある。`+agenda` 等のヘルパーコマンドを優先して使う
 - `gws-personal` は必ずシェル関数を使う。`GOOGLE_WORKSPACE_CLI_CONFIG_DIR` を手動設定しても、社内の CLIENT_ID/SECRET 環境変数が残り認証が壊れる
 - `~/.config/gws/client_secret.json` が存在すると、そのファイルの `project_id` がquota projectとして使われ、環境変数のOAuthクライアントと矛盾して403になる。仕事用はenv vars経由なのでこのファイルは不要
+- `gws` は gcloud ADC (`~/.config/gcloud/application_default_credentials.json`) の `quota_project_id` も参照する。他プロジェクト用に `gcloud auth application-default login` した副作用で仕事用 gws が別プロジェクト（例: `ai-agent-arena-10`）の Service Usage 権限を要求され403になることがある。`gcloud auth application-default revoke` で ADC を削除すれば env vars 経由の認証に戻って解決する（2026-04-24に実際に発生・復旧）。gws はenv varsで認証完結するので ADC は通常不要
