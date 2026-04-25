@@ -85,7 +85,7 @@
 | テスト | ユニットテスト・統合テストが存在し実行可能か |
 | CI/CD | PRマージ前にテスト・リンター・型チェックが走るか |
 | E2Eテスト | Playwright / bats-core / Hurl 等が設定されているか |
-| PR自動レビュー | Greptile 等の自動レビューが custom standards で運用されているか |
+| PR自動レビュー | Greptile / Claude Code Action 等の自動レビューが custom standards（SKILL.md / config）で運用されているか |
 | 成功時のサイレント性 | Hook・CI が成功時に不要な出力を出していないか（Success should be silent) |
 
 フィードバックの速度階層（速い順）:
