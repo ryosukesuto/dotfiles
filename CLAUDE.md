@@ -38,6 +38,7 @@ bin/           - カスタムスクリプト
   claude-suggest-compact - コンパクト提案（PreToolUse hook）
   claude-pre-compact   - コンパクト前処理（PreCompact hook）
   claude-session-end   - セッション終了処理（Stop hook）
+  claude-review-coverage - ghq配下のリポでsetup-ci-review適用状況を集計（md/json）
   cmux-quad            - cmux 4分割レイアウト
   cmux-lazygit         - cmuxで現在ペインを分割してlazygit起動
 ```
