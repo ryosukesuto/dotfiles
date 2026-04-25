@@ -66,15 +66,40 @@ extract_criteria() {
   ' "$1" | trim_blank_lines
 }
 
-# update-existing.sh 内の関数定義と本テストの複製が乖離していないか、簡易的に検証する。
-# extract_role の awk 1 行目のシグネチャだけ突き合わせる（フルマッチは保守コストが高いため）。
+# update-existing.sh 内の関数定義と本テストの複製が乖離していないか検証する。
+# 関数の中身まで突き合わせないと、本体側の awk ロジックを壊してもテスト側の複製は
+# そのままなので緑のままになり、回帰防止として弱い。grep -qF で先頭行だけ見るのではなく
+# 関数定義ブロック全体を抽出して文字列比較する。
+extract_function_body() {
+  # $1: file, $2: function name
+  # シェルコメント行 (空白のみ先頭から始まる #) と空行は無視する。テスト側に
+  # 解説コメントを書きたくない一方、本体側は解説コメントを残しておきたいケースがあるため。
+  awk -v fn="$2" '
+    $0 ~ "^" fn "\\(\\) \\{" { capture=1; print; next }
+    capture && $0 ~ /^\}$/ { print; exit }
+    capture && $0 ~ /^[[:space:]]*#/ { next }
+    capture && $0 ~ /^[[:space:]]*$/ { next }
+    capture { print }
+  ' "$1"
+}
+
 verify_in_sync() {
-  local expected='/^あなたは .*です。このPRをレビューします。$/'
-  if ! grep -qF "$expected" "$TARGET_SCRIPT"; then
-    echo "FAIL: update-existing.sh の extract_role 実装がテスト側と乖離しています。" >&2
-    echo "      期待するパターン: $expected" >&2
-    return 1
-  fi
+  local fn prod_body test_body any_fail=0
+  for fn in extract_role extract_consistency extract_criteria trim_blank_lines; do
+    prod_body=$(extract_function_body "$TARGET_SCRIPT" "$fn")
+    test_body=$(extract_function_body "$0" "$fn")
+    if [ -z "$prod_body" ]; then
+      echo "FAIL: update-existing.sh に $fn の定義が見つかりません。" >&2
+      any_fail=1
+      continue
+    fi
+    if [ "$prod_body" != "$test_body" ]; then
+      echo "FAIL: $fn の定義が update-existing.sh と乖離しています。" >&2
+      diff <(printf '%s\n' "$test_body") <(printf '%s\n' "$prod_body") >&2 || true
+      any_fail=1
+    fi
+  done
+  return "$any_fail"
 }
 
 PASS=0
