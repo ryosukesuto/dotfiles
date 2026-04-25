@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+# claude-review-coverage - ghq 配下のリポで setup-ci-review 適用状況を集計する
+#
+# Usage:
+#   claude-review-coverage                    # 全リポを Markdown で出力
+#   claude-review-coverage --org WinTicket    # 特定 org に絞る
+#   claude-review-coverage --format json      # JSON で出力（Linear 自動起票等で使用）
+#   claude-review-coverage --only-missing     # 未適用リポのみ出力
+#
+# チェック対象ファイル:
+#   必須:
+#     .github/workflows/claude-review.yml         (Claude Code レビュー workflow)
+#     .claude/skills/claude-code-review/SKILL.md  (レビュー指示 skill)
+#   任意:
+#     .greptile/config.json                       (Greptile 連携)
+#     .github/workflows/checkov.yml               (IaC gating)
+#
+# 状態:
+#   完全適用: 必須 2 つとも存在
+#   部分適用: 必須のうち片方だけ
+#   未適用: 必須 2 つとも欠落
+
+set -euo pipefail
+
+SCOPE_ORG=""
+FORMAT="md"
+ONLY_MISSING=0
+
+usage() {
+  sed -n 's/^# \{0,1\}//; 2,/^$/p' "$0" | sed -n '1,/^$/p'
+  exit 0
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --org) SCOPE_ORG="${2:-}"; shift 2 ;;
+    --format) FORMAT="${2:-md}"; shift 2 ;;
+    --only-missing) ONLY_MISSING=1; shift ;;
+    -h|--help) usage ;;
+    *) echo "unknown arg: $1" >&2; exit 2 ;;
+  esac
+done
+
+if ! command -v ghq >/dev/null 2>&1; then
+  echo "ERROR: ghq が見つかりません" >&2
+  exit 1
+fi
+
+GHQ_ROOT="$(ghq root)"
+
+# ghq list は "host/owner/repo" を返す
+mapfile -t REPOS < <(ghq list 2>/dev/null | sort)
+
+# org フィルタ: */<org>/* にマッチするものだけ残す
+if [ -n "$SCOPE_ORG" ]; then
+  filtered=()
+  for r in "${REPOS[@]}"; do
+    case "$r" in
+      */"$SCOPE_ORG"/*) filtered+=("$r") ;;
+    esac
+  done
+  REPOS=("${filtered[@]:-}")
+fi
+
+# 集計バッファ（並列順序を保つため配列で持つ）
+ROW_REPO=()
+ROW_WORKFLOW=()
+ROW_SKILL=()
+ROW_GREPTILE=()
+ROW_CHECKOV=()
+ROW_STATUS=()
+
+count_full=0
+count_partial=0
+count_missing=0
+
+for repo in "${REPOS[@]}"; do
+  [ -z "$repo" ] && continue
+  path="$GHQ_ROOT/$repo"
+  [ -d "$path/.git" ] || [ -f "$path/.git" ] || continue  # worktree も pointer file を許容
+
+  has_workflow=0
+  has_skill=0
+  has_greptile=0
+  has_checkov=0
+
+  [ -f "$path/.github/workflows/claude-review.yml" ] && has_workflow=1
+  [ -f "$path/.claude/skills/claude-code-review/SKILL.md" ] && has_skill=1
+  [ -f "$path/.greptile/config.json" ] && has_greptile=1
+  [ -f "$path/.github/workflows/checkov.yml" ] && has_checkov=1
+
+  if [ "$has_workflow" -eq 1 ] && [ "$has_skill" -eq 1 ]; then
+    status="完全適用"
+    count_full=$((count_full + 1))
+  elif [ "$has_workflow" -eq 1 ] || [ "$has_skill" -eq 1 ]; then
+    status="部分適用"
+    count_partial=$((count_partial + 1))
+  else
+    status="未適用"
+    count_missing=$((count_missing + 1))
+  fi
+
+  if [ "$ONLY_MISSING" -eq 1 ] && [ "$status" = "完全適用" ]; then
+    continue
+  fi
+
+  ROW_REPO+=("$repo")
+  ROW_WORKFLOW+=("$has_workflow")
+  ROW_SKILL+=("$has_skill")
+  ROW_GREPTILE+=("$has_greptile")
+  ROW_CHECKOV+=("$has_checkov")
+  ROW_STATUS+=("$status")
+done
+
+mark() {
+  case "$1" in
+    1) printf '%s' "✅" ;;
+    *) printf '%s' "❌" ;;
+  esac
+}
+
+mark_optional() {
+  case "$1" in
+    1) printf '%s' "✅" ;;
+    *) printf '%s' "—" ;;
+  esac
+}
+
+case "$FORMAT" in
+  md|markdown)
+    printf '# CI Review Coverage Report\n\n'
+    printf '生成日時: %s\n' "$(date '+%Y-%m-%d %H:%M')"
+    printf 'ghq root: `%s`\n' "$GHQ_ROOT"
+    [ -n "$SCOPE_ORG" ] && printf '対象 org: `%s`\n' "$SCOPE_ORG"
+    printf '対象リポ数: %d\n\n' "${#ROW_REPO[@]}"
+
+    printf '## 詳細\n\n'
+    printf '| リポジトリ | workflow | skill | greptile | checkov | 状態 |\n'
+    printf '|---|:---:|:---:|:---:|:---:|---|\n'
+    for i in "${!ROW_REPO[@]}"; do
+      printf '| `%s` | %s | %s | %s | %s | %s |\n' \
+        "${ROW_REPO[$i]}" \
+        "$(mark "${ROW_WORKFLOW[$i]}")" \
+        "$(mark "${ROW_SKILL[$i]}")" \
+        "$(mark_optional "${ROW_GREPTILE[$i]}")" \
+        "$(mark_optional "${ROW_CHECKOV[$i]}")" \
+        "${ROW_STATUS[$i]}"
+    done
+
+    printf '\n## サマリ\n\n'
+    printf -- '- 完全適用: %d 件\n' "$count_full"
+    printf -- '- 部分適用: %d 件\n' "$count_partial"
+    printf -- '- 未適用: %d 件\n' "$count_missing"
+    ;;
+  json)
+    printf '{\n'
+    printf '  "generated_at": "%s",\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    printf '  "ghq_root": "%s",\n' "$GHQ_ROOT"
+    printf '  "scope_org": "%s",\n' "$SCOPE_ORG"
+    printf '  "summary": {\n'
+    printf '    "full": %d,\n' "$count_full"
+    printf '    "partial": %d,\n' "$count_partial"
+    printf '    "missing": %d\n' "$count_missing"
+    printf '  },\n'
+    printf '  "repos": [\n'
+    for i in "${!ROW_REPO[@]}"; do
+      sep=","
+      [ "$i" -eq $((${#ROW_REPO[@]} - 1)) ] && sep=""
+      printf '    {"repo": "%s", "workflow": %s, "skill": %s, "greptile": %s, "checkov": %s, "status": "%s"}%s\n' \
+        "${ROW_REPO[$i]}" \
+        "$([ "${ROW_WORKFLOW[$i]}" -eq 1 ] && echo true || echo false)" \
+        "$([ "${ROW_SKILL[$i]}" -eq 1 ] && echo true || echo false)" \
+        "$([ "${ROW_GREPTILE[$i]}" -eq 1 ] && echo true || echo false)" \
+        "$([ "${ROW_CHECKOV[$i]}" -eq 1 ] && echo true || echo false)" \
+        "${ROW_STATUS[$i]}" \
+        "$sep"
+    done
+    printf '  ]\n'
+    printf '}\n'
+    ;;
+  *)
+    echo "ERROR: unknown format '$FORMAT' (md|json)" >&2
+    exit 2
+    ;;
+esac
