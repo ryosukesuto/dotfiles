@@ -63,9 +63,48 @@ grep exclude-newer ~/.config/uv/uv.toml  # → 設定あり
 
 `curl | bash` パターンや `chmod 777` がないか確認。
 
-### 7. 環境変数のハードコード
+### 7. private情報の混入チェック
 
-git tracked ファイルにプロジェクトID、アカウントID、内部URL、メールアドレス等が含まれていないか確認。
+`~/.claude/CLAUDE.md` のセキュリティセクションで「publicリポに含めない」と定めている情報がgit tracked ファイルに混入していないか確認する。検出した場合は `dotfiles-private` 配下の `*.local.md` に移す。
+
+#### 検出パターン
+
+```bash
+# 7-1. 個人・会社ドメインのメールアドレス
+git ls-files | xargs grep -nE '[a-zA-Z0-9._%+-]+@(cyberagent|winticket|cloud-identity|perman)\.[a-zA-Z.]+' 2>/dev/null
+
+# 7-2. GCPプロジェクトID（WinTicket org）
+git ls-files | xargs grep -nE '\b(billioon-[a-zA-Z0-9-]+|winticket-[a-zA-Z0-9-]+)\b' 2>/dev/null
+
+# 7-3. 社内ナレッジ・チケット系のホスト
+git ls-files | xargs grep -nE '[a-zA-Z0-9-]+\.(kibe\.la|cybozu\.com|atlassian\.net|backlog\.com)' 2>/dev/null
+
+# 7-4. SlackチャンネルID（C + 10桁前後の英数）/ Slack permalink
+git ls-files | xargs grep -nE '\b[CG][A-Z0-9]{8,11}\b|[a-z0-9-]+\.slack\.com/archives/' 2>/dev/null
+
+# 7-5. AWSアカウントID（12桁数字）/ ロールARN
+git ls-files | xargs grep -nE 'arn:aws:[a-z0-9-]+::[0-9]{12}:|\b[0-9]{12}\b.*(account|role|aws)' 2>/dev/null
+
+# 7-6. 内部URL・社内ドメイン
+git ls-files | xargs grep -nE 'https?://[a-zA-Z0-9.-]+\.(internal|local|corp|cyberagent\.co\.jp|winticket\.co\.jp)' 2>/dev/null
+
+# 7-7. Datadog等のメトリクス名（サービス固有）
+git ls-files | xargs grep -nE '\b(trace|metric|service)\.name[:=]\s*["\x27]?(winticket|billioon)' 2>/dev/null
+```
+
+#### 検出時の対応
+
+1. publicリポに残してよいか判断する。基準:
+   - 個人特定情報・組織特定情報を含む → private に移す
+   - 一般的な手順説明の例示で、誰の環境でも通用する → public でよい（メアドは `user@example.com` 等に置換）
+2. private に移す場合の配置先:
+   - `~/.claude/CLAUDE.md` 系の rules → `~/gh/github.com/ryosukesuto/dotfiles-private/config/claude/rules/<topic>.local.md`
+   - skill 固有 → `<skill-dir>/SKILL.local.md`（skillファイルから `${CLAUDE_SKILL_DIR}/SKILL.local.md` で参照）
+3. 既にgit履歴に残っている場合は `git filter-repo` で除去する（`git rm` だけでは履歴から消えない）:
+   ```bash
+   git filter-repo --replace-text <(echo 'sensitive-string==>REDACTED') --force
+   ```
+4. private リポは `install.sh` がシンボリックリンクで配置するので、移動後にインストールし直す必要は通常ない（既存リンク維持）
 
 ## 出力形式
 
@@ -99,3 +138,21 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): dotfiles セキュリティチェック実
 - シークレット検出のgrepパターンはSSH configのHost定義やコメント内の例示にも反応することがある。誤検知は内容を確認してからスキップ
 - `*.local` ファイルはgitignoreで除外されているため、git ls-filesには含まれない。local ファイル内のシークレットチェックはこのSkillの対象外
 - settings.json の deny ルールは `--dangerously-skip-permissions` でも有効。ただし ask ルールはスキップされる点に注意
+
+### 項目7（private情報）の誤検知パターン
+
+以下は「検出されてもpublicに残してよい」ケース。除外判断の参考にする。
+
+- `~/dotfiles-private/config/...` のようなパス参照: ディレクトリ構造の説明で、機密情報そのものではない
+- `user@example.com` `someone@cyberagent.co.jp` 等の例示: コマンド例示の placeholder。ただし実在のメアドが混入していないか個別確認
+- 「Kibela」「Slack」等のサービス名のみの言及: ID/URL/チャンネル名を含まなければ問題なし
+- `winticket-org` `WinTicket org` 等の組織名のみの一般的な記述: org名はOSSリポにも露出しているため許容（ただしプロジェクトIDは別）
+- Renovate設定の `commitMessagePrefix: "chore(deps):"` 等の汎用設定値: org固有でない
+
+### 重要度の判定基準
+
+| 重要度 | 例 |
+|--------|-----|
+| High | AWSアカウントID（12桁）、GCPプロジェクトID、SlackチャンネルID、内部URL（社内のみアクセス可能なホスト） |
+| Medium | 個人/同僚のメールアドレス、メトリクス名、Datadogダッシュボード名 |
+| Low | org名のみの言及、サービス名のみの言及（IDなし） |
