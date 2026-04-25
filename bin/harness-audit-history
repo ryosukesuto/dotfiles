@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+# harness-audit-history - 対象リポの harness-audit スコア推移を表示する
+#
+# Usage:
+#   harness-audit-history [<repo_path>]      # デフォルトは cwd
+#   harness-audit-history --format json      # JSON 出力
+#   harness-audit-history --format csv       # CSV 出力（Sheets/Excel 取込用）
+#
+# 入力:
+#   <repo_path>/docs/audit-history/*.md または <repo_path>/.audit/history/*.md の
+#   各ファイル冒頭にある `<!-- audit-meta: {...} -->` コメントを parse する。
+#
+# audit-meta の期待形式:
+#   <!-- audit-meta: {"date": "YYYY-MM-DD", "scores": {"A":N,"B":N,"C":N,"D":N,"E":N,"F":N}, "total": N} -->
+
+set -euo pipefail
+
+REPO_PATH="${1:-.}"
+FORMAT="md"
+
+# 引数 parse（first arg がパス、2 個目以降は flag）
+if [ "${1:-}" = "--format" ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  REPO_PATH="."
+else
+  shift || true
+fi
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --format) FORMAT="${2:-md}"; shift 2 ;;
+    -h|--help)
+      sed -n 's/^# \{0,1\}//; 2,/^$/p' "$0"
+      exit 0
+      ;;
+    *) echo "unknown arg: $1" >&2; exit 2 ;;
+  esac
+done
+
+if [ ! -d "$REPO_PATH" ]; then
+  echo "ERROR: $REPO_PATH is not a directory" >&2
+  exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ERROR: jq が必要です（brew install jq）" >&2
+  exit 1
+fi
+
+# 履歴ディレクトリを優先順に探す
+HISTORY_DIR=""
+for candidate in "docs/audit-history" ".audit/history" ".audit/local"; do
+  if [ -d "$REPO_PATH/$candidate" ]; then
+    HISTORY_DIR="$REPO_PATH/$candidate"
+    break
+  fi
+done
+
+if [ -z "$HISTORY_DIR" ]; then
+  echo "ERROR: 履歴ディレクトリが見つかりません（探索: docs/audit-history/, .audit/history/, .audit/local/）" >&2
+  exit 1
+fi
+
+# ファイル一覧（日付順）
+mapfile -t FILES < <(ls -1 "$HISTORY_DIR"/*.md 2>/dev/null | sort)
+
+if [ "${#FILES[@]}" -eq 0 ]; then
+  echo "ERROR: $HISTORY_DIR に audit レポートがありません" >&2
+  exit 1
+fi
+
+# 各ファイルから audit-meta JSON を抽出
+DATES=()
+SCORES_A=()
+SCORES_B=()
+SCORES_C=()
+SCORES_D=()
+SCORES_E=()
+SCORES_F=()
+TOTALS=()
+
+for f in "${FILES[@]}"; do
+  meta=$(grep -m1 -oE '<!-- audit-meta: \{.*\} -->' "$f" 2>/dev/null \
+    | sed -E 's/^<!-- audit-meta: //; s/ -->$//' || true)
+  if [ -z "$meta" ]; then
+    echo "WARN: audit-meta が見つかりません: $f" >&2
+    continue
+  fi
+  # jq で安全に抽出
+  date=$(echo "$meta" | jq -r '.date // empty' 2>/dev/null || echo "")
+  if [ -z "$date" ]; then
+    # フォールバック: ファイル名から日付推定
+    date=$(basename "$f" .md)
+  fi
+  DATES+=("$date")
+  SCORES_A+=("$(echo "$meta" | jq -r '.scores.A // 0')")
+  SCORES_B+=("$(echo "$meta" | jq -r '.scores.B // 0')")
+  SCORES_C+=("$(echo "$meta" | jq -r '.scores.C // 0')")
+  SCORES_D+=("$(echo "$meta" | jq -r '.scores.D // 0')")
+  SCORES_E+=("$(echo "$meta" | jq -r '.scores.E // 0')")
+  SCORES_F+=("$(echo "$meta" | jq -r '.scores.F // 0')")
+  TOTALS+=("$(echo "$meta" | jq -r '.total // 0')")
+done
+
+if [ "${#DATES[@]}" -eq 0 ]; then
+  echo "ERROR: parse 可能な audit-meta がありませんでした" >&2
+  exit 1
+fi
+
+repo_name=$(basename "$(cd "$REPO_PATH" && pwd)")
+
+# 推移計算ヘルパー
+trend() {
+  local cur="$1" prev="$2"
+  if [ -z "$prev" ]; then
+    printf '初回'
+    return
+  fi
+  local diff=$((cur - prev))
+  if [ "$diff" -gt 0 ]; then
+    printf '+%d' "$diff"
+  elif [ "$diff" -lt 0 ]; then
+    printf '%d' "$diff"
+  else
+    printf '±0'
+  fi
+}
+
+case "$FORMAT" in
+  md|markdown)
+    printf '# Harness Audit History\n\n'
+    printf 'リポジトリ: `%s`\n' "$repo_name"
+    printf '履歴ディレクトリ: `%s`\n' "$HISTORY_DIR"
+    printf '監査回数: %d\n\n' "${#DATES[@]}"
+
+    printf '## スコア推移\n\n'
+    printf '| 日付 | A | B | C | D | E | F | 合計 | 前回比 |\n'
+    printf '|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|\n'
+    for i in "${!DATES[@]}"; do
+      if [ "$i" -gt 0 ]; then
+        prev_total="${TOTALS[$((i - 1))]}"
+        diff_str=$(trend "${TOTALS[$i]}" "$prev_total")
+      else
+        diff_str="初回"
+      fi
+      printf '| %s | %s | %s | %s | %s | %s | %s | %s/30 | %s |\n' \
+        "${DATES[$i]}" \
+        "${SCORES_A[$i]}" "${SCORES_B[$i]}" "${SCORES_C[$i]}" \
+        "${SCORES_D[$i]}" "${SCORES_E[$i]}" "${SCORES_F[$i]}" \
+        "${TOTALS[$i]}" \
+        "$diff_str"
+    done
+
+    if [ "${#DATES[@]}" -ge 2 ]; then
+      first_total="${TOTALS[0]}"
+      last_total="${TOTALS[$((${#DATES[@]} - 1))]}"
+      overall_diff=$((last_total - first_total))
+      printf '\n## サマリ\n\n'
+      printf -- '- 初回（%s）: %s/30\n' "${DATES[0]}" "$first_total"
+      printf -- '- 直近（%s）: %s/30\n' "${DATES[$((${#DATES[@]} - 1))]}" "$last_total"
+      if [ "$overall_diff" -gt 0 ]; then
+        printf -- '- 通算改善: +%d\n' "$overall_diff"
+      elif [ "$overall_diff" -lt 0 ]; then
+        printf -- '- 通算後退: %d\n' "$overall_diff"
+      else
+        printf -- '- 変化なし: ±0\n'
+      fi
+    fi
+    ;;
+  json)
+    printf '{\n'
+    printf '  "repo": "%s",\n' "$repo_name"
+    printf '  "history_dir": "%s",\n' "$HISTORY_DIR"
+    printf '  "audits": [\n'
+    for i in "${!DATES[@]}"; do
+      sep=","
+      [ "$i" -eq $((${#DATES[@]} - 1)) ] && sep=""
+      printf '    {"date": "%s", "scores": {"A": %s, "B": %s, "C": %s, "D": %s, "E": %s, "F": %s}, "total": %s}%s\n' \
+        "${DATES[$i]}" \
+        "${SCORES_A[$i]}" "${SCORES_B[$i]}" "${SCORES_C[$i]}" \
+        "${SCORES_D[$i]}" "${SCORES_E[$i]}" "${SCORES_F[$i]}" \
+        "${TOTALS[$i]}" \
+        "$sep"
+    done
+    printf '  ]\n'
+    printf '}\n'
+    ;;
+  csv)
+    printf 'date,A,B,C,D,E,F,total\n'
+    for i in "${!DATES[@]}"; do
+      printf '%s,%s,%s,%s,%s,%s,%s,%s\n' \
+        "${DATES[$i]}" \
+        "${SCORES_A[$i]}" "${SCORES_B[$i]}" "${SCORES_C[$i]}" \
+        "${SCORES_D[$i]}" "${SCORES_E[$i]}" "${SCORES_F[$i]}" \
+        "${TOTALS[$i]}"
+    done
+    ;;
+  *)
+    echo "ERROR: unknown format '$FORMAT' (md|json|csv)" >&2
+    exit 2
+    ;;
+esac

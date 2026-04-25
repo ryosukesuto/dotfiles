@@ -139,15 +139,18 @@ main セッションは subagent の戻り値を受け取り、それを Evidenc
 ### 3. レポート出力
 
 ```
+<!-- audit-meta: {"date": "YYYY-MM-DD", "scores": {"A": N, "B": N, "C": N, "D": N, "E": N, "F": N}, "total": N} -->
+
 ## ハーネス監査レポート
 
 リポジトリ: {name}
 監査日: {YYYY-MM-DD}
 総合スコア: {sum}/30
+前回比: {+N / -N / ±0 / 初回}（前回 {YYYY-MM-DD}: {prev_sum}/30）
 
-| カテゴリ | スコア | Confidence | Evidence | 状態 |
-|---------|--------|------------|----------|------|
-| A. コンテキスト設計 | N | High/Medium/Low | {根拠ファイル:行} | {成熟度ラベル}: {1行サマリ} |
+| カテゴリ | スコア | 前回比 | Confidence | Evidence | 状態 |
+|---------|--------|--------|------------|----------|------|
+| A. コンテキスト設計 | N | +N/-N/±0 | High/Medium/Low | {根拠ファイル:行} | {成熟度ラベル}: {1行サマリ} |
 | ...全6カテゴリ... |
 
 ### 検出された課題（優先度順）
@@ -177,6 +180,35 @@ main セッションは subagent の戻り値を受け取り、それを Evidenc
 Quick Wins と中期的改善の切り分け:
 - Quick Wins: 既存ファイルへの数行編集 or 単一ファイル新規作成で完結。15分以内で実行可能
 - 中期的改善: 新規ワークフロー整備・複数ファイル改修・運用ルール導入を伴うもの
+
+#### レポートの保存（履歴永続化）
+
+レポートは対象リポの `docs/audit-history/{YYYY-MM-DD}.md` に保存する。git 管理下に置くことで、チーム横断でスコア推移を diff で追える。
+
+```bash
+mkdir -p docs/audit-history
+# 上記レポート全体を以下に書き込む（既存日付があれば上書き確認）
+cat > "docs/audit-history/$(date '+%Y-%m-%d').md" <<'EOF'
+<!-- audit-meta: ... -->
+## ハーネス監査レポート
+...
+EOF
+```
+
+保存時の前回比計算:
+- `docs/audit-history/*.md` のうち、今回より古い最新ファイルを `ls -1 docs/audit-history/*.md | sort | tail -2 | head -1` で特定
+- `<!-- audit-meta: {...} -->` を grep で抽出し JSON parse（`jq -r .scores.A` など）
+- カテゴリごとに今回スコアと差分を計算し、レポートの「前回比」列と冒頭サマリに反映
+- 前回ファイルが存在しない場合は「初回」と表記
+
+`audit-meta` コメントは Markdown の見た目に出ない HTML コメントなので、レポート可読性を損なわず機械可読性を確保できる。`bin/harness-audit-history` がこのコメントを parse して時系列推移を出力する。
+
+保存パスのバリエーション:
+- 既定: `docs/audit-history/`
+- `docs/` が存在しない / 別目的で使われている場合: `.audit/history/` で代替
+- 個人ローカルだけで運用したい場合（`gitignore` 入り）: `.audit/local/`（チーム共有はしない明示意図）
+
+判断: 対象リポに `docs/` がすでにある（`docs/adr/` など）なら `docs/audit-history/`、なければ `.audit/history/` を作る。リポジトリ管理者の意向があれば従う。
 
 ### 4. 改善実行（ユーザー承認後）
 
