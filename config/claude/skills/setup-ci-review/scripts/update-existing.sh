@@ -11,6 +11,8 @@
 #   - .greptile/config.json を最新テンプレートで全置換（preset自動判定）
 #     IaC preset 判定: .github/workflows/checkov.yml の有無、または既存 rules[] に
 #     テンプレート由来のIaC用 rule id が含まれるか
+#     triggerOnUpdates は既存値を保持（ops / server-config のように true 運用中のリポで
+#     テンプレート既定の false に勝手に戻さないため）
 #   - 差分を表示してから y/N で確認（--yes で省略可）
 #   - コミット・push は行わない
 #
@@ -78,20 +80,40 @@ extract_role() {
   sed -n 's/^あなたは \(.*\) です。このPRをレビューします。$/\1/p' "$1" | head -1
 }
 
+# `## 役割` セクションの 3 番目の項目（一貫性チェックの責務記述）を抽出する。
+# 旧テンプレート（"3. 既存コードとの一貫性チェックは Greptile が担当するため..."）と
+# 新テンプレート（"3. 既存コードとの一貫性チェックも自分で行う..." 等、Greptile 非選択時）の
+# どちらの文面でも汎用的に拾えるよう "^3\. " で始まる最初の行をターゲットにする。
+extract_consistency() {
+  awk '
+    /^3\. / && !found {
+      sub(/^3\. /, "")
+      print
+      found=1
+      exit
+    }
+  ' "$1"
+}
+
 extract_criteria() {
   awk '
-    /^3\. 既存コードとの一貫性チェックは Greptile が担当するため、そちらには踏み込まない$/{flag=1; next}
-    /^## 優先度ラベル/{exit}
-    flag {print}
+    /^3\. / && !flag { flag=1; next }
+    /^## 優先度ラベル/ && flag { exit }
+    flag { print }
   ' "$1" | trim_blank_lines
 }
 
 render_skill_template() {
-  # $1: template, $2: role string, $3: criteria file path
-  awk -v role="$2" -v cfile="$3" '
+  # $1: template, $2: role string, $3: criteria file path, $4: consistency delegation string
+  awk -v role="$2" -v cfile="$3" -v consistency="$4" '
     {
       line = $0
       gsub(/\{\{REVIEWER_ROLE\}\}/, role, line)
+      # gsub は右辺の & を特殊扱いするため、index ベースで安全に置換する
+      idx = index(line, "{{CONSISTENCY_DELEGATION}}")
+      if (idx > 0) {
+        line = substr(line, 1, idx - 1) consistency substr(line, idx + length("{{CONSISTENCY_DELEGATION}}"))
+      }
       if (line ~ /^\{\{REVIEW_CRITERIA\}\}$/) {
         while ((getline cline < cfile) > 0) print cline
         close(cfile)
@@ -119,29 +141,34 @@ else
   echo "WARN: $WF_DST not found — skipping" >&2
 fi
 
-# 2) SKILL.md を全置換（REVIEWER_ROLE / REVIEW_CRITERIA は保持）
+# 2) SKILL.md を全置換（REVIEWER_ROLE / REVIEW_CRITERIA / CONSISTENCY_DELEGATION は保持）
 if [ -f "$SKILL_DST" ]; then
   ROLE=$(extract_role "$SKILL_DST")
+  CONSISTENCY=$(extract_consistency "$SKILL_DST")
   CRITERIA_FILE=$(mktemp)
   extract_criteria "$SKILL_DST" > "$CRITERIA_FILE"
 
   if [ -z "$ROLE" ]; then
     echo "WARN: REVIEWER_ROLE を抽出できませんでした。SKILL.md の形式が想定と異なる可能性があります。" >&2
     rm -f "$CRITERIA_FILE"
+  elif [ -z "$CONSISTENCY" ]; then
+    echo "WARN: CONSISTENCY_DELEGATION を抽出できませんでした（## 役割 セクションの 3 番目の項目が想定形式と異なります）。" >&2
+    rm -f "$CRITERIA_FILE"
   elif [ ! -s "$CRITERIA_FILE" ]; then
     echo "WARN: REVIEW_CRITERIA を抽出できませんでした。" >&2
     rm -f "$CRITERIA_FILE"
   else
     TMP=$(mktemp)
-    render_skill_template "$SKILL_TEMPLATE" "$ROLE" "$CRITERIA_FILE" > "$TMP"
+    render_skill_template "$SKILL_TEMPLATE" "$ROLE" "$CRITERIA_FILE" "$CONSISTENCY" > "$TMP"
 
     if ! cmp -s "$TMP" "$SKILL_DST"; then
       echo ""
-      echo "=== diff: $SKILL_DST (全置換、REVIEWER_ROLE / REVIEW_CRITERIA は保持) ==="
+      echo "=== diff: $SKILL_DST (全置換、REVIEWER_ROLE / REVIEW_CRITERIA / CONSISTENCY_DELEGATION は保持) ==="
       diff -u "$SKILL_DST" "$TMP" || true
       echo ""
       echo "抽出値:"
       echo "  REVIEWER_ROLE: $ROLE"
+      echo "  CONSISTENCY_DELEGATION: $CONSISTENCY"
       echo "  REVIEW_CRITERIA: $(wc -l < "$CRITERIA_FILE") 行"
       echo ""
       if confirm "SKILL.md を上記の内容で上書きしますか？"; then
@@ -175,19 +202,39 @@ if [ -f "$GREPTILE_DST" ]; then
     GREPTILE_PRESET="generic"
   fi
 
+  # 既存の triggerOnUpdates 値を抽出（ops / server-config のように true で運用中のリポで
+  # テンプレート置換により勝手に false に戻らないようにする）。抽出失敗時はテンプレート既定の false を採用。
+  EXISTING_TRIGGER=$(grep -Eo '"triggerOnUpdates"[[:space:]]*:[[:space:]]*(true|false)' "$GREPTILE_DST" 2>/dev/null \
+    | grep -Eo '(true|false)' | head -1)
+
   if [ ! -f "$GREPTILE_SRC" ]; then
     echo "WARN: $GREPTILE_SRC not found — skipping greptile config update" >&2
-  elif ! cmp -s "$GREPTILE_SRC" "$GREPTILE_DST"; then
-    echo ""
-    echo "=== diff: $GREPTILE_DST (preset=$GREPTILE_PRESET) ==="
-    diff -u "$GREPTILE_DST" "$GREPTILE_SRC" || true
-    echo ""
-    echo "注意: strictness / ignorePatterns / instructions / rules[] 等のローカル調整は上書きで失われます。"
-    if confirm ".greptile/config.json を最新テンプレートで上書きしますか？"; then
-      cp "$GREPTILE_SRC" "$GREPTILE_DST"
-      updated+=(".greptile/config.json")
+  else
+    # テンプレートを一時ファイルに展開し、既存の triggerOnUpdates 値を書き戻してから比較する
+    GREPTILE_TMP=$(mktemp)
+    cp "$GREPTILE_SRC" "$GREPTILE_TMP"
+    if [ "$EXISTING_TRIGGER" = "true" ]; then
+      # macOS / Linux 両対応で in-place 編集
+      sed -i.bak 's/"triggerOnUpdates": false,/"triggerOnUpdates": true,/' "$GREPTILE_TMP"
+      rm -f "$GREPTILE_TMP.bak"
+    fi
+
+    if ! cmp -s "$GREPTILE_TMP" "$GREPTILE_DST"; then
+      echo ""
+      echo "=== diff: $GREPTILE_DST (preset=$GREPTILE_PRESET, triggerOnUpdates=${EXISTING_TRIGGER:-false} を保持) ==="
+      diff -u "$GREPTILE_DST" "$GREPTILE_TMP" || true
+      echo ""
+      echo "注意: strictness / ignorePatterns / instructions / rules[] 等のローカル調整は上書きで失われます。"
+      echo "      triggerOnUpdates は既存値を保持しています（ops / server-config 等での true 運用を壊さないため）。"
+      if confirm ".greptile/config.json を最新テンプレートで上書きしますか？"; then
+        mv "$GREPTILE_TMP" "$GREPTILE_DST"
+        updated+=(".greptile/config.json")
+      else
+        echo ".greptile/config.json の更新をスキップしました。"
+        rm -f "$GREPTILE_TMP"
+      fi
     else
-      echo ".greptile/config.json の更新をスキップしました。"
+      rm -f "$GREPTILE_TMP"
     fi
   fi
 fi

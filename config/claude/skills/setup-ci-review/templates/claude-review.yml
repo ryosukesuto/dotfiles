@@ -64,6 +64,125 @@ jobs:
             fi
           fi
 
+      # 一貫性チェック用の context ファイルを事前に集める。
+      # Greptile の embedding ベース検索の代替として、変更ファイルが触る identifier の
+      # 既存呼び出し箇所、同階層ファイル、test ペアを grep で抽出する。
+      # SKILL.md の Phase 2 (consistency review) でこのファイルを参照する。
+      - name: Prepare consistency context
+        id: consistency
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          set -uo pipefail
+          OUT=".claude-review-context.md"
+          : > "$OUT"
+
+          {
+            echo "# Consistency Review Context"
+            echo ""
+            echo "PR #${PR_NUMBER} の一貫性レビュー（命名規則・既存パターンへの追従・cross-file 整合）で参照する事前収集メモです。"
+            echo "Greptile 不在環境で Claude Code が一貫性チェックを担うため、grep ベースで近傍ファイルと類似パターンを集めています。"
+            echo ""
+          } >> "$OUT"
+
+          # 変更ファイル一覧（バイナリは除外）
+          mapfile -t CHANGED < <(gh pr diff "$PR_NUMBER" --name-only 2>/dev/null \
+            | grep -Ev '\.(png|jpg|jpeg|gif|webp|ico|pdf|zip|gz|tar|woff2?|ttf|otf|eot)$' || true)
+
+          if [ "${#CHANGED[@]}" -eq 0 ]; then
+            echo "## 変更ファイル: 0 件（context 収集スキップ）" >> "$OUT"
+          else
+            {
+              echo "## 変更ファイル一覧（${#CHANGED[@]} 件）"
+              echo ""
+              printf '- `%s`\n' "${CHANGED[@]}"
+              echo ""
+            } >> "$OUT"
+
+            # 同階層の兄弟ファイル（同一ディレクトリの上位 20 件）
+            {
+              echo "## 同階層の兄弟ファイル（命名規則・既存パターンの参照用）"
+              echo ""
+            } >> "$OUT"
+            declare -A SEEN_DIR=()
+            for f in "${CHANGED[@]}"; do
+              dir=$(dirname "$f")
+              [ -n "${SEEN_DIR[$dir]:-}" ] && continue
+              SEEN_DIR[$dir]=1
+              echo "### \`$dir/\`" >> "$OUT"
+              ls -1 "$dir" 2>/dev/null | head -20 | sed 's/^/- /' >> "$OUT" || true
+              echo "" >> "$OUT"
+            done
+
+            # test ペア（_test.go / .test.ts / .spec.ts 等）の存在チェック
+            {
+              echo "## test ペアの有無"
+              echo ""
+            } >> "$OUT"
+            for f in "${CHANGED[@]}"; do
+              base="${f%.*}"
+              ext="${f##*.}"
+              candidates=()
+              case "$ext" in
+                go) candidates+=("${base}_test.go") ;;
+                ts|tsx|js|jsx) candidates+=("${base}.test.${ext}" "${base}.spec.${ext}") ;;
+                py) candidates+=("$(dirname "$f")/test_$(basename "$base").py") ;;
+              esac
+              for c in "${candidates[@]:-}"; do
+                [ -z "$c" ] && continue
+                if [ -e "$c" ]; then
+                  echo "- \`$f\` → test ペアあり: \`$c\`" >> "$OUT"
+                else
+                  echo "- \`$f\` → test ペアなし（候補: \`$c\`）" >> "$OUT"
+                fi
+              done
+            done
+            echo "" >> "$OUT"
+
+            # 変更ファイルの呼び出し元（基本的な grep）
+            # トップレベル symbol（公開関数/型）を抽出して、リポ内の参照を最大10件ずつ拾う
+            {
+              echo "## 変更ファイル内 symbol の参照箇所（最大 10 件/symbol）"
+              echo ""
+              echo "Claude はこのリスト＋実 grep で十分にカバーできない場合、追加で grep を実行してください。"
+              echo ""
+            } >> "$OUT"
+            for f in "${CHANGED[@]}"; do
+              [ -f "$f" ] || continue
+              ext="${f##*.}"
+              # 言語別の symbol 抽出パターン（簡易）
+              symbols=""
+              case "$ext" in
+                go) symbols=$(grep -E '^(func|type|var|const) [A-Z]' "$f" 2>/dev/null \
+                              | sed -E 's/^(func|type|var|const) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
+                ts|tsx|js|jsx) symbols=$(grep -E '^export (function|class|const|interface|type) [A-Za-z]' "$f" 2>/dev/null \
+                              | sed -E 's/^export (function|class|const|interface|type) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
+                py) symbols=$(grep -E '^(def|class) [A-Za-z]' "$f" 2>/dev/null \
+                              | sed -E 's/^(def|class) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
+              esac
+              [ -z "$symbols" ] && continue
+              echo "### \`$f\`" >> "$OUT"
+              while IFS= read -r sym; do
+                [ -z "$sym" ] && continue
+                refs=$(grep -rln --include="*.${ext}" -F "$sym" . 2>/dev/null \
+                        | grep -v "^./$f$" | head -10 || true)
+                if [ -n "$refs" ]; then
+                  echo "- \`$sym\` の参照:" >> "$OUT"
+                  echo "$refs" | sed 's/^/  - /' >> "$OUT"
+                else
+                  echo "- \`$sym\`: 他ファイルからの参照なし（新規 symbol または file-local の可能性）" >> "$OUT"
+                fi
+              done <<< "$symbols"
+              echo "" >> "$OUT"
+            done
+          fi
+
+          echo "consistency_context_path=$OUT" >> "$GITHUB_OUTPUT"
+          echo "::group::Consistency context (head 200 行)"
+          head -200 "$OUT" || true
+          echo "::endgroup::"
+
       # v1.0.94 使用: mcp__github_inline_comment__create_inline_comment は引き続き利用可能
       # v1.0.94 以降は PR branch 上の .claude/ と .mcp.json を base branch から自動 restore する
       # 防御が入る（attacker-controlled な指示ファイルを Claude に読ませないため）。
@@ -81,9 +200,11 @@ jobs:
             BEFORE_SHA: ${{ steps.context.outputs.before }}
             AFTER_SHA: ${{ steps.context.outputs.after }}
             FORCE_PUSH: ${{ steps.context.outputs.force_push }}
+            CONSISTENCY_CONTEXT_PATH: ${{ steps.consistency.outputs.consistency_context_path }}
 
             PR ブランチは既にカレントディレクトリにチェックアウト済みです。
             `.claude/skills/claude-code-review/SKILL.md` を Read で読み込み、その内容に従ってこのPRをレビューしてください。
+            一貫性レビュー (Phase 2) では、上記 `CONSISTENCY_CONTEXT_PATH` のファイルを Read で読んでから判定してください。
           claude_args: |
             --model claude-opus-4-5
             --max-turns 50
