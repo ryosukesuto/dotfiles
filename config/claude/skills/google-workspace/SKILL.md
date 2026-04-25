@@ -37,12 +37,16 @@ function gws-personal() {
 
 | 用途 | コマンド |
 |------|---------|
-| Calendar（仕事予定 + 個人予定の両方） | `gws-personal calendar +agenda` |
-| Calendar（NASCAカレンダーのみ） | `gws calendar +agenda --calendar '<表示名>'` |
+| Calendar 閲覧（仕事予定 + 個人予定の両方） | `gws-personal calendar +agenda` |
+| Calendar 閲覧（NASCAカレンダーのみ） | `gws calendar +agenda --calendar '<表示名>'` |
+| Calendar 予定作成（既定） | `gws-personal calendar +insert`（個人・社外MTG・私用すべて） |
+| Calendar 予定作成（例外） | `gws calendar +insert`（CyberAgent 社内会議のみ） |
 | Gmail | `gws-personal`（仕事用は Gmail API 無効化済み） |
 | Drive（個人、01_Finance等） | `gws-personal` |
 | Drive（仕事） | `gws` |
 | Sheets / Docs / Slides | 対象に応じて使い分け |
+
+`gws`（仕事用）は CyberAgent アカウント。社内会議以外（社外ミーティング、個人予定、フライト等）は `gws-personal` の primary に入れる。迷ったら `gws-personal`。
 
 ### 再認証
 
@@ -127,10 +131,14 @@ eval "$(mise activate zsh)" && gws calendar +agenda --days 3 --calendar '<SKILL.
 eval "$(mise activate zsh)" && gws calendar events list --params '{"calendarId": "<SKILL.local.mdのカレンダーID>", "timeMin": "YYYY-MM-DDT00:00:00+09:00", "timeMax": "YYYY-MM-DDT00:00:00+09:00", "singleEvents": true, "orderBy": "startTime"}'
 ```
 
-予定作成（必ず須藤に内容を確認してから実行）:
+予定作成（必ず須藤に内容を確認してから実行）。既定は個人カレンダー（`gws-personal`）。`gws` を使うのは CyberAgent 社内会議のみ:
 ```bash
-eval "$(mise activate zsh)" && gws calendar +insert --summary "会議名" --start "2026-03-10T10:00:00+09:00" --end "2026-03-10T11:00:00+09:00"
-eval "$(mise activate zsh)" && gws calendar +insert --summary "1on1" --start "..." --end "..." --attendee "someone@example.com" --location "会議室A"
+# 既定: 個人・社外MTG・私用
+eval "$(mise activate zsh)" && gws-personal calendar +insert --summary "会議名" --start "2026-03-10T10:00:00+09:00" --end "2026-03-10T11:00:00+09:00"
+eval "$(mise activate zsh)" && gws-personal calendar +insert --summary "1on1" --start "..." --end "..." --location "https://meet.google.com/xxx-xxxx-xxx" --description "..."
+
+# CA社内会議のみ
+eval "$(mise activate zsh)" && gws calendar +insert --summary "社内会議" --start "..." --end "..." --attendee "someone@cyberagent.co.jp"
 ```
 
 ### Drive
