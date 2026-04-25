@@ -204,5 +204,5 @@ PR レビュー自動化の `allowed_bots` には `dependabot[bot]` と並べて
 ## 関連リソース
 
 - リポジトリの監査スクリプト: `bin/claude-review-coverage`、`bin/harness-audit-history`
-- Renovate org 方針: `~/dotfiles-private/config/claude/rules/winticket-dep-updates.local.md`（org 内）
+- Renovate org 方針: `~/dotfiles-private/config/claude/rules/<topic>.local.md`（org 内）
 - harness-audit カテゴリ詳細: `~/.claude/skills/harness-audit/checklist.md`

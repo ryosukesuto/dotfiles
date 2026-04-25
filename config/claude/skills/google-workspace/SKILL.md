@@ -18,7 +18,7 @@ gwsはプロファイル切り替え機能がないため、環境変数と conf
 
 ### 仕組み
 
-`GOOGLE_WORKSPACE_CLI_CLIENT_ID` / `CLIENT_SECRET` がシェル環境変数として常駐している（仕事用OAuthクライアント、winticket-workspace由来）。`gws` はこの環境変数を使って仕事アカウントで認証する。
+`GOOGLE_WORKSPACE_CLI_CLIENT_ID` / `CLIENT_SECRET` がシェル環境変数として常駐している（仕事用OAuthクライアント。GCPプロジェクトIDは `SKILL.local.md` 参照）。`gws` はこの環境変数を使って仕事アカウントで認証する。
 
 `gws-personal` は `~/.zshrc` にシェル関数として定義済み:
 ```bash
@@ -137,8 +137,8 @@ eval "$(mise activate zsh)" && gws calendar events list --params '{"calendarId":
 eval "$(mise activate zsh)" && gws-personal calendar +insert --summary "会議名" --start "2026-03-10T10:00:00+09:00" --end "2026-03-10T11:00:00+09:00"
 eval "$(mise activate zsh)" && gws-personal calendar +insert --summary "1on1" --start "..." --end "..." --location "https://meet.google.com/xxx-xxxx-xxx" --description "..."
 
-# CA社内会議のみ
-eval "$(mise activate zsh)" && gws calendar +insert --summary "社内会議" --start "..." --end "..." --attendee "someone@cyberagent.co.jp"
+# 社内会議のみ
+eval "$(mise activate zsh)" && gws calendar +insert --summary "社内会議" --start "..." --end "..." --attendee "someone@example.com"
 ```
 
 ### Drive

@@ -144,7 +144,7 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): dotfiles セキュリティチェック実
 以下は「検出されてもpublicに残してよい」ケース。除外判断の参考にする。
 
 - `~/dotfiles-private/config/...` のようなパス参照: ディレクトリ構造の説明で、機密情報そのものではない
-- `user@example.com` `someone@cyberagent.co.jp` 等の例示: コマンド例示の placeholder。ただし実在のメアドが混入していないか個別確認
+- `user@example.com` `someone@example.com` 等の例示: コマンド例示の placeholder。ただし会社ドメインの実在メアドが混入していないか個別確認
 - 「Kibela」「Slack」等のサービス名のみの言及: ID/URL/チャンネル名を含まなければ問題なし
 - `winticket-org` `WinTicket org` 等の組織名のみの一般的な記述: org名はOSSリポにも露出しているため許容（ただしプロジェクトIDは別）
 - Renovate設定の `commitMessagePrefix: "chore(deps):"` 等の汎用設定値: org固有でない
