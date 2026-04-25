@@ -43,6 +43,7 @@ REPO_NAME=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null \
   - `iac`: Claude Code workflow / Greptile / Checkov（IaCのみ候補追加）
 - analyze: コードベースを分析して設定を最適化するか（yes/no）
 - model: レビューに使うClaudeモデル（`default` = action既定 / `opus-4-5` / その他、デフォルト `default`）
+- greptileAutoReview: Greptile の Auto-review on new commits を有効化するか（yes/no、デフォルト `no`）。`yes` は ops / server-config 等「プロダクト的に重要で追加料金を払う価値があるリポ」のみ。理由は 2026-03 の料金改定で 1 アカウントあたり 50 件超のレビューに $1/件 が追加課金されるため、org レベルでは既定 OFF に切り替わった（詳細は `reference.md`）
 
 ### 3. コードベース分析（analyze=yes の場合のみ）
 
@@ -84,6 +85,7 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 |------|--------|
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」（analyze=yesの場合はスタック反映） |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=IaC観点カタログ（analyze=yesの場合はスタック固有観点を追加） |
+| `{{CONSISTENCY_DELEGATION}}` | Greptile を選択した場合=「既存コードとの一貫性チェックは Greptile が担当するため、そちらには踏み込まない」 / Greptile を選択しない場合=「既存コードとの一貫性チェック（命名規則・既存パターンへの追従・cross-file 整合）も自分で行う。Greptile 不在のため Claude Code が cross-repo 文脈を除く一貫性レビューを引き受ける」 |
 | `{{PROJECT_INSTRUCTIONS}}` | Greptile `.greptile/config.json` の `instructions` フィールドに入る自然文。analyze=yes=リポジトリ概要（1〜3文、CLAUDE.md 要約＋重要な制約）/ analyze=no=プレースホルダのまま残す場合は該当行を削除して空のままにする |
 
 置換ルール（iteration 検証で曖昧と出た箇所を明文化）:
@@ -110,6 +112,7 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
   - analyze=yesの場合 → rules.md のプレースホルダーを分析結果で置換、files.json の `files[]` に実際の重要ファイルを `{path, description}` で追記（公式スキーマ準拠）、config.json の `instructions` にリポジトリ概要（1〜3文）を埋める
   - analyze=noの場合 → `instructions: "{{PROJECT_INSTRUCTIONS}}"` の行ごと削除（プレースホルダを残したまま Greptile に送らない）
   - 公式フィールドのみ使用: `strictness` / `commentTypes` / `triggerOnUpdates` / `triggerOnDrafts` / `statusCheck` / `summarySection` / `issuesTableSection` / `confidenceScoreSection` / `sequenceDiagramSection` / `ignorePatterns` / `instructions` / `rules` / `disabledRules`。`updateExistingSummaryComment` / `updateSummaryOnly` / `fileChangeLimit` は公式ドキュメントに記載がないため追加しない
+  - `triggerOnUpdates`: テンプレートは既定 `false`（org レベルで OFF と同じ挙動）。ステップ2で `greptileAutoReview=yes` が選ばれた場合のみ、生成後に `.greptile/config.json` の該当行を `"triggerOnUpdates": true,` に書き換える。書き換え例: `sed -i '' 's/"triggerOnUpdates": false,/"triggerOnUpdates": true,/' .greptile/config.json`（macOS）。書き換えた場合は差分を目視確認する
   - 構造化ルール: IaC preset の `config.json` には `rules[]` に `id` / `severity` / `scope` 付きのIaC観点が含まれる。サブディレクトリで一部ルールを無効化したい場合は、そのディレクトリに `.greptile/config.json` を置いて `disabledRules: ["<id>"]` を指定する（cascading で親ルールを継承）
   - Provider本体・ライブラリ等の Go/TS/Python コードベース: `generic` preset を選んで analyze=yes で `instructions` と `rules[]` を埋める。IaC preset は `**/*.tf` スコープなので `.tf` が存在しないリポジトリでは発火しない
 - Checkov: `.github/workflows/checkov.yml`（IaC preset かつ選択時のみ）
@@ -177,10 +180,12 @@ bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 - **`--max-turns` は 50 以上を推奨**: SKILL.md が長い（コンテキスト補正ルール / ERROR-WHY-FIX / 追記テンプレート等）と、既定の 30 ターンでは Claude が `gh pr review` 投稿前に `error_max_turns` で打ち切られる。最低 50、SKILL.md を大幅に拡張した場合はさらに増やす
 - `--allowedTools` には `mcp__github_inline_comment__create_inline_comment` を必ず含める。これが無いと Claude が分析だけして何も投稿せず終わるケースがある（`display_report: true` はworkflow summaryに出すだけでPRコメントには投稿しない）
 - `--allowedTools` の Bash パターンに空白と複数 `*` を混ぜると Claude CLI の引数解釈が壊れて `Could not resolve authentication credentials` で fail する。`Bash(gh api --method PATCH repos/*/issues/comments/*:*)` は動作確認済みだが、新規パターンを増やすときは単体で動作確認する
+- **2-pass レビュー（B+C 案）**: `claude-review.yml` の `Prepare consistency context` step が `.claude-review-context.md` を生成し、 prompt の `CONSISTENCY_CONTEXT_PATH` で参照させる。SKILL.md template の「2-pass 順序」セクションで Phase 1 (logic/security) → Phase 2 (consistency) の順序を強制し、Phase 2 で `CONSISTENCY_CONTEXT_PATH` を Read する。Greptile 選択時もこの context 生成は走らせて構わない（害はない、むしろ補助情報として活用できる）。A 案（matrix で 2 セッションに分割）は ops / server-config 等のクリティカルリポでのみ別 workflow として後付けする
 - `anthropics/claude-code-action` は `id-token: write` permission が必須。ANTHROPIC_API_KEY 直接認証の構成でも内部で OIDC token を要求するため、未使用に見えても削除してはいけない（削除すると `Could not fetch an OIDC token` で fail する）。Codex/AI レビュアが「未使用だから削除」と誤指摘することがあるので却下すること
 - PR レビューの最終判定は `--approve` または `--request-changes` を必須で出す設計。`--comment` はレビュー状態が「commented」扱いで CI/Branch Protection 連携がしにくいため使わない。P0/P1 なし → `--approve`、あり → `--request-changes`。AI による approve を避けたい場合は `--comment` に差し替えるが、レビュー完了を機械的に判別できなくなる点を受容すること
 - Claude Code workflow を追加する初回 PR 自身では Claude のレビューはスキップされる（"Action skipped due to workflow validation error" / セキュリティ対策）。CI status は pass 扱いだがレビューコメントは付かない。動作確認は**マージ後の次の PR**で行うよう案内すること
 - `.greptile/` は3ファイルを個別に競合判定。ディレクトリ存在だけでスキップ禁止
+- **Greptile `triggerOnUpdates` の既定は `false`**: 2026-03 の料金改定で 1 アカウントあたり 50 件超のレビューに $1/件 が追加課金されるようになり、org レベルで Auto-review on new commits が OFF に切り替えられた（2倍〜3倍に値上がり）。setup-ci-review のテンプレートも追随して既定 `false`。`true` に上げるのは `WinTicket/ops` と `WinTicket/server-config` のようにプロダクトに重要で追加料金を払う価値があるリポのみ。ステップ2の `greptileAutoReview` で `yes` を選んだ場合のみ、生成後に手動書き換えする
 - Checkov は IaC preset 選択時のみ候補に出す（Terraform専用）
 - **商用 IaC scanner が既に動いているリポジトリには Checkov を入れない**: Wiz / Prisma Cloud / Snyk IaC などが CI で動作している場合、Checkov は機能重複でノイズの二重化・baseline / skip_check の二重メンテが発生する。ステップ3（analyze）で `.github/workflows/` を確認し、`wiz-cli` / `prisma-cloud-scan` / `snyk-iac` 等の step が存在する、または `Wiz IaC Scanner` などの status check が既に PR に付いている場合は、ステップ2のコンポーネント選択で Checkov をデフォルト非選択にして、その旨を option の description に明記する（例: 「Wiz IaC Scanner が検出されたため非推奨」）
 - `verify-sha-pin.sh` は生成ファイルのみ対象
