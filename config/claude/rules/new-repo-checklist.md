@@ -181,7 +181,7 @@ PR レビュー自動化の `allowed_bots` には `dependabot[bot]` と並べて
 | 周期 | アクション | 自動化可否 |
 |---|---|---|
 | 週次 | 自分宛て PR レビュー消化 | 半自動（Linear / pr inbox） |
-| 月次 | 未適用リポへの setup-ci-review 適用検討 | 自動（cron で Linear 起票） |
+| 月次 | 未適用リポへの setup-ci-review 適用検討 | 半自動（月次レビュー時に linear-triage Phase 7 で起票） |
 | 月次 | Renovate PR の処理（破壊的変更の確認） | 自動レビュー + 手動マージ |
 | 四半期 | harness-audit 再実行、スコア推移確認 | 半自動（Linear リマインダ） |
 
