@@ -21,7 +21,24 @@ user-invocable: true
 
 ### 1. 現状収集
 
-以下を並行で調査する。ファイルが存在しない項目はスキップし、「未構成」として記録する。Claude 固有パスは例示であり、他エージェント（Cursor / Cline / Codex / Aider など）の等価成果物も同等に扱う。
+#### 実行モードの判定
+
+以下のいずれかに該当する場合は **Mode B（大規模リポ向け Phase 1 並列化）** を使う。それ以外は **Mode A（標準）** で main セッション内で完結させる。
+
+判定シグナル（いずれか1つで Mode B を推奨）:
+
+```bash
+# Mode B 推奨条件のいずれかで true になる
+[ "$(git ls-files 2>/dev/null | wc -l)" -gt 3000 ] || \
+[ "$(find . -name '*.tf' 2>/dev/null | wc -l)" -gt 100 ] || \
+[ "$(ls .github/workflows/ 2>/dev/null | wc -l)" -gt 8 ]
+```
+
+ユーザーが明示的に「巨大リポ」「ops」「monorepo」「並列で」のように指定した場合も Mode B。判定が微妙なら Mode A から始め、Phase 1 で context window が逼迫してきたら Mode B に切り替える。
+
+#### Mode A: 標準モード（既定）
+
+main セッションで以下を並行で調査する。ファイルが存在しない項目はスキップし、「未構成」として記録する。Claude 固有パスは例示であり、他エージェント（Cursor / Cline / Codex / Aider など）の等価成果物も同等に扱う。
 
 ```
 # コンテキスト設計 (A)
@@ -54,6 +71,51 @@ main 保護: git hooks (pre-commit), GitHub branch protection
 Secret: gitleaks.toml, .github/workflows/secret-scan*, git-secrets 設定
 ループ検出: Stop hook, retry 上限ラッパー
 ```
+
+#### Mode B: 大規模リポ向け Phase 1 並列化モード
+
+Phase 1（収集）だけ `Explore` subagent に切り出して main の context window を温存する。Phase 2（評価）以降は main で実行する。
+
+```
+Agent({
+  subagent_type: "Explore",
+  model: "opus",
+  description: "harness-audit Phase 1 現状収集（{repo_name}）",
+  prompt: <<<
+    リポジトリ {repo_name} のハーネス資産を網羅的に調査して構造化レポートを返す。採点はしない。
+
+    探索対象（カテゴリ別）:
+    - A. コンテキスト設計: CLAUDE.md / AGENTS.md / .cursor/rules/ / .cursorrules / .clinerules / .claude/rules/ / docs/ / docs/adr/ / .claude/skills/*/SKILL.md / .cursor/commands/
+    - B. フィードバックループ: .claude/settings.json / .husky/ / .lefthook.yml / lefthook.yml / .pre-commit-config.yaml / .eslintrc* / biome.json / .ruff.toml / .golangci.yml / rubocop.yml / jest.config* / vitest.config* / pytest.ini / .github/workflows/ / .gitlab-ci.yml / .circleci/ / azure-pipelines.yml
+    - C. アーキテクチャ制約: tsconfig.json / mypy.ini / pyrightconfig.json / Makefile / depcheck / dependency-cruiser / archunit / docs/adr/
+    - D. エントロピー管理: renovate.json / dependabot.yml / .gitignore / .editorconfig / docs 鮮度スクリプト
+    - E. 計画と実行の分離: .claude/skills/ / git-wt 等のラッパー / plans/ ディレクトリ
+    - F. ガードレール: allowed-tools 設定 / MCP 許可リスト / git hooks (pre-commit) / GitHub branch protection / gitleaks.toml / .github/workflows/secret-scan* / git-secrets / Stop hook / retry 上限ラッパー
+
+    出力形式（Markdown、各カテゴリで以下を埋める）:
+    ## A. コンテキスト設計
+    | パス | 種類 | 1行サマリ（行数・主要トピック・更新頻度の推測） |
+    |---|---|---|
+
+    ## B. フィードバックループ
+    （以下同形式）
+
+    制約:
+    - 採点・評価・改善提案はしない（Phase 2 で main が行う）
+    - 各ファイルは Read で先頭 30 行程度を確認する。全文 Read は避ける
+    - パスが見つからないカテゴリは「未構成（探索したパス: ...）」と明記
+    - 巨大ディレクトリ（.git / node_modules / vendor / .terraform 等）はスキップ
+  >>>
+})
+```
+
+main セッションは subagent の戻り値を受け取り、それを Evidence ベースとして Phase 2（評価）に進む。Phase 2 で追加の Read が必要になった場合のみ、main から個別ファイルを読む。
+
+注意点:
+
+- subagent が「未構成」と報告したカテゴリでも、main が念のため 1 度 grep する（subagent の探索漏れガード）
+- subagent モデルは Terraform / IaC リポなど判断要素が多い場合は `opus`、軽量リポでは `sonnet` で十分
+- subagent の出力サイズが大きすぎる場合は、対象カテゴリを 2 つに分けて 2 体並列で起動する（A+E / B+C+F+D など、`config/claude/rules/model-selection.md` 参照）
 
 ### 2. 6カテゴリ評価
 
