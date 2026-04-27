@@ -66,6 +66,23 @@ ProjectのAssigneeは、そのProjectの完了判断責任者とする。
 - Bug Bounty、Wizアラートなど頻出系 → ゴールなしの恒常プロジェクトにまとめる（例外）
   - 恒常Projectには週1でコメントを残す: 今週消費したpt、押し出された作業
 
+### Issue 起票のタイミングと粒度
+
+GitHub PR との自動連携を活かすため、Issue は **着手前に切る**。
+
+| 作業タイプ | Issue 設計 | 自動連携 |
+|---|---|---|
+| 単発の機能/修正 | 1 Issue = 1 PR | PR description に `Closes PF-XXXX` で自動 Done |
+| 複数 PR またぐ施策 | 親 Issue + 子 Issue | 子は `Closes`、親は子が完了したら手動 Done |
+| 調査/Spike | 1 Issue（PR不要も可） | 完了時に手動 Done |
+| 長期エピック | 親 Issue は In Progress 維持、子を順次切る | 同上 |
+
+着手後に切ると、ブランチ名・PR タイトルを書き直す必要があり手動紐づけ作業が発生する。例外は5分で終わる typo 修正程度。
+
+複数 PR をぶら下げた重い親 Issue（例: 10件以上の PR が紐づく）は、後から子 Issue に分解しなおす必要が出る。最初から子 Issue を切る方が効率がよい。
+
+詳細: `~/.claude/rules/linear-branch-naming.md`
+
 ### Claude Codeでのissue作成時の必須項目
 
 Linearでissueを作成する際は、以下の項目を必ず設定する：

@@ -133,12 +133,36 @@ Issueを参照する際は必ずLinearのURLリンクを付与する:
 
 ## PR description追記フォーマット
 
-マージ済みPRも含めて `gh pr edit` で追記する:
+マージ済みPRも含めて `gh pr edit` で追記する。Linear の magic word を入れて自動 Done を効かせる:
 
 ```markdown
 
-<!-- Linear -->
-Linear: [PF-XXXX](https://linear.app/winticket/issue/PF-XXXX)
+## Linear
+
+Closes [PF-XXXX](https://linear.app/winticket/issue/PF-XXXX)
 ```
 
-bodyの末尾に追記。既にLinearリンクがある場合は重複追記しない。
+bodyの末尾に追記。既に `Closes PF-XXXX` / `Fixes PF-XXXX` / `Resolves PF-XXXX` または Linearリンクがある場合は重複追記しない。
+
+### 紐づけだけしたい場合（参照のみ、自動 Done させない）
+
+サブタスクで親 Issue を参照したいだけ等、自動 Done させたくないケース:
+
+```markdown
+
+## Linear
+
+Refs [PF-XXXX](https://linear.app/winticket/issue/PF-XXXX)
+```
+
+`Refs` は magic word ではないので Linear の自動クローズは発火しない。attachments への登録は ID が body に含まれていれば走る。
+
+## 自動リンクの確認方法
+
+PR が Linear と紐づいているかは、Linear MCP で確認できる:
+
+```
+mcp__linear-server__get_issue(id: "PF-XXXX")
+```
+
+応答の `attachments` 配列に `url: "https://github.com/.../pull/<num>"` が含まれていれば紐づけ済み。skill は手動追記前にこのチェックを行うこと。
