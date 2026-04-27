@@ -1,5 +1,5 @@
 ---
-name: claude-md-improver
+name: agent-context-auditor
 description: CLAUDE.mdファイルの監査・改善。「CLAUDE.md確認」「改善」「メンテナンス」等で起動。テンプレート比較→品質レポート→修正を実行。
 allowed-tools:
   - Read
@@ -10,7 +10,7 @@ allowed-tools:
 user-invocable: true
 ---
 
-# CLAUDE.md Improver
+# Agent Context Auditor
 
 Audit, evaluate, and improve CLAUDE.md files across a codebase to ensure Claude Code has optimal project context.
 

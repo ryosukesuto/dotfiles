@@ -1,4 +1,4 @@
-# claude-md-improver リファレンス
+# agent-context-auditor リファレンス
 
 ## Phase 3: Quality Report フォーマット
 
