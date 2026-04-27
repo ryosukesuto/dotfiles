@@ -184,8 +184,20 @@ PR レビュー自動化の `allowed_bots` には `dependabot[bot]` と並べて
 | 月次 | 未適用リポへの setup-ci-review 適用検討 | 半自動（月次レビュー時に linear-triage Phase 7 で起票） |
 | 月次 | Renovate PR の処理（破壊的変更の確認） | 自動レビュー + 手動マージ |
 | 四半期 | harness-audit 再実行、スコア推移確認 | 半自動（Linear リマインダ） |
+| 四半期 | ハーネスルール台帳の棚卸し（`expires <= today` を維持/降格/撤去判定） | harness-audit と同セッションで実行 |
 
 `bin/claude-review-coverage` で未適用リポの一覧、`bin/harness-audit-history` でスコア推移を取れる。
+
+### ラチェット化の予防
+
+ハーネスは追加の仕組みは整っているが、削除条件が弱いと膨張する。以下を運用上の原則にする。
+
+- ルール追加時は `rule / reason / added / expires / owner / downgrade_if` の6項目をメタ情報として併記する
+- 四半期ごとに「1本足すより1本消す」を優先する。撤去候補がない場合は新規追加を見送る
+- `expires` は自動削除トリガーではなく「レビュー必須フラグ」として扱う。期限到来時に維持/降格/撤去を判断する
+- リポジトリを `full` / `light` / `scratch` の3 tier に分け、scratch には監査圧をかけない
+
+詳細は `harness-audit` skill の `patterns.md` P3 を参照。
 
 ## 整備の優先順位
 
