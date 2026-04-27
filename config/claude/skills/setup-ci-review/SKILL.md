@@ -38,12 +38,15 @@ REPO_NAME=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null \
 `AskUserQuestion` で以下を一度に収集する。往復を最小化するため、1回でまとめて聞く。
 
 - preset: `generic` / `iac`
-- コンポーネント選択（multiSelect）:
-  - `generic`: Claude Code workflow / Greptile
-  - `iac`: Claude Code workflow / Greptile / Checkov（IaCのみ候補追加）
+- tier: 対象リポの Tier 分類（`1` / `2` / `3`、デフォルト `2`）。Tier 1=ops/server-config 相当の重要かつ活発なリポ、Tier 2=重要だが PR 頻度が低〜中で初回レビューだけで足りるリポ、Tier 3=スクラッチ/experimental または商用 IaC scanner で重複機能をカバーできるリポ。判定基準は `reference.md` の「Tier 分類」を参照。Tier 選択がコンポーネント選択と `greptileAutoReview` の既定値を決める
+- コンポーネント選択（multiSelect、Tier ごとのデフォルトを提示）:
+  - `generic`: Claude Code workflow / Greptile（Tier 1/2 はデフォルト選択、Tier 3 はデフォルト未選択）
+  - `iac`: Claude Code workflow / Greptile / Checkov（IaC のみ候補追加。Greptile の選択基準は generic と同じ）
 - analyze: コードベースを分析して設定を最適化するか（yes/no）
 - model: レビューに使うClaudeモデル（`default` = action既定 / `opus-4-5` / その他、デフォルト `default`）
-- greptileAutoReview: Greptile の Auto-review on new commits を有効化するか（yes/no、デフォルト `no`）。`yes` は ops / server-config 等「プロダクト的に重要で追加料金を払う価値があるリポ」のみ。理由は 2026-03 の料金改定で 1 アカウントあたり 50 件超のレビューに $1/件 が追加課金されるため、org レベルでは既定 OFF に切り替わった（詳細は `reference.md`）
+- greptileAutoReview: Greptile の Auto-review on new commits を有効化するか（yes/no）。デフォルトは Tier 1 のみ `yes`、Tier 2/3 は `no`。理由は 2026-03 の料金改定で 1 アカウントあたり 50 件/月を超えたレビューに $1/件 が追加課金されるため、Tier 1 以外で `triggerOnUpdates: true` にする費用対効果が薄い（詳細は `reference.md` の「Tier 分類」と「Greptile 料金改定」を参照）
+
+ユーザーが Tier 3 を選択した場合は、Greptile を deselect した構成で生成する。GitHub App から該当リポを uninstall する手順は完了ガイドで案内する（skill 側からは App 操作不可）。
 
 ### 3. コードベース分析（analyze=yes の場合のみ）
 
@@ -136,6 +139,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 
 - 必要な Secret: `ANTHROPIC_API_KEY`（リポジトリ Settings > Secrets > Actions）
 - **Claude Code GitHub App のインストールが必須**: https://github.com/apps/claude を開き、対象リポジトリに個別インストールする。workflow 投入だけでは動かず、App が無いと `401 Unauthorized - Claude Code is not installed on this repository` で workflow が 3回リトライして失敗する。OAuth 同意が必要なユーザー手動作業
+- **Tier 3（Greptile を deselect した構成）の場合のみ追加案内**: Greptile GitHub App が org にインストール済みの場合、設定ファイルなしでも初回レビューが走る。完全に無効化するには org admin に依頼して該当リポを Greptile App の Repository access から外してもらう（`https://github.com/organizations/<org>/settings/installations` の Greptile 行 → Configure → Repository access）
 - Branch Protection は維持したまま、Claude / Greptile の check を Required Check にしない
 - Greptile `statusCheck: true` は状態表示用。Required Check にすると block 相当になるため注意
 - **Required review count は 2 以上を推奨（human + AI の 2 Approve 制）**: Claude のコンテキスト補正ルールにより「文脈依存P0 + PR本文の申告」でAI Approveに至る経路がある。AI単独マージを防ぐため、Branch Protection で `Require a pull request before merging` → `Required approvals: 2` を設定し、少なくとも1件は human reviewer の Approve を必須にすること
