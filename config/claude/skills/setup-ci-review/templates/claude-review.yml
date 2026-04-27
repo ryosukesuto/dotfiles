@@ -96,7 +96,8 @@ jobs:
             {
               echo "## 変更ファイル一覧（${#CHANGED[@]} 件）"
               echo ""
-              printf '- `%s`\n' "${CHANGED[@]}"
+              # `--` 必須: format 文字列が `-` 始まりだと bash printf が `- : invalid option` で落ちる
+              printf -- '- `%s`\n' "${CHANGED[@]}"
               echo ""
             } >> "$OUT"
 
