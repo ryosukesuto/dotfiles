@@ -306,6 +306,10 @@
           {
             "type": "command",
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-pr-writing"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-heredoc-escape"
           }
         ]
       }

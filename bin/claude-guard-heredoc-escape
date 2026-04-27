@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# PreToolUse(Bash) hook: block commands that escape backticks / $ inside a
+# *quoted* heredoc (`<<'EOF'` / `<<"EOF"`), since shell expansion is already
+# disabled there and the escapes survive as literal backslashes — corrupting
+# markdown rendering in PR bodies, commit messages, etc.
+#
+# Rule reference: ~/.claude/rules/heredoc-escaping.md
+#
+# Detection is conservative: only fires when the command contains a quoted
+# heredoc opener AND a literal `\` + backtick (or `\$`) sequence. Unquoted
+# heredocs (`<<EOF`) legitimately need escaping, so they are not flagged.
+#
+# Exit 2 blocks the tool call and surfaces stderr to the agent.
+
+set -euo pipefail
+
+payload=$(cat)
+command=$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')
+
+# Cheap pre-filter: bail unless the command targets text-publishing surfaces
+# where heredoc bodies typically appear.
+case "$command" in
+  *"gh pr create"*|*"gh pr edit"*|*"gh issue create"*|*"gh issue edit"*|*"gh pr comment"*|*"gh issue comment"*|*"git commit"*) ;;
+  *) exit 0 ;;
+esac
+
+# Quoted heredoc opener present? (`<<'EOF'` / `<<"EOF"` — delimiter name varies)
+if ! printf '%s' "$command" | grep -qE "<<['\"][A-Za-z_][A-Za-z0-9_]*['\"]"; then
+  exit 0
+fi
+
+hits=()
+# Backslash + backtick (literal `\` followed by `)
+if printf '%s' "$command" | grep -qF '\`'; then
+  hits+=("\\\` (バックスラッシュ + バッククォート)")
+fi
+# Backslash + $ — same failure mode for variable-looking text
+if printf '%s' "$command" | grep -qE '\\\$'; then
+  hits+=("\\\$ (バックスラッシュ + ドル記号)")
+fi
+
+if [ ${#hits[@]} -eq 0 ]; then
+  exit 0
+fi
+
+{
+  echo "[guard-heredoc-escape] クォート付き heredoc 内でエスケープが使われています:"
+  for h in "${hits[@]}"; do echo "  - $h"; done
+  echo ""
+  echo "<<'EOF' / <<\"EOF\" ではシェル展開が走らないため、バッククォートや \$ を"
+  echo "エスケープするとバックスラッシュがリテラルとして残り、markdown 描画が壊れます。"
+  echo "詳細: ~/.claude/rules/heredoc-escaping.md"
+  echo ""
+  echo "対処: 該当箇所のバックスラッシュを削除して、バッククォート / \$ をそのまま書いてください。"
+} >&2
+
+exit 2
