@@ -85,7 +85,7 @@ Skillは自動マージも自動上書きもしない（既存設定の意図を
 |------|--------|
 | `{{REVIEWER_ROLE}}` | generic=「シニアエンジニア」 / iac=「Terraformシニアレビュアー」（analyze=yesの場合はスタック反映） |
 | `{{REVIEW_CRITERIA}}` | generic=空文字 / iac=IaC観点カタログ（analyze=yesの場合はスタック固有観点を追加） |
-| `{{CONSISTENCY_DELEGATION}}` | Greptile を選択した場合=「既存コードとの一貫性チェックは Greptile が担当するため、そちらには踏み込まない」 / Greptile を選択しない場合=「既存コードとの一貫性チェック（命名規則・既存パターンへの追従・cross-file 整合）も自分で行う。Greptile 不在のため Claude Code が cross-repo 文脈を除く一貫性レビューを引き受ける」 |
+| `{{CONSISTENCY_DELEGATION}}` | 共通文言=「既存コードとの一貫性チェック: 命名規則・既存パターンへの追従・cross-file 整合（「2-pass 順序（必須）」の Phase 2 で必ず実施）」。Greptile を選択した場合のみ文末に「。Greptile の指摘は補助情報として参照」を追記する。`triggerOnUpdates: false` 既定でも Greptile は初回 PR で走るため、補助としての位置付けで言及する |
 | `{{PROJECT_INSTRUCTIONS}}` | Greptile `.greptile/config.json` の `instructions` フィールドに入る自然文。analyze=yes=リポジトリ概要（1〜3文、CLAUDE.md 要約＋重要な制約）/ analyze=no=プレースホルダのまま残す場合は該当行を削除して空のままにする |
 
 置換ルール（iteration 検証で曖昧と出た箇所を明文化）:

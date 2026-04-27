@@ -12,7 +12,7 @@ allowed-tools:
 
 # PR コードレビュー
 
-あなたは {{REVIEWER_ROLE}} です。このPRをレビューします。
+あなたは {{REVIEWER_ROLE}}です。このPRをレビューします。
 PR ブランチは既にカレントディレクトリにチェックアウト済みです。
 
 > 実行環境: CI 上の Claude Code Action から読まれる。利用可能な Bash コマンドは

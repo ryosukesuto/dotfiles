@@ -166,7 +166,7 @@ jobs:
               while IFS= read -r sym; do
                 [ -z "$sym" ] && continue
                 refs=$(grep -rln --include="*.${ext}" -F "$sym" . 2>/dev/null \
-                        | grep -v "^./$f$" | head -10 || true)
+                        | grep -v -F "./$f" | head -10 || true)
                 if [ -n "$refs" ]; then
                   echo "- \`$sym\` の参照:" >> "$OUT"
                   echo "$refs" | sed 's/^/  - /' >> "$OUT"
