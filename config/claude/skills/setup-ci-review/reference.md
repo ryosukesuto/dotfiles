@@ -15,14 +15,38 @@ Greptile を選ばない構成では、Claude Code が「PR内ロジック・設
 - 改定前: レビューを受けたエンジニアアカウント数 × $30
 - 改定後: 上記に加えて、1 アカウントあたり 50 件/月を超えたレビューは $1/件の追加課金
 
+「1 件のレビュー」は Greptile がレビューを完了するごとにカウントされる。PR 作成時の初回レビュー、`triggerOnUpdates: true` 時のコミット追加レビュー、`@greptileai` 手動再実行いずれも個別に課金対象。`triggerOnUpdates: false` の節約効果は「PR の追加コミット数 × 件数」になる（活発な PR ほど効果大）。
+
 これを受けて org レベルで Auto-review on new commits（`triggerOnUpdates`）が OFF に切り替えられた。PR 作成時のレビューは従来通り走るが、push 後の再レビューは手動トリガー（`@claude` 相当）に寄せる運用。
 
 setup-ci-review の既定値:
 - テンプレート（`config.json` / `config-iac.json`）は `triggerOnUpdates: false`
-- `true` に上げるのはプロダクト的に重要で追加料金を払う価値があるリポのみ。現状: `WinTicket/ops`、`WinTicket/server-config`
+- `true` に上げるのは Tier 1 リポのみ（後述）
 - `update-existing.sh` は既存 `triggerOnUpdates` 値を保持する（true 運用中のリポを勝手に false に戻さない）
 
 新規 setup 時は step 2 の `greptileAutoReview` で `yes` を選んだ場合のみ、生成後に `sed -i '' 's/"triggerOnUpdates": false,/"triggerOnUpdates": true,/' .greptile/config.json` で書き換える。
+
+## Tier 分類（Greptile 適用範囲の判定基準）
+
+50 review/seat の枠と Claude Code Review の Phase 2（grep ベース一貫性チェック）の両立を踏まえ、リポを 3 tier に分類して Greptile 適用範囲を決める。Claude Code Review はどの Tier でも常に導入する。
+
+| Tier | 対象 | Greptile | `triggerOnUpdates` |
+|------|------|----------|---------------------|
+| 1（重要・活発） | プロダクト中核・PR 頻度高・追加課金を払う価値があるリポ | 導入 | `true` |
+| 2（重要・低〜中頻度） | プロダクト関連だが PR 頻度が低く、初回レビューだけで網が足りるリポ | 導入 | `false`（初回のみ） |
+| 3（スクラッチ・experimental・Claude のみで足りるリポ） | 使い捨て・個人系・IaC scanner で重複機能をカバーできるリポ | 未導入（GitHub App から uninstall） | — |
+
+判定の目安:
+- Tier 1 にする条件: ops / server-config 相当。本番障害に直結し、PR ごとにコミット追加が頻繁で、`triggerOnUpdates: true` の追加課金を払う価値がある
+- Tier 2 にする条件: 上記に当てはまらないが、Greptile の cross-repo 文脈・embedding 検索が初回レビューで価値を出すリポ。PR 数が月 5〜10 件程度で、50 件/seat 枠を圧迫しない
+- Tier 3 にする条件: 商用 IaC scanner（Wiz / Prisma / Snyk）が稼働済みで Greptile rule との重複が大きい / PR 数が極小・閉じたツールリポ / Claude Code の Phase 2 で一貫性チェックが十分なリポ
+
+Tier 3 の運用:
+- `.greptile/config.json` の削除では初回レビューを止められない（GitHub App がインストールされていれば既定挙動で走る）。GitHub App をリポから uninstall するのが正規手段
+- 切り替え順は: (1) GitHub App から該当リポを外す → (2) リポの `.greptile/` 配下を削除 → (3) `CLAUDE.md` 等の Greptile 言及を整理。順序を逆にすると、設定ファイルが残ったまま App が走る or App が残ったまま設定削除で混乱する
+- setup-ci-review skill では step 2 のコンポーネント選択で Greptile を deselect することで Tier 3 構成として bootstrap できる（既存リポを Tier 3 化する場合は `update-existing.sh` ではなく手動削除が必要）
+
+Tier 見直しの周期: 四半期。`harness-audit` skill の運用サイクルに合わせて、PR 数推移と seat 枠使用量を見て判定する。
 
 ## IaC観点カタログ
 
