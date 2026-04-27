@@ -273,6 +273,27 @@ def build_symbol_index(triage: dict, repo_roots: dict) -> dict:
     return index
 
 
+def fetch_pr_metadata(pr_ref: str) -> dict:
+    """pr_ref（例: github.com/org/repo#123）から gh CLI で PR title/body を取得する。"""
+    m = re.match(r"github\.com/([^#]+)#(\d+)", pr_ref or "")
+    if not m:
+        return {}
+    repo, pr_num = m.group(1), m.group(2)
+    try:
+        result = subprocess.run(
+            ["gh", "pr", "view", pr_num, "--repo", repo, "--json", "title,body"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if result.returncode != 0:
+            return {}
+        data = json.loads(result.stdout)
+        return {"title": data.get("title", ""), "body": data.get("body", "")}
+    except Exception:
+        return {}
+
+
 def load_static_analysis(path: str | None) -> dict:
     """外部生成済みの静的解析 JSON を読み込んでそのまま bundle にマージする。"""
     if not path:
@@ -317,6 +338,8 @@ def main():
     head_sha = triage.get("head_sha", "")
     changed_files = triage.get("changed_files", [])
     selected_reviewers = triage.get("selected_reviewers", [])
+    pr_ref = triage.get("pr_ref", "")
+    pr_metadata = fetch_pr_metadata(pr_ref) if pr_ref else {}
 
     review_slices, path_reason_map = build_review_slices(
         changed_files, repo_roots, base_sha, head_sha, selected_reviewers
@@ -330,6 +353,7 @@ def main():
     bundle = {
         "schema_version": 1,
         "triage_ref": args.triage,
+        "pr_metadata": pr_metadata,
         "changed_file_manifest": build_changed_file_manifest(changed_files),
         "interface_changes": build_interface_changes(triage),
         "risk_tags": triage.get("risk_tags", []),

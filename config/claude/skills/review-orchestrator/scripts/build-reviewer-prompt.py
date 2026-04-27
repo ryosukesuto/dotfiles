@@ -181,8 +181,9 @@ def build_diff_context(bundle: dict, triage: dict, repo_roots: dict, reviewer_id
 
 def build_prompt(bundle: dict, triage: dict, repo_roots: dict, reviewer_id: str) -> str:
     pr_ref = triage.get("pr_ref", "")
-    pr_meta = triage.get("pr_metadata", {}) or {}
+    pr_meta = bundle.get("pr_metadata", {}) or triage.get("pr_metadata", {}) or {}
     pr_title = pr_meta.get("title", "")
+    pr_body = pr_meta.get("body", "")
     size = triage.get("size", "")
     risk_tags = triage.get("risk_tags", [])
     interface_changes = bundle.get("interface_changes", {})
@@ -221,6 +222,11 @@ def build_prompt(bundle: dict, triage: dict, repo_roots: dict, reviewer_id: str)
 - 本番 API を呼ぶため無制限ループ・大量 RPC は本番環境への影響として扱う
 """
 
+    pr_body_section = ""
+    if pr_body:
+        body_truncated = pr_body[:3000] + ("..." if len(pr_body) > 3000 else "")
+        pr_body_section = f"\n## PR Description（著者の意図・前提条件・マージ前提として必読）\n{body_truncated}\n"
+
     prompt = f"""あなたは reviewer_id="{reviewer_id}" として動作します。
 
 ## PR概要
@@ -228,7 +234,7 @@ def build_prompt(bundle: dict, triage: dict, repo_roots: dict, reviewer_id: str)
 - タイトル: {pr_title}
 - サイズ: {size}
 - リスクタグ: {', '.join(risk_tags) if risk_tags else 'なし'}
-
+{pr_body_section}
 ## 変更ファイル
 {file_list}
 

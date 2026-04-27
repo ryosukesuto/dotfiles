@@ -235,6 +235,7 @@ uv run python3 ~/.claude/skills/review-orchestrator/scripts/report.py \
 ```
 
 オーケストレーターパスでは以下の手順へ進まず、report.py の出力をそのまま返す。
+report.py の出力はツール結果に流れるだけで、ユーザーには届かない。**必ず最終テキストメッセージで report.py の出力全文をそのまま貼り付けてユーザーに伝えること。** 要約に圧縮せず、全 findings を掲載する。
 
 ---
 
@@ -260,6 +261,7 @@ uv run python3 ~/.claude/skills/review-orchestrator/scripts/report.py \
 - `gh pr view --json baseRepository` は一部 gh バージョンで `Unknown JSON field` になる。REPO は `--json url` の PR URL から正規表現で抽出する（ルーティング節のスニペット参照）
 - `gh` 実行時に shell profile 由来の noise（例: `gh:1: command not found: _gh_ensure_token`）が stderr に混ざる環境では `2>/dev/null` を付けて stdout の jq パースが壊れないようにする
 - オーケストレーターパスは `report.py` の出力をそのまま返す。その後に手動でレビューを追記しない
+- レビュー結果はユーザーへの出力として返すだけで終了する。`gh pr review` / `gh pr comment` 等で GitHub に投稿するかどうかはユーザーが判断する。**ユーザーから明示的に「投稿して」と指示されるまで書き込み操作は行わない**
 - Codex が「サポートしていない」「動作しない」系の主張をしたら実際にコードを読んで確認してから採用する。未確認の指摘を P0 として出すと信頼性を損なう
 - subagent 内から review-pr が呼ばれた場合、triage の `size` / `risk_tags` に関わらずシンプルパス骨格にフォールバックする（Agent tool の再帰呼び出し禁止のため）。出力は `review-pr-reference.md` のフォーマットに従い、`risk_tags` の内容は「注意事項」節に転記する
 - triage の `selected_reviewers` が null または空の場合、オーケストレーターパスでは `codex-baseline` と `opus-baseline` の 2 本を固定で使う。非 null の場合はその全員分のプロンプトを生成して並列起動する
