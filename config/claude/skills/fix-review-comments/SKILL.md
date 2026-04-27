@@ -40,10 +40,11 @@ REPO_NAME=$(echo "$REPO" | cut -d/ -f2)
 
 ### 3. レビューコメントの取得
 
-レビューコメントには2種類ある。両方を取得すること。
+レビューコメントには3種類ある。すべて取得すること。
 
-- インラインコメント（`reviewThreads`）: コードの特定行に付くコメント。resolveが可能
+- インラインコメント（`reviewThreads`）: コードの特定行に付くコメント。resolve が可能
 - review body（`reviews`）: レビュー全体のサマリーコメント。APPROVED / CHANGES_REQUESTED 等の状態を持つ
+- issue コメント（`comments`）: PR 全体に対する単発コメント。Greptile などのレビュー bot は inline thread ではなく issue コメントとしてサマリ＋suggestion を一括投稿することがある。resolve 不可
 
 ```bash
 gh api graphql -f query='query {
@@ -79,6 +80,15 @@ gh api graphql -f query='query {
           }
         }
       }
+      comments(first: 50) {
+        nodes {
+          id
+          databaseId
+          body
+          author { login }
+          createdAt
+        }
+      }
     }
   }
 }'
@@ -86,6 +96,7 @@ gh api graphql -f query='query {
 
 - `reviewThreads`: 未解決（`isResolved: false`）のスレッドのみを対象にする
 - `reviews`: `CHANGES_REQUESTED` 状態のレビューを優先的に対応する。`APPROVED` のレビューに含まれる指摘も見落とさないこと
+- `comments`: bot 投稿（`greptile-apps[bot]` / `coderabbit[bot]` など）の本文に suggestion が埋め込まれていないか必ず確認する。HTML の `<details>` で折りたたまれていることもあるので、`gh api repos/{owner}/{repo}/issues/comments/{id}` で本文をフルで取得して読む
 
 ### 4. コメントの分析と優先度判断
 
@@ -123,7 +134,7 @@ git commit -m "fix: address review comments
 git push
 ```
 
-### 7. スレッドの resolve
+### 7. スレッドの resolve / issue コメントへの返信
 
 レビュアーが対応状況を一目で把握できるよう、対応済みスレッドは resolve する。修正対応したスレッドと、対応不要と判断したスレッドを resolve する。
 
@@ -150,6 +161,11 @@ gh api graphql -f query='mutation {
 }'
 ```
 
+issue コメント（Greptile などの bot サマリ）には resolve 機能がないため、以下のいずれかで対応を残す:
+
+- 修正コミットのメッセージで対応箇所を明記する（push すれば自動的に bot のコメントから参照できる）
+- 必要に応じて PR に通常コメント（`gh pr comment {PR_NUMBER} --body "..."`）で対応サマリを返信する。Greptile のように再レビューを再走できる bot の場合は、再走によって対応済みが反映される
+
 ### 8. 結果報告
 
 対応結果をまとめてユーザーに報告:
@@ -159,9 +175,10 @@ gh api graphql -f query='mutation {
 
 ## Gotchas
 
-- `reviewThreads` はインラインコメント（コードの特定行に付くコメント）のみ返す。review body（レビュー全体のサマリー）は `reviews` で別途取得が必要。両方を必ず取得すること
-- review body に指摘が書かれていてインラインコメントが0件のケースがある（自動レビューボットに多い）。`reviewThreads` が空でも `reviews` を確認する
-- `resolveReviewThread` は PR author 権限で実行可能。他人の PR では権限エラーになる場合がある。review body のコメントは resolve できないので、PR コメントで対応済みの旨を返信する
+- レビューコメントは 3 経路に分かれて格納される。`reviewThreads` / `reviews` / `comments`（issue コメント）すべて取得しないと取りこぼす。経験上、Greptile は inline thread を作らず issue コメントに suggestion をまとめるため、`reviewThreads.totalCount=0` でも `comments` を必ず確認する
+- `gh pr view --comments` は PR description + issue コメント + reviews を時系列に統合表示してくれるので、目視確認の最初の一歩として有効。ただし長い HTML コメントはトリミングされるため、確実に本文を読むなら `gh api repos/{owner}/{repo}/issues/comments/{id}` でフル取得する
+- `resolveReviewThread` は PR author 権限で実行可能。他人の PR では権限エラーになる場合がある。issue コメント（Greptile bot 等）には resolve 機能がないため、対応サマリは PR コメントで返すか、コミットメッセージで明記する
+- 自動レビューボットの本文は `<details>` で折りたたまれていることが多い。`grep -F suggestion` 等で機械的に探すより、本文全体を Read して目視で漏れを確認する方が確実
 - リポジトリ名はハードコードせず、`gh repo view` から動的に取得する
 - Greptile の suggestion を `git apply` で適用する場合、diff 形式が GitHub の suggestion 形式と異なることがあるので、手動で Edit ツールを使って修正する方が確実
 - 複数コメントへの修正を1コミットにまとめる。コメントごとに commit すると履歴が散らかる
