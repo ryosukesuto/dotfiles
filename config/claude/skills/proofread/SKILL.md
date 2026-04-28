@@ -2,7 +2,7 @@
 name: proofread
 description: AI生成テキストを校正する。「校正」「proofread」「文体チェック」「AIっぽい」「トーン修正」等で起動。
 user-invocable: true
-argument-hint: "[ファイルパス]（省略時は直前に書いたファイル）"
+argument-hint: "[ファイルパス | slack]（省略時は直前に書いたファイル。`slack` でSlack向け会話文に校正）"
 allowed-tools:
   - Read
   - Edit
@@ -15,16 +15,23 @@ allowed-tools:
 
 ## 実行手順
 
-### 1. 対象ファイルの特定
+### 1. 対象テキストの特定
 
-引数があればそのファイル。なければ直前にEdit/Writeしたファイルを対象にする。
+引数の解釈:
+- ファイルパス: そのファイルを対象にする
+- `slack`（または `slack` を含む文字列）: 直前に書いた / 提示したSlack草案テキストを対象にし、Slack向けパターンを併用する
+- 省略時: 直前にEdit/Writeしたファイル、または直前のメッセージで提示したテキスト
 
 ### 2. チェックリストに沿って検出
 
-対象ファイルを読み、以下のパターンを検出する。該当箇所を行番号付きでリストアップする。
+対象テキストを読み、以下のパターンを検出する。該当箇所を行番号付きでリストアップする。
 自分が書いた文章のパターンは自分では見落としやすいため、チェックリストで機械的に洗い出す。
 
-検出パターン（`${CLAUDE_SKILL_DIR}/patterns.md` を参照）
+検出パターン:
+- 共通: `${CLAUDE_SKILL_DIR}/patterns.md`
+- Slack向け（引数 `slack` のときのみ追加適用）: `${CLAUDE_SKILL_DIR}/patterns-slack.md`
+
+Slack向けの場合、共通patternsの一部（ラベル+改行構造、体言止めの羅列、見出し化など）はドキュメント体を前提とした指針なので、Slack patternsの指示が優先される。
 
 ### 3. 修正
 
