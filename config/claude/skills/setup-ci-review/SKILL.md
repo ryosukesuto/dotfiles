@@ -180,7 +180,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 
 ## Gotchas
 
-- **action バージョンは v1.0.94（`1c8b699d43e9bfed42b48ef15da85d89bab70960`）を pin**: `mcp__github_inline_comment__create_inline_comment` は v1.0.94 / v1.0.101 いずれも引き続き使用可能（過去の「v1.0.101 で削除」という記述は誤り）。v1.0.94 では PR branch 上の `.claude/` と `.mcp.json` を base branch から自動 restore する防御が入り、attacker が PR branch でレビュー指示を改ざんする経路を塞いでいる。SKILL.md はこの挙動を前提に書くこと（PR branch 上の SKILL.md 改変は効かず base branch の内容が読まれる）
+- **action バージョンは v1.0.101（`38ec876110f9fbf8b950c79f534430740c3ac009`）を pin**: `mcp__github_inline_comment__create_inline_comment` は v1.0.94 / v1.0.101 いずれも引き続き使用可能（過去の「v1.0.101 で削除」という記述は誤り）。v1.0.94 で PR branch 上の `.claude/` と `.mcp.json` を base branch から自動 restore する防御が入り、attacker が PR branch でレビュー指示を改ざんする経路を塞いだ。v1.0.101 でも継承されているため、新しい方を pin する。SKILL.md はこの挙動を前提に書くこと（PR branch 上の SKILL.md 改変は効かず base branch の内容が読まれる）
 - **`--max-turns` は 50 以上を推奨**: SKILL.md が長い（コンテキスト補正ルール / ERROR-WHY-FIX / 追記テンプレート等）と、既定の 30 ターンでは Claude が `gh pr review` 投稿前に `error_max_turns` で打ち切られる。最低 50、SKILL.md を大幅に拡張した場合はさらに増やす
 - `--allowedTools` には `mcp__github_inline_comment__create_inline_comment` を必ず含める。これが無いと Claude が分析だけして何も投稿せず終わるケースがある（`display_report: true` はworkflow summaryに出すだけでPRコメントには投稿しない）
 - `--allowedTools` の Bash パターンに空白と複数 `*` を混ぜると Claude CLI の引数解釈が壊れて `Could not resolve authentication credentials` で fail する。`Bash(gh api --method PATCH repos/*/issues/comments/*:*)` は動作確認済みだが、新規パターンを増やすときは単体で動作確認する

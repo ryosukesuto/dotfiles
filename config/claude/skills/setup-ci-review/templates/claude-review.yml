@@ -184,12 +184,12 @@ jobs:
           head -200 "$OUT" || true
           echo "::endgroup::"
 
-      # v1.0.94 使用: mcp__github_inline_comment__create_inline_comment は引き続き利用可能
       # v1.0.94 以降は PR branch 上の .claude/ と .mcp.json を base branch から自動 restore する
       # 防御が入る（attacker-controlled な指示ファイルを Claude に読ませないため）。
       # SKILL.md はこの挙動を前提に書く（`.claude/skills/claude-code-review/SKILL.md` は
       # base branch の内容が読まれる）。
-      - uses: anthropics/claude-code-action@1c8b699d43e9bfed42b48ef15da85d89bab70960 # v1.0.94
+      # mcp__github_inline_comment__create_inline_comment は v1.0.94 / v1.0.101 いずれでも利用可能。
+      - uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009 # v1.0.101
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_bots: "dependabot[bot],renovate[bot]"
