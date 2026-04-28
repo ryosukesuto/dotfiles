@@ -310,6 +310,10 @@
           {
             "type": "command",
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-heredoc-escape"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-cyberagent-email"
           }
         ]
       }
