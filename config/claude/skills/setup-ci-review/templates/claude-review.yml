@@ -188,8 +188,8 @@ jobs:
       # 防御が入る（attacker-controlled な指示ファイルを Claude に読ませないため）。
       # SKILL.md はこの挙動を前提に書く（`.claude/skills/claude-code-review/SKILL.md` は
       # base branch の内容が読まれる）。
-      # mcp__github_inline_comment__create_inline_comment は v1.0.94 / v1.0.101 いずれでも利用可能。
-      - uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009 # v1.0.101
+      # mcp__github_inline_comment__create_inline_comment は v1.0.94 以降継続して利用可能。
+      - uses: anthropics/claude-code-action@11a9dadd198803a0cea6bd53da3e0e8a762fc6ea # v1.0.108
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_bots: "dependabot[bot],renovate[bot]"
