@@ -16,6 +16,11 @@
 #   - 差分を表示してから y/N で確認（--yes で省略可）
 #   - コミット・push は行わない
 #
+# サポート対象外:
+#   Tier 3 化（Greptile 完全撤去）は本スクリプトでは扱わない。GitHub App uninstall →
+#   .greptile/ 削除 → CLAUDE.md 整理の順序で手動実施する。詳細は reference.md の
+#   「Tier 分類」セクションを参照。
+#
 # 注意:
 #   SKILL.md に REVIEWER_ROLE / REVIEW_CRITERIA 以外の手動カスタマイズがある場合、
 #   全置換で失われる。差分を必ず目視確認すること。
