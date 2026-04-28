@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# PreToolUse(Bash) hook: block git commands that try to author a commit
+# under @cyberagent.co.jp. The user's primary git identity is
+# ryosuke.suto+gh@gmail.com (see ~/.gitconfig); cyberagent.co.jp must never
+# leak into git history via Claude Code automation.
+#
+# Patterns blocked:
+#   - `git -c user.email=...@cyberagent.co.jp ...` (override at invocation)
+#   - `git config ... user.email ...@cyberagent.co.jp` (config write)
+#   - `GIT_AUTHOR_EMAIL=...@cyberagent.co.jp` / `GIT_COMMITTER_EMAIL=...@cyberagent.co.jp`
+#
+# Exit 2 blocks the tool call and surfaces stderr to the agent.
+
+set -euo pipefail
+
+payload=$(cat)
+command=$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')
+
+# Quick reject if the command does not mention the forbidden domain at all.
+case "$command" in
+  *cyberagent.co.jp*) ;;
+  *) exit 0 ;;
+esac
+
+# Match only when the domain appears in an email-author context.
+if printf '%s' "$command" \
+    | grep -qE '(user\.email[ =][^ ]*@cyberagent\.co\.jp|GIT_(AUTHOR|COMMITTER)_EMAIL=[^ ]*@cyberagent\.co\.jp)'; then
+  cat >&2 <<'EOF'
+[guard-cyberagent-email] git author に @cyberagent.co.jp を使用しようとしています。
+
+このマシンの git identity は ryosuke.suto+gh@gmail.com (~/.gitconfig) です。
+WinTicket org の社内リポでも commit author は GitHub アカウントに紐づく
+個人アドレスを使う運用に統一しています。
+
+対処:
+  - `git -c user.email=...` の override を外し、global 設定を尊重する
+  - GIT_AUTHOR_EMAIL / GIT_COMMITTER_EMAIL の env override も同様に外す
+  - どうしても @cyberagent.co.jp を使う必要がある場合は、ユーザーの明示
+    指示を受けてから --no-verify 系のバイパスではなく hook を一時無効化
+    する形で対応する
+EOF
+  exit 2
+fi
+
+exit 0
