@@ -1,20 +1,44 @@
 #!/bin/bash
 #
-# pre-commit hook: mainブランチへの直接コミットを防止
+# pre-commit hook: mainブランチへの直接コミット・worktree外でのfeatureブランチコミットを防止
 #
-# 保護対象: main, master（全リポジトリ共通）
+# 保護対象:
+#   - main, master ブランチへの直接コミット
+#   - メインチェックアウト（worktree外）でのfeatureブランチコミット
 # 除外: git config --local wt.allowDirectCommit true を設定したリポジトリ
 # バイパス: git commit --no-verify（緊急時のみ）
 
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 
-# main/master以外はスキップ
-if [[ "$current_branch" != "main" ]] && [[ "$current_branch" != "master" ]]; then
+# リポジトリ単位のopt-out（main直コミット・worktree強制の両方を解除）
+if [[ "$(git config --bool wt.allowDirectCommit 2>/dev/null)" == "true" ]]; then
     exit 0
 fi
 
-# リポジトリ単位のopt-out
-if [[ "$(git config --bool wt.allowDirectCommit 2>/dev/null)" == "true" ]]; then
+# worktree外でのfeatureブランチコミットをブロック
+git_dir=$(git rev-parse --absolute-git-dir 2>/dev/null)
+git_common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+if [[ "$git_dir" == "$git_common_dir" ]] \
+    && [[ "$current_branch" != "main" ]] \
+    && [[ "$current_branch" != "master" ]] \
+    && [[ "$current_branch" != "HEAD" ]]; then
+    echo ""
+    echo -e "\033[0;31m[BLOCKED]\033[0m メインチェックアウトでfeatureブランチをコミットしようとしています (branch: ${current_branch})"
+    echo ""
+    echo "  worktreeで作業してください:"
+    echo "    git stash"
+    echo "    git switch main"
+    echo "    git-wt add ${current_branch}"
+    echo "    cd .worktrees/${current_branch} && git stash pop"
+    echo ""
+    echo "  除外設定: git config --local wt.allowDirectCommit true"
+    echo "  緊急バイパス: git commit --no-verify"
+    echo ""
+    exit 1
+fi
+
+# main/master以外はスキップ（feature in worktree）
+if [[ "$current_branch" != "main" ]] && [[ "$current_branch" != "master" ]]; then
     exit 0
 fi
 

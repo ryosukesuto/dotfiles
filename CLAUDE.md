@@ -62,6 +62,9 @@ bin/           - カスタムスクリプト
 
 - 理由: 複数タスクを並行実行するため、作業ディレクトリの独立性が必要
 - mainへの直接コミットはpre-commitフックでブロック済み（`wt.allowDirectCommit` でopt-out可能）
+- メインチェックアウトでのfeatureブランチ作業も以下でブロック（同じ`wt.allowDirectCommit`でopt-out）
+  - `claude-guard-worktree-edit`（PreToolUse）でEdit/Writeを阻止
+  - `pre-commit`フックでコミットを阻止
 - Claude Codeでの並列作業は `isolation: "worktree"` のsubagentも活用する
 
 ### 基本フロー

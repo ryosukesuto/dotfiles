@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# PreToolUse hook: worktree外でのfeatureブランチ編集をブロック
+#
+# メインチェックアウト（git-dir == git-common-dir）にいるとき、
+# main/master以外のブランチでEdit/Writeを阻止する。
+# featureブランチは常にworktreeで作業させるため。
+#
+# 判定ロジック:
+#   - git-dir と git-common-dir が等しい → メインチェックアウト
+#   - current_branchがmain/master → 別hook(claude-guard-main-edit)に委譲
+#   - wt.allowDirectCommit でopt-outされていないか
+#
+# exit 0: 編集を許可
+# exit 2: 編集をブロック
+
+file_path="${CLAUDE_TOOL_INPUT_file_path}"
+[[ -z "$file_path" ]] && exit 0
+
+# ファイルのディレクトリからgitリポジトリ情報を取得
+file_dir="$(dirname "$file_path")"
+while [[ ! -d "$file_dir" ]] && [[ "$file_dir" != "/" ]]; do
+    file_dir="$(dirname "$file_dir")"
+done
+[[ ! -d "$file_dir" ]] && exit 0
+
+# gitリポジトリ外はスキップ
+git_dir=$(git -C "$file_dir" rev-parse --absolute-git-dir 2>/dev/null)
+[[ -z "$git_dir" ]] && exit 0
+
+git_common_dir=$(git -C "$file_dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+
+# worktree内なら通す
+[[ "$git_dir" != "$git_common_dir" ]] && exit 0
+
+# main/masterはclaude-guard-main-editに任せる
+current_branch=$(git -C "$file_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+[[ "$current_branch" == "main" ]] && exit 0
+[[ "$current_branch" == "master" ]] && exit 0
+
+# detached HEADはスキップ
+[[ "$current_branch" == "HEAD" ]] && exit 0
+
+# リポジトリ単位のopt-out
+[[ "$(git -C "$file_dir" config --bool wt.allowDirectCommit 2>/dev/null)" == "true" ]] && exit 0
+
+echo "[BLOCKED] メインチェックアウトでfeatureブランチを直接編集しています (branch: ${current_branch})"
+echo ""
+echo "  worktreeで作業してください:"
+echo "    git stash"
+echo "    git switch main"
+echo "    git-wt add ${current_branch}"
+echo "    cd .worktrees/${current_branch} && git stash pop"
+echo ""
+echo "  除外設定: git config --local wt.allowDirectCommit true"
+exit 2
