@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# Fetch Bitwarden credentials and emit `export` statements for `eval`.
+#
+# Usage:
+#   eval "$(bw-fetch <preset>)"
+#   eval "$(bw-fetch --item <bw_item_id> --field <field_name> --as <env_var>)"
+#
+# The output is shell `export` statements with values quoted via `printf %q`.
+# Always invoke through `eval "$(...)"` so values do not land in the transcript.
+#
+# Presets are defined in <skill_dir>/presets.local.md as a markdown table:
+#   | preset | item_id | field | env_var |
+#   |--------|---------|-------|---------|
+#   | dd     | <uuid>  | api_key | DD_API_KEY |
+# Multiple rows with the same preset name export multiple variables.
+set -euo pipefail
+
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PRESETS_FILE="$SKILL_DIR/presets.local.md"
+
+die() { echo "bw-fetch: $*" >&2; exit 1; }
+
+ensure_session() {
+  if [[ -n "${BW_SESSION:-}" ]] \
+      && bw status 2>/dev/null \
+         | jq -re '.status == "unlocked"' >/dev/null 2>&1; then
+    return 0
+  fi
+  local session
+  session="$("$SKILL_DIR/bin/bw-unlock" 2>/dev/null)" || die "bw unlock failed (op session may need re-auth)"
+  [[ -n "$session" ]] || die "bw unlock returned empty session"
+  export BW_SESSION="$session"
+  printf 'export BW_SESSION=%q\n' "$session"
+}
+
+fetch_field() {
+  local item="$1" field="$2"
+  bw get item "$item" \
+    | jq -r --arg f "$field" '.fields[]? | select(.name==$f) | .value'
+}
+
+emit_from_preset() {
+  local preset="$1"
+  [[ -f "$PRESETS_FILE" ]] || die "presets file not found: $PRESETS_FILE"
+  local found=0
+  while IFS= read -r line; do
+    # Skip header / separator rows
+    [[ "$line" =~ ^\|[[:space:]]*-+ ]] && continue
+    [[ "$line" =~ ^\|[[:space:]]*preset[[:space:]]*\| ]] && continue
+    # Parse "| preset | item_id | field | env_var |"
+    local p i f v
+    p="$(awk -F'|' '{print $2}' <<<"$line" | xargs)"
+    [[ "$p" == "$preset" ]] || continue
+    i="$(awk -F'|' '{print $3}' <<<"$line" | xargs)"
+    f="$(awk -F'|' '{print $4}' <<<"$line" | xargs)"
+    v="$(awk -F'|' '{print $5}' <<<"$line" | xargs)"
+    [[ -n "$i" && -n "$f" && -n "$v" ]] || die "malformed preset row: $line"
+    local val
+    val="$(fetch_field "$i" "$f")"
+    [[ -n "$val" ]] || die "empty value for preset=$preset field=$f"
+    printf 'export %s=%q\n' "$v" "$val"
+    found=1
+  done < <(grep -E '^\|' "$PRESETS_FILE")
+  [[ "$found" -eq 1 ]] || die "preset not found: $preset"
+}
+
+emit_adhoc() {
+  local item="$1" field="$2" as="$3"
+  local val
+  val="$(fetch_field "$item" "$field")"
+  [[ -n "$val" ]] || die "empty value for item=$item field=$field"
+  printf 'export %s=%q\n' "$as" "$val"
+}
+
+preset=""
+item=""
+field=""
+as=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --item) item="$2"; shift 2 ;;
+    --field) field="$2"; shift 2 ;;
+    --as) as="$2"; shift 2 ;;
+    -h|--help) sed -n '2,15p' "$0" | sed 's/^# //; s/^#//'; exit 0 ;;
+    --) shift; break ;;
+    -*) die "unknown flag: $1" ;;
+    *) preset="$1"; shift ;;
+  esac
+done
+
+ensure_session
+
+if [[ -n "$preset" ]]; then
+  emit_from_preset "$preset"
+elif [[ -n "$item" && -n "$field" && -n "$as" ]]; then
+  emit_adhoc "$item" "$field" "$as"
+else
+  die "either <preset> or all of --item/--field/--as is required"
+fi
