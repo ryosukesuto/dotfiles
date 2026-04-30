@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Print a Bitwarden session token to stdout.
+#
+# Usage:
+#   export BW_SESSION="$(bw-unlock)"
+#
+# Master password is fetched from 1Password (op://Personal/Bitwarden/password)
+# so this works non-interactively after `op` is unlocked (touchID on macOS).
+set -euo pipefail
+
+BW_PASSWORD="$(op read 'op://Personal/Bitwarden/password')" \
+  bw unlock --raw --passwordenv BW_PASSWORD
