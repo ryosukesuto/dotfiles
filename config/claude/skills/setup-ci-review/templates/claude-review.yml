@@ -70,6 +70,7 @@ jobs:
       # SKILL.md の Phase 2 (consistency review) でこのファイルを参照する。
       - name: Prepare consistency context
         id: consistency
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
@@ -152,21 +153,31 @@ jobs:
             for f in "${CHANGED[@]}"; do
               [ -f "$f" ] || continue
               ext="${f##*.}"
-              # 言語別の symbol 抽出パターン（簡易）
+              # 言語別の symbol 抽出パターンと、参照検索時の include glob 集合を決定する。
+              # ts <-> tsx, js <-> jsx は同じ言語族として相互参照を拾う。
               symbols=""
+              INCLUDE_GLOBS=()
               case "$ext" in
-                go) symbols=$(grep -E '^(func|type|var|const) [A-Z]' "$f" 2>/dev/null \
-                              | sed -E 's/^(func|type|var|const) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
-                ts|tsx|js|jsx) symbols=$(grep -E '^export (function|class|const|interface|type) [A-Za-z]' "$f" 2>/dev/null \
-                              | sed -E 's/^export (function|class|const|interface|type) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
-                py) symbols=$(grep -E '^(def|class) [A-Za-z]' "$f" 2>/dev/null \
-                              | sed -E 's/^(def|class) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
+                go)
+                  INCLUDE_GLOBS=(--include='*.go')
+                  symbols=$(grep -E '^(func|type|var|const) [A-Z]' "$f" 2>/dev/null \
+                            | sed -E 's/^(func|type|var|const) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
+                ts|tsx|js|jsx)
+                  INCLUDE_GLOBS=(--include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx')
+                  symbols=$(grep -E '^export (function|class|const|interface|type) [A-Za-z]' "$f" 2>/dev/null \
+                            | sed -E 's/^export (function|class|const|interface|type) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
+                py)
+                  INCLUDE_GLOBS=(--include='*.py')
+                  symbols=$(grep -E '^(def|class) [A-Za-z]' "$f" 2>/dev/null \
+                            | sed -E 's/^(def|class) ([A-Za-z0-9_]+).*/\2/' | sort -u | head -10) ;;
               esac
               [ -z "$symbols" ] && continue
               echo "### \`$f\`" >> "$OUT"
               while IFS= read -r sym; do
                 [ -z "$sym" ] && continue
-                refs=$(grep -rln --include="*.${ext}" -F "$sym" . 2>/dev/null \
+                refs=$(grep -rln "${INCLUDE_GLOBS[@]}" \
+                        --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=vendor \
+                        -F "$sym" . 2>/dev/null \
                         | grep -v -F "./$f" | head -10 || true)
                 if [ -n "$refs" ]; then
                   echo "- \`$sym\` の参照:" >> "$OUT"
