@@ -424,6 +424,17 @@ if [ ! -d "$HOME/.codex/prompts" ]; then
 fi
 create_symlink "$DOTFILES_DIR/config/codex/prompts/create-pr-pro.md" "$HOME/.codex/prompts/create-pr-pro.md"
 
+# Codex Skills（ユーザー層: ~/.agents/skills、freee-api-skill 等の lock 管理 skill と共存させるため個別 symlink）
+if [ ! -d "$HOME/.agents/skills" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Codex Skills ディレクトリを作成: ~/.agents/skills"
+    else
+        mkdir -p "$HOME/.agents/skills"
+        info "Codex Skills ディレクトリを作成: ~/.agents/skills"
+    fi
+fi
+create_symlink "$DOTFILES_DIR/config/codex/skills/code-review" "$HOME/.agents/skills/code-review"
+
 # ============================================================================
 # dotfiles-private（機密設定ファイルのシンボリックリンク）
 # ============================================================================
