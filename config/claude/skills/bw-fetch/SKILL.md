@@ -1,6 +1,6 @@
 ---
 name: bw-fetch
-description: Bitwarden から credential を取得して環境変数に export するスキル。Datadog API、Slack token などサービス毎の preset を `presets.local.md` で管理し、`eval "$(bw-fetch <preset>)"` で env に注入する。「BW_SESSION」「Bitwarden」「DD_API_KEY」「認証情報取得」「credential 取得」等で起動。
+description: Bitwarden から credential を取得して環境変数に export するスキル。1Password 経由の非対話 unlock (`bin/bw-unlock`) も含むので、`bw unlock` をユーザーに手動実行させない。Datadog API、Slack token などサービス毎の preset を `presets.local.md` で管理し、`eval "$(bw-fetch <preset>)"` で env に注入する。「BW_SESSION」「Bitwarden」「unlock」「DD_API_KEY」「認証情報取得」「credential 取得」等で起動。
 ---
 
 # bw-fetch
