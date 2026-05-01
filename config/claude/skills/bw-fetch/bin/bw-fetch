@@ -35,8 +35,15 @@ ensure_session() {
 
 fetch_field() {
   local item="$1" field="$2"
-  bw get item "$item" \
-    | jq -r --arg f "$field" '.fields[]? | select(.name==$f) | .value'
+  case "$field" in
+    password|username|uri|totp|notes)
+      bw get "$field" "$item"
+      ;;
+    *)
+      bw get item "$item" \
+        | jq -r --arg f "$field" '.fields[]? | select(.name==$f) | .value'
+      ;;
+  esac
 }
 
 emit_from_preset() {
