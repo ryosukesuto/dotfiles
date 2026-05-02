@@ -55,6 +55,19 @@ Closes PF-XXXX
 
 `Closes` / `Fixes` / `Resolves` のいずれも有効。複数 Issue を1 PR で閉じる場合は `Closes PF-1234, Closes PF-1235` のように繰り返す。
 
+### Closes / Refs の使い分け
+
+Magic Word は「この PR をマージしたら Issue を Done にしてよいか」で選ぶ。受け入れ条件を全て満たさないのに `Closes` を書くと、TODO が残ったまま Issue が Done になる事故が起きる。
+
+| Magic Word | 効果 | 使う場面 |
+|---|---|---|
+| `Closes` / `Fixes` / `Resolves` | merge で Issue が自動 Done | この PR で Issue の受け入れ条件を全て満たす場合 |
+| `Refs` / `Part of` | リンクのみ。Status 変化なし | 部分対応・複数 PR にまたがる場合の中間 PR |
+
+判定基準: PR を開く前に Issue の Acceptance Criteria（または description の TODO リスト）を読み返し、この PR で全項目チェックが入るかを確認する。1 つでも残るなら `Refs`、最終 PR で `Closes` に切り替える。
+
+複数 PR にまたがると分かった時点で Issue 粒度を見直す（親 Issue + 子 Issue に分割）ほうが、`Refs` を使い続けるより運用が楽になる。
+
 ### 親 Issue は閉じない
 
 サブタスク (`parentId` がある Issue) を閉じても親 Issue は自動クローズしない。サブタスク全体が完了したら親 Issue は手動で Done にする。
