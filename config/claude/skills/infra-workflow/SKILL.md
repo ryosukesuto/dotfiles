@@ -22,6 +22,10 @@ allowed-tools:
 4. PR作成前 → mainブランチ（デフォルトブランチ）でローカルと同期
 5. PR作成後 → CI/CDのterraform planで結果確認
 
+## destroy / IAM 変更を含む PR の追加チェック
+
+`google_*_iam_member` (non-authoritative) や `google_logging_project_sink` を destroy する場合、共有所有問題で他 stack を巻き込む事故が起きやすい。詳細手順とチェックリストは `~/.claude/rules/terraform-iam-destroy.md` を参照する（global rule として autoload 済み）。
+
 ## AWS CLI作業時
 1. フェデレーションポータルにログイン
 2. 対象AWSアカウントの `...` → `一時的な認証情報を取得`
