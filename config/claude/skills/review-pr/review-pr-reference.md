@@ -145,6 +145,40 @@ PRの目的と変更内容を1-2文で要約。
 - 監視・ロギング
 - セキュリティ設定（IAM、ネットワーク）
 
+### Terraform PR の追加観点（destroy / IAM 変更時は必須）
+
+terraform plan が destroy または IAM binding 変更を含む場合、以下を追加で確認する。
+
+#### IAM binding の共有所有チェック（P0）
+
+`google_*_iam_member` (non-authoritative) や AWS の non-authoritative IAM リソースが destroy される場合:
+
+- **destroy 対象の `member` を抽出し、同じ `(project, role, member)` tuple が他 module / stack で管理されていないか grep で確認**
+- 共有所有なら destroy で GCP/AWS 側の binding が消えて他 stack が drift する → P0 として指摘
+- 確認コマンド例:
+  ```bash
+  grep -rn "<member 文字列の特徴的部分>" --include='*.tf' terraform/
+  ```
+- 特に注意するべき member パターン:
+  - GCP default service agent (`service-{project_number}@gcp-sa-*.iam.gserviceaccount.com`) — 複数機能で共有されやすい
+  - log sink writer identity (`unique_writer_identity = true` でも既存 sink は legacy default SA のままの drift がよくある)
+  - GitHub Actions / Workload Identity 系の principal — 複数 stack で同じ principal を使う
+
+#### unique_writer_identity の drift（P1）
+
+`google_logging_project_sink.unique_writer_identity` を `true` に変更する PR では、既存 sink の writer identity は GCP API では rotate されない (新規作成時のみ反映)。
+
+- terraform state では `true` だが GCP 上では legacy default SA のままという drift が発生
+- 既存 sink を destroy → re-create するまで drift は解消しない
+- レビュー時は `gcloud logging sinks describe <name>` で実 `writerIdentity` を確認するように促す
+
+#### Cycle-aware な destroy 順序（P0-P1）
+
+複数 stack にまたがる destroy では、上流 stack の destroy が下流 stack の依存リソース (IAM binding、Secret、Pub/Sub topic 等) を巻き込む可能性を確認する。
+
+- 影響範囲が読み切れない場合は段階適用 (dev → stg → prd) を提案
+- Drift 解消が apply の副作用として混入していないか plan を読み込む
+
 ## タイムボックス目安
 
 - 小規模PR（<100行）: 10-15分
