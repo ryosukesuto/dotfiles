@@ -28,7 +28,13 @@ PRの未解決レビューコメントを一覧取得し、優先度判断→修
 PR_NUMBER=$(gh pr view --json number --jq '.number' 2>/dev/null)
 ```
 
-PRが見つからない場合はユーザーにPR番号を確認する。
+引数で PR 番号 / URL が渡されている場合はそちらを優先する。PR が見つからない場合の優先順位:
+
+1. 引数で受け取った PR 番号 / URL があればそれを使う
+2. 直前の同一セッション内で操作した PR 番号があれば、AskUserQuestion で「PR #XXX で続行しますか？」と確認
+3. 上記いずれも無ければ AskUserQuestion で PR 番号を尋ねる
+
+worktree 横断で作業している場合、`cwd` が main 側だと `gh pr view` は失敗する。`gh pr list --author @me --state open --limit 5` で候補を出して確認する手もある。
 
 ### 2. リポジトリ情報の取得
 
@@ -97,6 +103,33 @@ gh api graphql -f query='query {
 - `reviewThreads`: 未解決（`isResolved: false`）のスレッドのみを対象にする
 - `reviews`: `CHANGES_REQUESTED` 状態のレビューを優先的に対応する。`APPROVED` のレビューに含まれる指摘も見落とさないこと
 - `comments`: bot 投稿（`greptile-apps[bot]` / `coderabbit[bot]` など）の本文に suggestion が埋め込まれていないか必ず確認する。HTML の `<details>` で折りたたまれていることもあるので、`gh api repos/{owner}/{repo}/issues/comments/{id}` で本文をフルで取得して読む
+
+#### 連続レビューサイクル時のフィルタ
+
+同じ PR に対して push → 新規レビュー → 修正 → push を繰り返す場合、毎回全件読み返すと無駄。`LAST_PUSH_TIME` 以降に追加された分だけを抽出する:
+
+```bash
+# 直近 push の時刻を ISO8601 で取得（fallback はセッション開始時刻）
+LAST_PUSH_TIME=$(git log -1 --format=%cI HEAD@{push} 2>/dev/null || echo "1970-01-01T00:00:00Z")
+
+gh api graphql -f query='...上のクエリ...' 2>/dev/null | jq --arg since "$LAST_PUSH_TIME" '{
+  unresolved_threads: [.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)],
+  recent_reviews: [.data.repository.pullRequest.reviews.nodes[] | select(.body != "" and (.submittedAt > $since))],
+  recent_comments: [.data.repository.pullRequest.comments.nodes[] | select(.createdAt > $since)]
+}'
+```
+
+初回実行時は `$since` をエポック相当にして全件取得、2 回目以降は直前 push の時刻でフィルタする。`unresolved_threads` は時刻を問わず全件確認すること（古い未対応スレッドを取りこぼさない）。
+
+#### セキュリティスキャナー bot（Wiz / Snyk 等）の扱い
+
+Wiz `wiz-ed2b67a832` のような scanner bot は本文に finding 件数のサマリしか持たず、詳細は外部コンソールへのリンクのみ。本文を Read しても意味のある情報は得られない。
+
+対処:
+
+- 本文に件数サマリしかない場合は、PR の他のレビュー（claude bot 等）が同じ脆弱性を捕捉していないか確認する。捕捉済みならそちらの修正で finding も解消する想定で進む
+- 解消したか確認する手段がローカルに無い場合、修正 push 後の次回 scan 結果まで判断保留と明示する
+- 詳細を見ないと判断できない finding（high/critical 等）はユーザーに「Wiz コンソールで詳細を確認しますか？」と聞いて止まる
 
 ### 4. コメントの分析と優先度判断
 
@@ -182,3 +215,5 @@ issue コメント（Greptile などの bot サマリ）には resolve 機能が
 - リポジトリ名はハードコードせず、`gh repo view` から動的に取得する
 - Greptile の suggestion を `git apply` で適用する場合、diff 形式が GitHub の suggestion 形式と異なることがあるので、手動で Edit ツールを使って修正する方が確実
 - 複数コメントへの修正を1コミットにまとめる。コメントごとに commit すると履歴が散らかる
+- 同一セッション内で同じスキルを連続呼び出しするケース（push → 新規レビュー → 修正 → push のループ）が頻出する。2 回目以降は「直前 push 以降に追加された分」だけをフィルタ表示し、毎回全件読み返さない（`#連続レビューサイクル時のフィルタ` 節参照）
+- worktree 横断で作業する場合、`gh pr view` がカレントブランチ判定で失敗することがある。直前の会話文脈に PR 番号があれば AskUserQuestion で「PR #XXX で続行しますか？」と確認してから進む
