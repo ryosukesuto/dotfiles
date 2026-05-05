@@ -14,7 +14,10 @@ allowed-tools:
 現在の変更を素早くコミットしてリモートにプッシュします。日常的な作業の効率化に最適です。
 
 ## 動作
-1. `git status`で現在の変更を表示
+1. `git status` と `git log @{u}..HEAD` で現在の状態を判定（詳細は下記「状態判定」）
+   - A: 未ステージ/ステージ済み変更あり → 通常フロー（2以降）
+   - B: 変更なし & unpushed commit あり → push直行（10へ）
+   - C: 変更なし & unpushed commit なし → 何もせず終了
 2. このセッションで自分が変更・作成したファイルのみを対象にする（会話履歴から判断）
    - セッション前から存在するunstaged変更は対象外
    - 判断に迷う場合はユーザーに確認する
@@ -36,6 +39,35 @@ allowed-tools:
 11. 現在のブランチをリモートにプッシュ
 12. dotfilesリポからの実行時は dotfiles-private の変更も確認・push（詳細は下記「dotfiles-private 連動push」）
 13. mainブランチ以外の場合、PR作成を提案
+
+## 状態判定
+
+quick-push 起動時にリポジトリ状態を3パターンに分類する。手動コミット済みのまま invoke された場合に空ステージで止まらないようにする。
+
+```bash
+porcelain=$(git status --porcelain)
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+unpushed=""
+if [[ -n "$upstream" ]]; then
+    unpushed=$(git log "$upstream"..HEAD --oneline 2>/dev/null)
+fi
+
+if [[ -n "$porcelain" ]]; then
+    # A: 通常フロー（add → scan → commit → push）
+    :
+elif [[ -n "$unpushed" ]]; then
+    # B: push直行（commit済み）
+    echo "未push commit があります:"
+    echo "$unpushed"
+    # 直接 PRマージ済みチェック → push へ
+else
+    # C: 何もすることなし
+    echo "push対象がありません"
+    exit 0
+fi
+```
+
+upstream が未設定（初回push）の場合は `unpushed` チェックをスキップして通常フローに乗せる。
 
 ## main直コミット判定
 
@@ -59,19 +91,29 @@ fi
 
 ## シークレットスキャン
 
-`git add` 後、コミット前に追加行（`+` 行）のみを対象に簡易シークレット検出を行う。`git/hooks/pre-commit` のシークレットスキャンは main/master ブランチでしか動かないため、feature ブランチでの保護はここで担保する。
+`git add` 後、コミット前にステージ済み diff を対象にシークレット検出を行う。`git/hooks/pre-commit` 側でも gitleaks が全ブランチ動作するが、二重防御として（および pre-commit がバイパス・未インストールな場合の保険として）quick-push でも実行する。
+
+優先順: gitleaks (`gitleaks git --staged`) → 正規表現フォールバック。
 
 ```bash
-patterns='AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|gho_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82}|xox[bp]-[0-9]+-[a-zA-Z0-9]+|hooks\.slack\.com/services/T[A-Z0-9]+|ya29\.[0-9A-Za-z_-]+|AIza[0-9A-Za-z_-]{35}|-----BEGIN [A-Z ]*PRIVATE KEY-----|password\s*[:=]\s*["\x27][^"\x27]{8,}|secret\s*[:=]\s*["\x27][^"\x27]{8,}'
+if command -v gitleaks >/dev/null 2>&1; then
+    if ! gitleaks git --staged --no-banner --redact=75 -v --exit-code 1 >/tmp/gitleaks-quickpush.log 2>&1; then
+        echo "シークレットらしき文字列を検出しました。push を中止します:"
+        cat /tmp/gitleaks-quickpush.log | tail -30
+        # ユーザーに「誤検知なのでそのまま進めるか」確認する
+        # 許可コメント: gitleaks:allow を該当行末に追加
+    fi
+else
+    patterns='AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|gho_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82}|xox[bp]-[0-9]+-[a-zA-Z0-9]+|hooks\.slack\.com/services/T[A-Z0-9]+|ya29\.[0-9A-Za-z_-]+|AIza[0-9A-Za-z_-]{35}|-----BEGIN [A-Z ]*PRIVATE KEY-----|password\s*[:=]\s*["\x27][^"\x27]{8,}|secret\s*[:=]\s*["\x27][^"\x27]{8,}'
 
-# diff の追加行のみ対象（先頭 + で始まり、+++ ヘッダは除く）
-matches=$(git diff --cached -U0 | grep -nE "^\+[^+].*($patterns)" 2>/dev/null || true)
+    # diff の追加行のみ対象（先頭 + で始まり、+++ ヘッダは除く）
+    matches=$(git diff --cached -U0 | grep -nE "^\+[^+].*($patterns)" 2>/dev/null || true)
 
-if [[ -n "$matches" ]]; then
-    echo "シークレットらしき文字列を検出しました。push を中止します:"
-    echo "$matches" | head -10
-    # ユーザーに「誤検知なのでそのまま進めるか」確認する
-    # 続行する場合のみ次のステップへ
+    if [[ -n "$matches" ]]; then
+        echo "シークレットらしき文字列を検出しました。push を中止します:"
+        echo "$matches" | head -10
+        # ユーザーに「誤検知なのでそのまま進めるか」確認する
+    fi
 fi
 ```
 
