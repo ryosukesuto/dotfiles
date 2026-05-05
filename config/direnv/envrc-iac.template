@@ -39,6 +39,21 @@ export AWS_REGION="ap-northeast-1"
 # export DIGGER_TARGET_PROJECTS="project-${ENV}"
 
 # ============================================================================
+# Secrets via 1Password CLI (op)
+# ============================================================================
+# .envrc に APIキー・トークン類を平文で書かない。op read で参照する。
+# 前提: brew install --cask 1password-cli && op signin
+# 確認: op item list --vault Private で参照したい item 名を取得
+#
+# export DATADOG_API_KEY=$(op read "op://Private/Datadog/api-key")
+# export OPENAI_API_KEY=$(op read "op://Private/OpenAI/api-key")
+# export GITHUB_TOKEN=$(op read "op://Private/GitHub/personal-access-token")
+#
+# CLI 起動時に op でラップする使い方も推奨（環境変数を子プロセスに限定）:
+#   op run -- terraform plan
+#   op run -- claude .
+
+# ============================================================================
 # Safety: Confirm environment on entry
 # ============================================================================
 echo ""
