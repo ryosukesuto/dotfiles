@@ -10,8 +10,8 @@ font-thicken = true
 # ウィンドウ
 window-padding-x = 10
 window-padding-y = 10
-background-opacity = 0.6
-background-blur = 20
+background-opacity = 0.9
+background-blur = 2
 
 # macOS
 macos-titlebar-style = transparent
