@@ -28,3 +28,4 @@ export GPG_TTY=$(tty)
 
 # Added by Obsidian
 export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"
+export HOMEBREW_NO_AUTO_UPDATE=1
