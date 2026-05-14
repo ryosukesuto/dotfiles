@@ -40,7 +40,6 @@ bin/           - カスタムスクリプト
   claude-session-end   - セッション終了処理（Stop hook）
   claude-review-coverage - ghq配下のリポでsetup-ci-review適用状況を集計（md/json）
   harness-audit-history - 対象リポのharness-auditスコア推移を表示（md/json/csv）
-  cmux-quad            - cmux 4分割レイアウト
   cmux-lazygit         - cmuxで現在ペインを分割してlazygit起動
 ```
 
