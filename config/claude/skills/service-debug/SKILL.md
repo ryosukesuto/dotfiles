@@ -10,10 +10,22 @@ allowed-tools:
   - Agent
 ---
 
+## 起動時の context 確定
+
+調査を始める前に、以下4点をユーザーから確定させる。曖昧なまま kubectl を叩き始めると無駄な探索を増やす。明らかに答えが分かるものは聞かない。
+
+1. 症状は？ — `レイテンシ高い / エラー率上昇 / Pod再起動 / OOM / 突発ダウン / その他（自由記述）`
+2. 対象サービスは？ — `namespace/service` 形式。不明なら「サービス一覧コマンドで検索する」と返答
+3. 環境は？ — `prd / stg / dev`。kubectl context と Datadog `env` tag に直結
+4. 時間範囲は？ — `直近1h以内` なら kubectl events で取れる、それ以上前は Datadog 必須
+
+複数まとめて `AskUserQuestion` で1往復で取る。1〜2問だけ未確定なら聞かずに合理的な仮定で進める（例：症状が明示済みで環境が prd 一択なら3を聞かない）。
+
+context が揃った後、以下のフローに進む。
+
 ## デバッグ & 調査
 
-### 調査開始時のコンテキスト取得
-サービス名が不明確、またはマルチサービス調査時は最初に実行:
+### サービス名検索（対象が不明な場合）
 ```bash
 # サービス一覧（namespace/service形式）
 kubectl get services -A --no-headers | awk '{print $1"/"$2}'
