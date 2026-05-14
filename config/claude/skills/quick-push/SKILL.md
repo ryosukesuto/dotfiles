@@ -230,3 +230,4 @@ PRマージ後にエラーが発生した場合:
 ## Gotchas
 
 - `wt.allowDirectCommit=true` のリポジトリ（dotfiles等）でworktree作成を提案しない。CLAUDE.mdの「worktree必須」はopt-out前提のルール。main/masterブランチに入ったら即座に worktree を作ろうとせず、先に `git config --get wt.allowDirectCommit` を確認する
+- `git push` は最初から `dangerouslyDisableSandbox: true` で実行する。SSH 鍵（`~/.ssh/id_ed25519`）はサンドボックスの read deny に含まれており、サンドボックス内では `Permission denied (publickey)` で必ず失敗する。失敗→再試行の無駄な permission prompt を避けるため、push の Bash 呼び出しでは最初から sandbox 外で叩く。HTTPS remote の場合はこの限りでないが、個人リポは SSH remote 前提で扱う
