@@ -19,7 +19,21 @@ Wizアラートのトリアージと調査を支援するskill。
 
 ## ワークフロー
 
-### Phase 1: Linear Issue作成
+### Phase 0: 自己発火パターンの確認（先にやる）
+
+アラートの actor / IP / 時刻が自分たちのチームの作業に紐づく可能性を最初に潰す。これを怠ると外部攻撃者として誤って深掘りしてしまう。
+
+1. **actor IP の whois**: `whois <ip>` で所有組織を確認。`IIJ-CA / CyberAgent, Inc.` 等の社内 NAT なら社員行動である強い証拠
+2. **User-Agent の解読**: `gcloud/* command/gcloud.xxx` のように対話型 SDK のコマンド名が出ていたら社員端末発信。`google-api-go-client/...Kubernetes/...` のような SDK 由来なら正規 service 経由
+3. **時刻照合**: 検出時刻と自分の作業セッション（git log / Slack 発言 / シェル履歴）が一致しないか確認。ユーザー本人に「この時刻に何をしていたか」を尋ねるのも有効
+4. **Wiz の actor=`allUsers` は要注意**: impersonation や認証失敗で principal が未解決の場合、Wiz は actor を `allUsers` の placeholder で表示する。User-Agent と IP の方が信頼できる
+5. **関連 memory を参照**: 既知の自己発火パターン（[[wiz-self-triggered-token-failure]] 等）に該当しないか確認
+
+該当した場合は Phase 1 を skip して Phase 3 (Wiz 解決のみ) に飛ぶ。Linear 起票は不要。
+
+### Phase 1: Linear Issue 作成（必要な場合のみ）
+
+Phase 0 で自己発火と判定できなかった、または継続的な調査が必要な場合のみ起票する。即時解決可能なノイズに毎回 issue を切ると Cycle が膨れる。
 
 アラート内容から以下を抽出してLinear issueを作成:
 
@@ -110,10 +124,16 @@ Description テンプレート:
 2. **Wiz用コメント**
    - `/tmp/wiz-comment-{issue番号}.txt` に出力
    - Wiz の「理由」フィールドはプレーンテキスト。バッククォート / 太字 / markdown 見出しは使わない
-   - 1段落の要約 + 箇条書きの判断根拠、というシンプル構成で書く
+   - **デフォルトは 1-2 文の短い説明**。placeholder 「この脅威は解決された。なぜなら...」に自然に続く文体で書く
+   - 必要な場合のみ判断根拠を箇条書きで足す。先に短い版を提示してユーザー判断を仰ぐ
    - 【原因】【判断理由】のような囲い見出しは付けず、本文で完結させる
 
-テンプレート:
+短いテンプレート（デフォルト）:
+```
+{何が・なぜ起きたか・なぜ問題ないか を 1-2 文で}。{実害の有無}。
+```
+
+詳細テンプレート（短い版で説明不足な場合のみ使う）:
 ```
 {要約: 何が起きて、なぜ問題ないと判断したか。1〜2文}
 
@@ -121,9 +141,9 @@ Description テンプレート:
 - {根拠1}
 - {根拠2}
 - {根拠3}
-
-Linear: {issueのURL}
 ```
+
+Linear issue を切らなかった場合は Linear URL 行は不要。
 
 実例 (organization 固有のリソース名・PR 番号・Linear URL を含む) は `${CLAUDE_SKILL_DIR}/SKILL.local.md` を参照する。
 
@@ -163,7 +183,11 @@ Linear: {issueのURL}
 | IMDS access | GCP認証トークン取得 | 正常動作なら無視 |
 | Suspicious outbound connection | 外部API呼び出し | 意図した通信か確認 |
 | Git Push Or Merge Pull Requests By Unusual Bot User (`cer-github-identity-pushOrMergeByUnusualBotUser`) | Claude Code GitHub App (`claude[bot]`) の初回 PR 自動レビュー、または Dependabot / Renovate の初回 push | リポの `.github/workflows/claude*.yml` 等を確認し、workflow が `contents: read` のみで実コード変更権限がないことを確認したら `計画された行動` で解決 |
+| Unusual Failed Attempts To Create Access Token For Admin Service Account (`cer-gcp-identity-unsualFailedCreationOfAdminServiceAccountAccessToken`) | Platform エンジニアによる CVE 影響調査等で `gcloud secrets versions access` + `--impersonate-service-account` を試行、`serviceAccountTokenCreator` 未付与で拒否 | 発信元 IP の whois が `IIJ-CA / CyberAgent, Inc.` で User-Agent が `gcloud` なら自己発火。詳細は [[wiz-self-triggered-token-failure]]、対応は `計画された行動` |
 
 ## Gotchas
 
-(運用しながら追記)
+- Wiz が `actor=allUsers` で表示するのは「未認証アクセス」ではなく「principal を解決できない失敗イベント」のケースが多い。impersonation 失敗・認証失敗・IAM 拒否のいずれかで principal 名が log に乗らなかった時に Wiz が placeholder として `allUsers` を入れている可能性が高い。User-Agent と actor IP の whois で実体を確認する
+- `iamcredentials.googleapis.com.GenerateAccessToken` は組織レベルの IAM Credentials API。プロジェクト直下の audit log には残らないことが多く、Data Access logs を有効化していない限り Cloud Logging で再現確認はできない。Wiz の cloudEvents セクションが一次情報になる
+- Wiz MCP は read-only。`get_*` / `list_*` のみで resolve / ignore / update_status の mutation tool は提供されていない。解決操作は Wiz portal UI で手動実施する
+- `whois <ip>` の所有組織が `IIJ-CA / CyberAgent, Inc.` なら社内 NAT (CyberAgent オフィス出口)。社員作業の強い証拠
