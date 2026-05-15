@@ -231,3 +231,4 @@ PRマージ後にエラーが発生した場合:
 
 - `wt.allowDirectCommit=true` のリポジトリ（dotfiles等）でworktree作成を提案しない。CLAUDE.mdの「worktree必須」はopt-out前提のルール。main/masterブランチに入ったら即座に worktree を作ろうとせず、先に `git config --get wt.allowDirectCommit` を確認する
 - `git push` は最初から `dangerouslyDisableSandbox: true` で実行する。SSH 鍵（`~/.ssh/id_ed25519`）はサンドボックスの read deny に含まれており、サンドボックス内では `Permission denied (publickey)` で必ず失敗する。失敗→再試行の無駄な permission prompt を避けるため、push の Bash 呼び出しでは最初から sandbox 外で叩く。HTTPS remote の場合はこの限りでないが、個人リポは SSH remote 前提で扱う
+- Claude Code のメイン cwd（`.`）の外にあるリポジトリで `git add` / `git commit` を叩く場合も最初から `dangerouslyDisableSandbox: true` を付ける。sandbox の write allowOnly は `.` 直下しか含まれず、別リポの `.git/index.lock` 作成が `Operation not permitted` で失敗する（例: メイン cwd が `~/gh/github.com/WinTicket/gws-terraform` のまま `cd ~/gh/github.com/ryosukesuto/dotfiles && git add ...` を叩いたケース）。push だけでなく commit / add も同様、と覚えておく。`.` 内のリポジトリでの commit / add は sandbox 内で動くので無効化は不要
