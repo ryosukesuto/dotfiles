@@ -204,8 +204,12 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Wiz custom rule 459cd9a5 (claude-code-action should not use wildcard or dependabot in allowed_bots, HIGH)
-          # により dependabot[bot] は allowed_bots に入れない。WinTicket org は Renovate に統一済みのため renovate[bot] のみ許可
-          allowed_bots: "renovate[bot]"
+          # により dependabot/renovate のいずれも allowed_bots に入れない。
+          # Confused Deputy 攻撃 (@dependabot recreate / @renovate run 経由の actor 偽装、依存パッケージ
+          # release note 経由の prompt injection) を防ぐため、bot PR は Claude レビュー対象外とし人間レビューに委ねる。
+          # 参考: https://www.wiz.io/blog/github-actions-security-ai-powered-actions-vulnerabilities
+          # bot コメントを Claude のコンテキストから除外（PR description 経由の injection は別経路で防ぐ必要あり）
+          exclude_comments_by_actor: "*[bot]"
           display_report: true
           prompt: |
             REPO: ${{ github.repository }}
@@ -221,5 +225,6 @@ jobs:
             一貫性レビュー (Phase 2) では、上記 `CONSISTENCY_CONTEXT_PATH` のファイルを Read で読んでから判定してください。
           claude_args: |
             --model claude-opus-4-5
-            --max-turns 50
+            # 攻撃成功時の被害時間を限定するため有限値を設定。typical な PR レビューは 10-15 turn で収まる
+            --max-turns 15
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Read,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr review:*),Bash(gh api repos/*/issues/*/comments:*),Bash(gh api --method PATCH repos/*/issues/comments/*:*),Bash(find:*),Bash(cat:*),Bash(grep:*),Bash(ls:*),Bash(git diff:*),Bash(git log:*),WebSearch,WebFetch(domain:pkg.go.dev),WebFetch(domain:github.com),WebFetch(domain:raw.githubusercontent.com)"
