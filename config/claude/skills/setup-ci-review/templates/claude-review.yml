@@ -225,6 +225,8 @@ jobs:
             一貫性レビュー (Phase 2) では、上記 `CONSISTENCY_CONTEXT_PATH` のファイルを Read で読んでから判定してください。
           claude_args: |
             --model claude-opus-4-5
-            # 攻撃成功時の被害時間を限定するため有限値を設定。typical な PR レビューは 10-15 turn で収まる
-            --max-turns 15
+            # SKILL.md が長いと既定 30 ターンでは gh pr review 投稿前に打ち切られるため 50 以上推奨
+            # (実測: 直近 PR の num_turns 中央値 18, p90 39, 最大 48)。allowed_bots 空化で bot 経由
+            # Confused Deputy 攻撃面は遮断済みのため被害時間制約は不要と判断
+            --max-turns 50
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Read,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr review:*),Bash(gh api repos/*/issues/*/comments:*),Bash(gh api --method PATCH repos/*/issues/comments/*:*),Bash(find:*),Bash(cat:*),Bash(grep:*),Bash(ls:*),Bash(git diff:*),Bash(git log:*),WebSearch,WebFetch(domain:pkg.go.dev),WebFetch(domain:github.com),WebFetch(domain:raw.githubusercontent.com)"
