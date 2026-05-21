@@ -12,6 +12,24 @@
 
 set -euo pipefail
 
+# Stop hook の stdin JSON を保持（v2.1.145+ で background_tasks / session_crons が入る）
+INPUT_JSON=""
+if [[ ! -t 0 ]]; then
+  INPUT_JSON=$(cat || true)
+fi
+
+# 背景タスク・cron 残存チェック
+if [[ -n "$INPUT_JSON" ]] && command -v jq >/dev/null 2>&1; then
+  BG_COUNT=$(echo "$INPUT_JSON" | jq -r '(.background_tasks // []) | length' 2>/dev/null || echo 0)
+  CRON_COUNT=$(echo "$INPUT_JSON" | jq -r '(.session_crons // []) | length' 2>/dev/null || echo 0)
+  if [[ "$BG_COUNT" -gt 0 ]]; then
+    echo "[Hook] 警告: 背景タスクが ${BG_COUNT} 件動作中です。完了報告前に状態を確認してください。" >&2
+  fi
+  if [[ "$CRON_COUNT" -gt 0 ]]; then
+    echo "[Hook] 情報: session cron が ${CRON_COUNT} 件登録されています。" >&2
+  fi
+fi
+
 # cmux通知（失敗しても続行）
 cmux notify --title 'Claude Code' --subtitle '処理終了' --body 'タスクが完了しました' 2>/dev/null || true
 
