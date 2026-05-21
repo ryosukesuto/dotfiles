@@ -176,6 +176,11 @@ def main():
     pr_number = pr_field.get("number")
     pr_state = pr_field.get("review_state")
 
+    # Repo info (v2.1.145+): workspace.repo.{host, owner, name}
+    repo_field = data.get("workspace", {}).get("repo") or {}
+    repo_owner = repo_field.get("owner")
+    repo_name = repo_field.get("name")
+
     # ── LINE 1: Model | Directory (branch) | PR | Session name | Session | Thinking ──
     parts = [f"{BLUE}{model_name}{R}"]
 
@@ -193,7 +198,10 @@ def main():
             "draft": COMMENT,
         }
         pr_color = state_color_map.get(pr_state, FG)
-        parts.append(f"{pr_color}#{pr_number}{R}")
+        repo_prefix = ""
+        if repo_owner and repo_name:
+            repo_prefix = f"{COMMENT}{repo_owner}/{repo_name}{R}"
+        parts.append(f"{repo_prefix}{pr_color}#{pr_number}{R}")
 
     if session_name:
         parts.append(f"{PURPLE}{session_name}{R}")
