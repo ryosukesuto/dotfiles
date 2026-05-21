@@ -51,6 +51,12 @@ tmux/cmuxで右半分にCodexを開いて、インタラクティブにレビュ
 - `codex`コマンドがインストールされていること（`npm install -g @openai/codex`）
 - cmux使用時はソケットAPI（`nc -U`）で直接通信するため、cmux CLIは不要
 
+### Sandbox 環境での実行
+
+Claude Code の sandbox 制限下では `pane-manager.sh` が `/tmp/codex-review-lock-*` ロックファイルを作成しようとして書き込み拒否され、`Could not acquire lock after 10 attempts` で失敗する。エラーが出たら `Bash` ツール呼び出しに `dangerouslyDisableSandbox: true` を付与して実行する (`status` / `ensure` / `send` / `wait_response` / `capture` のいずれも該当)。
+
+これは sandbox の `/tmp` 書き込み拒否が原因で、コマンド自体の不備ではない。最初の `pane-manager.sh status` から sandbox 無効化で実行して構わない。
+
 ## 実行手順
 
 ### ステップ1: Codexペインを作成

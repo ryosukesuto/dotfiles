@@ -10,6 +10,7 @@ ragent はクエリ内の URL を自動検出し、特別な処理を行う。
 
 - Kibela URL (`*.kibe.la`): WebFetch ではなく hybrid_search に URL ごと渡す。`reference` フィールドで完全一致検索を先に試み、ヒットすれば即座に返す
 - Slack URL (`*.slack.com/archives/...`): 自動でメッセージ本文+スレッド返信を取得し、コンテキストとして付与する。`SLACK_SEARCH_ENABLED` の設定に関係なく動作する
+  - ただし permalink 形式 (`/archives/<channel_id>/p<ts>`) は ragent 側で `fallback_reason: term_query_no_results` になり、関連のないドキュメントが返ってくることがある。「このスレッドの中身を読みたい」という用途では `mcp__claude_ai_Slack__slack_read_thread` (channel_id + ts) に直行するのが確実。ragent を経由するのは「Slack 上の会話を社内ナレッジ全体と一緒に検索したい」場合に限る
 
 ## パラメータリファレンス
 
