@@ -36,6 +36,8 @@ fi
 
 # direnv初期化（環境変数の自動切替）
 if (( $+commands[direnv] )); then
+  # bw-fetch 経由で Bitwarden を unlock する .envrc があるため、警告閾値を延長
+  export DIRENV_WARN_TIMEOUT=30s
   eval "$(direnv hook zsh)"
 fi
 
