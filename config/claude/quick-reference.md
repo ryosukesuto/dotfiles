@@ -31,3 +31,11 @@ Claude Codeを効果的に使うためのユーザー向けガイダンス。
 - 「コードは読みやすく書く」のような当たり前のこと
 - 長い説明文（箇条書きで簡潔に）
 - 重複した情報
+
+## 開発時のショートカット
+
+### Skill変更の即時反映
+Skillファイル (`~/.claude/skills/*/SKILL.md` 等) を編集後、`/reload-skills` でセッション再起動なしに再スキャンできる（v2.1.152+）。`cc-upgrade` / `create-skill` などSkill自体を触る作業で活躍する。
+
+### Frontmatter `disallowed-tools`
+Skill / slash command の frontmatter で `disallowed-tools` を指定すると、そのSkill実行中だけツールを除外できる（v2.1.152+）。読み取り中心のSkillでEdit/Writeを外す、調査系で危険コマンドを禁じる、といった用途。
