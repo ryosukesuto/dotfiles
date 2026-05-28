@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# PostToolUse(Edit|Write) hook: 編集対象が *.go のとき gofmt / golangci-lint を実行する。
+#
+# Rule reference: ~/.claude/rules/go-quality.md
+#
+# 設計方針:
+# - gofmt の出力と一致しない場合は exit 2 で Claude に自動修正を促す
+#   (deterministic な整形なので blocking として扱う)
+# - golangci-lint の指摘は stderr 表示のみ exit 0
+#   (.golangci.yml 依存で project ごとに厳しさが異なるため、blocking は CI に任せる)
+# - ツール未インストール / 対象外ファイル / ./custom-gcl ありは silent skip
+# - go.mod が見つからない場合は golangci-lint をスキップ (誤検知ノイズ防止)
+
+set -euo pipefail
+export LC_ALL=C
+
+payload=$(cat)
+file=$(printf '%s' "$payload" | jq -r '.tool_response.filePath // .tool_input.file_path // empty')
+
+case "$file" in
+  *.go) ;;
+  *) exit 0 ;;
+esac
+
+[[ -f "$file" ]] || exit 0
+
+needs_fix=0
+
+# gofmt: violation を blocking 扱い
+if command -v gofmt >/dev/null 2>&1; then
+  diff=$(gofmt -d "$file" 2>/dev/null || true)
+  if [[ -n "$diff" ]]; then
+    {
+      printf '=== gofmt diff (%s) ===\n' "$file"
+      printf '%s\n' "$diff"
+      printf '\nFix: gofmt -w %s\n' "$file"
+    } >&2
+    needs_fix=1
+  fi
+fi
+
+# golangci-lint: 表示のみ
+# - ./custom-gcl が存在するプロジェクトはカスタムビルドを使うため標準 binary をスキップ
+# - go.mod が祖先に存在しないと golangci-lint は意味のあるエラーを出せない
+if command -v golangci-lint >/dev/null 2>&1 && [[ ! -x ./custom-gcl ]]; then
+  go_mod_found=0
+  d=$(cd "$(dirname "$file")" && pwd)
+  while [[ "$d" != "/" ]]; do
+    if [[ -f "$d/go.mod" ]]; then
+      go_mod_found=1
+      break
+    fi
+    d=$(dirname "$d")
+  done
+
+  if [[ "$go_mod_found" -eq 1 ]]; then
+    lint_output=$(golangci-lint run --timeout=20s "$file" 2>&1 || true)
+    if [[ -n "$lint_output" ]]; then
+      {
+        printf '=== golangci-lint (%s) ===\n' "$file"
+        printf '%s\n' "$lint_output"
+      } >&2
+    fi
+  fi
+fi
+
+[[ "$needs_fix" -eq 1 ]] && exit 2
+exit 0

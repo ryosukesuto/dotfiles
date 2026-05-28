@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# PostToolUse(Edit|Write) hook: 編集対象が *.tf / *.tfvars のとき terraform fmt をチェックする。
+#
+# Rule reference: ~/.claude/rules/terraform-quality.md
+#
+# 設計方針:
+# - terraform fmt -check に違反した場合は exit 2 で Claude に自動修正を促す
+# - terraform validate / tflint / checkov は走らせない
+#   (validate は init 必須・network 必要、tflint / checkov は config 依存でノイズが大きい)
+# - *.tfstate / *.tfstate.backup / *.tfvars.json はスキップ
+# - ツール未インストール / 対象外ファイルは silent skip
+
+set -euo pipefail
+export LC_ALL=C
+
+payload=$(cat)
+file=$(printf '%s' "$payload" | jq -r '.tool_response.filePath // .tool_input.file_path // empty')
+
+case "$file" in
+  *.tfstate|*.tfstate.backup|*.tfvars.json) exit 0 ;;
+  *.tf|*.tfvars) ;;
+  *) exit 0 ;;
+esac
+
+[[ -f "$file" ]] || exit 0
+command -v terraform >/dev/null 2>&1 || exit 0
+
+# terraform fmt -check -diff: 整形済み = exit 0、要整形 = exit 3、構文エラー等 = それ以外の非 0
+if output=$(terraform fmt -check -diff "$file" 2>&1); then
+  exit 0
+fi
+
+{
+  printf '=== terraform fmt diff (%s) ===\n' "$file"
+  printf '%s\n' "$output"
+  printf '\nFix: terraform fmt %s\n' "$file"
+} >&2
+exit 2

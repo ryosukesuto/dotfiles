@@ -347,7 +347,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=\"$CLAUDE_TOOL_INPUT_file_path\"; if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then pnpm run lint --silent 2>&1 | tail -20; elif [ -f go.mod ] && [ ! -x ./custom-gcl ]; then command -v golangci-lint >/dev/null 2>&1 && golangci-lint run \"$FILE\" 2>&1 | tail -20; fi",
+            "command": "if [ -f package.json ] && grep -q '\"lint\"' package.json 2>/dev/null; then pnpm run lint --silent 2>&1 | tail -20; fi",
             "timeout": 30
           }
         ]
@@ -376,6 +376,15 @@
           {
             "type": "command",
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-shellcheck-after-edit"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-go-after-edit",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-terraform-after-edit"
           }
         ]
       }

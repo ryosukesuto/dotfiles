@@ -35,10 +35,12 @@ export LC_ALL=C
 ローカルでも CI でも shellcheck を通す。
 
 - 推奨 severity: `--severity=info`
-  - error / warning / info を blocking 検査
-  - style 指摘 (SC2001 / SC2129 等) は除外できる。既存スクリプトと一貫性を保つ場合や、可読性を優先する場合のため
+  - error / warning / info を表示。style 指摘 (SC2001 / SC2129 等) は除外
 - CI: `validate-workflows.yml` 系で `.github/scripts/*.sh` を検査
-- ローカル: PostToolUse hook で Edit/Write 後に自動実行 (`~/.claude/settings.json` で設定)
+- ローカル: PostToolUse hook (`bin/claude-shellcheck-after-edit`) で Edit/Write 後に自動実行
+  - info/warning は stderr 表示のみ (exit 0)。transcript で人間が確認するノイズ層
+  - error 重大度の findings がある場合のみ exit 2 で Claude のコンテキストに注入し、自己修正を促す
+  - 二段構えにする理由: 既存 .sh に info 寄り style 指摘が混在するため、全件 blocking にすると Claude が無関係な修正に脱線する
 
 ## よくある style 指摘の回避パターン
 
