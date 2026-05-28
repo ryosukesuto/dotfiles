@@ -369,6 +369,15 @@
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-commit-log"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-shellcheck-after-edit"
+          }
+        ]
       }
     ],
     "StopFailure": [
@@ -458,7 +467,8 @@
     "slack@claude-plugins-official": false,
     "figma@claude-plugins-official": true,
     "codex@openai-codex": true,
-    "vercel@claude-plugins-official": true
+    "vercel@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "openai-codex": {

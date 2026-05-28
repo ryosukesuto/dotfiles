@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# PostToolUse(Edit|Write) hook: 編集対象が *.sh のとき shellcheck を実行し、
+# warning / info / error を stderr に表示してユーザーへ即フィードバックする。
+#
+# Rule reference: ~/.claude/rules/shell-quality.md
+#
+# 設計方針:
+# - shellcheck が未インストールの環境では silent skip (exit 0)
+# - 編集対象が *.sh 以外なら silent skip (exit 0)
+# - shellcheck が指摘を出しても tool 実行はブロックしない (常に exit 0)
+# - --severity=info で error / warning / info を表示。style は除外。
+#   既存スクリプトに style 指摘が混在しているため (SC2001 / SC2129 等)、
+#   一括整理するまでは style を blocking にしない。
+
+set -euo pipefail
+
+payload=$(cat)
+file=$(printf '%s' "$payload" | jq -r '.tool_response.filePath // .tool_input.file_path // empty')
+
+# .sh 拡張子のみ対象
+case "$file" in
+  *.sh) ;;
+  *) exit 0 ;;
+esac
+
+# shellcheck がインストールされていなければ何もしない
+command -v shellcheck >/dev/null 2>&1 || exit 0
+
+# 実ファイルが存在しなければスキップ (削除直後など)
+[[ -f "$file" ]] || exit 0
+
+# stderr に出力。指摘があっても exit 0 で tool 実行はブロックしない。
+shellcheck --severity=info "$file" >&2 || true
+
+exit 0
