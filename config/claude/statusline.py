@@ -44,7 +44,25 @@ def gradient(pct: float) -> str:
     return f"\033[38;2;{r};{g};{b}m"
 
 
-def bar(pct: float, width: int = 20) -> str:
+def _terminal_columns() -> int:
+    try:
+        return int(os.environ.get("COLUMNS") or 80)
+    except (ValueError, TypeError):
+        return 80
+
+
+def _default_bar_width() -> int:
+    cols = _terminal_columns()
+    if cols < 80:
+        return 10
+    if cols < 100:
+        return 14
+    return 20
+
+
+def bar(pct: float, width: int | None = None) -> str:
+    if width is None:
+        width = _default_bar_width()
     pct = min(max(pct, 0), 100)
     filled = round(pct * width / 100)
     return "\u2500" * filled + f"{COMMENT}" + "\u2500" * (width - filled) + f"{R}"
