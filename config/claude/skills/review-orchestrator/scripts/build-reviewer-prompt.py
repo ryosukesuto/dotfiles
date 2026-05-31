@@ -114,13 +114,12 @@ JSONのみ出力。前置き・説明文・まとめは一切禁止。
   "meta": {
     "tokens_used": 0,
     "wall_time_ms": 0,
-    "slice_count": 1,
-    "dropped_candidates": 0
+    "slice_count": 1
   }
 }
 ```
 
-上限: must-fix=5件、should-fix=10件、watch=15件
+件数で finding を切り捨てない（coverage 優先）。確信が持てないもの・低 severity のものも、適切な confidence と severity を付けて全て報告する。重複排除・重要度ランク付け・件数調整は後段の normalizer が担う。
 """
 
 

@@ -1,7 +1,7 @@
 ---
 name: slo-health-check
 description: SLO Health Checkレポートを作成する。「SLO調査」「SLOレポート」「SLO Health Check」「SLOの状態確認」「breached確認」等で起動。
-model: claude-opus-4-7
+model: opus
 user-invocable: true
 allowed-tools:
   - Bash

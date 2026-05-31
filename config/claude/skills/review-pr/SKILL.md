@@ -258,7 +258,7 @@ uv run python3 ~/.claude/skills/review-orchestrator/scripts/report.py \
 ```
 
 オーケストレーターパスでは以下の手順へ進まず、report.py の出力をそのまま返す。
-report.py の出力はツール結果に流れるだけで、ユーザーには届かない。**必ず最終テキストメッセージで report.py の出力全文をそのまま貼り付けてユーザーに伝えること。** 要約に圧縮せず、全 findings を掲載する。
+report.py の出力はツール結果に流れるだけで、ユーザーには届かない。最終テキストメッセージで report.py の出力全文をそのまま貼り付けてユーザーに伝える。要約に圧縮せず、全 findings を掲載する。
 
 ---
 
