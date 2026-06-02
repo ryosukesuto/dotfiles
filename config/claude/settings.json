@@ -509,5 +509,6 @@
         "callbackPort": 3118
       }
     }
-  }
+  },
+  "model": "sonnet[1m]"
 }
