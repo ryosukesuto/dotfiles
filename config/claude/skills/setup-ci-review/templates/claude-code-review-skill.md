@@ -297,6 +297,6 @@ GitHub 上の review 状態が残らない限り未完了とみなす。
 - **frontmatter の `allowed-tools` は実行時に支配しない**: CI 上では workflow の `--allowedTools` allowlist が支配する。frontmatter に Bash と書いていても、workflow 側で `Bash(gh pr review:*)` 等の subset しか許可されていなければそれ以外は失敗する。新しいコマンドが必要になったら `claude-review.yml` 側を更新する
 - **投稿フロー最終ステップ（PR レビュー判定）の省略が過去発生**: サマリ＋インラインコメントを投稿した時点で「タスク完了」と誤判断し、`gh pr review --approve / --request-changes` を打たずに終わるケースが実測された。GitHub 上にレビュー状態が残らないため CI / Branch Protection から「レビュー完了」を判別できなくなる。「実行順序」セクションを必ず最後まで踏むこと
 - **AI 単独 Approve を防ぐ**: 文脈補正で Approve に至った場合は body 冒頭に `⚠️ 文脈補正により Approve` プレフィクスを必ず付ける。Branch Protection の Required approvals は 2 以上が org 既定だが、補正経路の Approve を human reviewer が見落とすと事実上 AI 単独 approve に近い状態になるため
-- **自己キャンセルループ**: bot 自身のコメントが `issue_comment` イベントを発火させ、実行中のレビューを cancel する事象が起きうる。workflow 側で `cancel-in-progress: ${{ github.event_name != 'issue_comment' }}` で対処済み。設定を外さないこと
+- **トリガーは `pull_request` のみ**: 過去は `issue_comment` も併用していたが、Wiz custom rule `CIWorkflow-020` 対応で削除した。`@claude` 手動再レビューは廃止、空コミット push で再評価する。`issue_comment` を再導入する場合は bot コメントによる自己キャンセルループ対策 (`cancel-in-progress: ${{ github.event_name != 'issue_comment' }}`) と author_association ガードが必須
 - **Skill invocation は使えない**: Claude Code Action v1.0.72 以降の SDK は組み込み skill しかロードしない。`Skill(claude-code-review)` 呼び出しは失敗する。workflow の prompt から `Read` で読ませる形式が公式の使い方
 - **このファイルが 150 行を超えているのは意図的**: create-skill の目安は 150 行だが、本 skill は CI 上で 1 回だけ Read される構造で遅延ロードのメリットが薄い。PR ブランチで `.claude/` 全体が base branch から restore される仕組みも併せて、外部ファイル分離より自己完結性・可読性を優先している。次回見直し時はこの判断ごと再検討すること

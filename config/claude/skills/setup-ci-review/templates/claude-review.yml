@@ -3,15 +3,10 @@ name: PR Review (Claude Code)
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-  issue_comment:
-    types: [created]
 
 concurrency:
-  # issue_comment では cancel-in-progress を無効化する。
-  # Claude bot 自身のコメントが issue_comment をトリガーし、実行中のレビューを
-  # キャンセルする自己キャンセルループが発生するのを防ぐ。
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -25,24 +20,12 @@ jobs:
   review:
     name: Claude Code Review
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-       startsWith(github.event.comment.body, '@claude') &&
-       github.actor != 'claude[bot]' &&
-       (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR'))
+    if: github.event.pull_request.draft == false
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-
-      # issue_comment トリガーは default branch をチェックアウトするため、PR ブランチに切り替える
-      - name: Checkout PR branch
-        if: github.event_name == 'issue_comment'
-        run: gh pr checkout ${{ github.event.issue.number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # force-push 検出: 追加コミットレビューとフルレビューの切り替えに使う
       - name: Detect review context
@@ -73,7 +56,7 @@ jobs:
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -uo pipefail
           OUT=".claude-review-context.md"
@@ -213,7 +196,7 @@ jobs:
           display_report: true
           prompt: |
             REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
             EVENT_ACTION: ${{ steps.context.outputs.action || github.event.action }}
             BEFORE_SHA: ${{ steps.context.outputs.before }}
             AFTER_SHA: ${{ steps.context.outputs.after }}

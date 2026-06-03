@@ -146,7 +146,7 @@ local action（`uses: ./...`）と reusable workflow は検証対象外（スク
 - 生成ファイルの確認を促し、コミット・PR作成はユーザーに委ねる
 - 再レビューのトリガー方法を伝える:
   - 自動: 新しいコミットをpushすると `synchronize` で再レビューが走る（force-push も検出してフルレビューに切り替わる）
-  - 手動: PRに `@claude re-review` 等 `@claude` を含むコメントを MEMBER/OWNER/COLLABORATOR が投稿すると再レビューが走る
+  - 手動再レビューが必要な場合は空コミットを push する（`git commit --allow-empty -m "re-review" && git push`）。`issue_comment` トリガー (`@claude`) は Wiz custom rule `CIWorkflow-020` 対応で削除済み
 - 初回 workflow 追加 PR ではレビューがスキップされる（"Action skipped due to workflow validation error"）。動作確認はマージ後の次の PR で行うこと
 - 増分レビューは `<!-- claude-code-review -->` マーカー付きコメントに追記される仕組み。初回は新規コメント、2回目以降は既存コメントに履歴が蓄積される
 
@@ -194,11 +194,11 @@ bash ${CLAUDE_SKILL_DIR}/scripts/update-existing.sh /path/to/target-repo --yes
 - **商用 IaC scanner が既に動いているリポジトリには Checkov を入れない**: Wiz / Prisma Cloud / Snyk IaC などが CI で動作している場合、Checkov は機能重複でノイズの二重化・baseline / skip_check の二重メンテが発生する。ステップ3（analyze）で `.github/workflows/` を確認し、`wiz-cli` / `prisma-cloud-scan` / `snyk-iac` 等の step が存在する、または `Wiz IaC Scanner` などの status check が既に PR に付いている場合は、ステップ2のコンポーネント選択で Checkov をデフォルト非選択にして、その旨を option の description に明記する（例: 「Wiz IaC Scanner が検出されたため非推奨」）
 - `verify-sha-pin.sh` は生成ファイルのみ対象
 - analyze=yesでCLAUDE.mdが存在しない場合はREADME.mdとディレクトリ構造から推定する
-- private repo で fork は org メンバーに限定されるため、`issue_comment` トリガーの prompt injection リスクは `author_association == MEMBER/OWNER/COLLABORATOR` のチェックで許容範囲とみなしてよい（public repo の場合はより慎重な判断が必要）
+- **`issue_comment` トリガーは入れない**: Wiz custom rule `CIWorkflow-020` (`Workflow should not use AI agents with dangerous tools on external triggers`, MEDIUM) が `issue_comment` + `anthropics/claude-code-action` + 危険ツール (`Bash` / `WebFetch` / `WebSearch` 等) の組み合わせを検出する。`author_association == MEMBER/OWNER/COLLABORATOR` の if-guard で実害は緩和できるが、`@claude` を実運用していないリポでは外したほうが攻撃面が構造的に消える。手動再レビューは空コミット push で代替する。`pull_request` トリガーは fork から secrets 非到達なのでルール対象外
 - `allowed_bots` は default (空) で運用する。`dependabot[bot]` / `renovate[bot]` のいずれも入れない。理由: Wiz custom rule `459cd9a5-6932-401a-b31a-f7d9eb6b3c5a` (`claude-code-action should not use wildcard or dependabot in allowed_bots`, HIGH) は dependabot と renovate の両方を Confused Deputy 攻撃ベクトルとして検出する。`@dependabot recreate` / `@renovate run` 等のコメントで attacker が bot を perceived actor 化できる経路がある。bot PR への Claude レビューは諦め、Renovate 自身の Release Notes と人間レビューでカバーする方針。WinTicket org は Renovate の minor/patch/digest を automerge、major のみ手動レビュー対象なので便益喪失は限定的。`exclude_comments_by_actor: "*[bot]"` を併用して bot コメントを Claude のコンテキストから除外する
 - 増分レビュー（履歴蓄積）は server リポジトリで実運用されている方式。`<!-- claude-code-review -->` マーカー検索 → 存在すれば `gh api --method PATCH` で追記、無ければ新規作成。force-push は `git merge-base --is-ancestor` で検出してフルレビューに切り替える
 - レビュー指示は `.claude/skills/claude-code-review/SKILL.md` に分離している。**Skill invocation は使えない**: Claude Code Action v1.0.72 の SDK は組み込み skill（debug / simplify / batch / loop / claude-api）しかロードしないため、`Skill` tool による `claude-code-review` 呼び出しは `is_error: true` で失敗する。回避策として workflow の prompt に「`.claude/skills/claude-code-review/SKILL.md` を Read で読み込んで指示に従ってください」と書き、ただのマークダウンファイルとして読ませる。レビュー観点・投稿ルールを変更する場合は SKILL.md 側を編集する（workflow の再デプロイ不要）
-- **concurrency の自己キャンセルループ**: `cancel-in-progress: true` のままだと Claude bot 自身が投稿する PR コメントが `issue_comment` イベントを発火させて実行中のレビューを打ち切る。`cancel-in-progress: ${{ github.event_name != 'issue_comment' }}` で issue_comment だけキャンセル無効化するのが正解。`pull_request` では新コミット push で古いレビューを止める挙動を維持できる
+- **concurrency**: `pull_request` トリガーのみの構成では `cancel-in-progress: true` で問題ない。新コミット push で古いレビューを止める挙動が期待値。過去に `issue_comment` トリガー併用時は bot 自身のコメントが自己キャンセルループを引き起こすため `cancel-in-progress: ${{ github.event_name != 'issue_comment' }}` が必要だったが、`issue_comment` 削除に伴い不要
 - **SKILL.md の投稿フロー最終ステップを省略する現象**: 過去の実測で Claude がサマリコメント投稿後に `gh pr review --approve/--request-changes` を忘れてタスク完了と判断するケースがあった。GitHub 上のレビュー状態が残らないため、SKILL.md の「PR レビュー判定」セクションは「省略禁止」「必ず最後に実行」と明示的に強調すること（テンプレート済み）
 - **workflow ファイル変更を含む PR は Claude にレビューさせられない**: `claude-code-action` は PR ブランチの workflow ファイルが main と一致しているか検証する（セキュリティ機構）。差異があると `Workflow validation failed` で即 fail する。`claude-review.yml` 自体の修正 PR は人間レビューで進めること
 - **ユーザーのローカル環境で `_gh_ensure_token` エラーが出る**: `gh:1: command not found: _gh_ensure_token` は zsh の gh 認証 wrapper の副作用で、コマンド自体は動く。Skill の挙動には影響しない
