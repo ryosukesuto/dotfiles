@@ -19,6 +19,17 @@ case "$command" in
   *) exit 0 ;;
 esac
 
+# Strip ref-name flag values (`--head` / `--base` and short forms `-H` / `-B`)
+# before scanning. These carry branch / ref names — technical metadata that is
+# never read as prose by reviewers — so matching skill names there produces
+# false positives that block legitimate PRs (e.g. branch named `chore/<skill>`).
+# Title / body inspections remain intact since `--title` / `--body` are not stripped.
+scan_target=$(printf '%s' "$command" | sed -E '
+  s/(--head|--base)[[:space:]]+[^[:space:]]+//g
+  s/(--head|--base)=[^[:space:]]+//g
+  s/(^| )-[HB][[:space:]]+[^[:space:]]+//g
+')
+
 # Build blocklist.
 skill_dir="${HOME}/.claude/skills"
 terms=()
@@ -39,7 +50,7 @@ terms+=("~/.claude/")
 
 hits=()
 for term in "${terms[@]}"; do
-  if printf '%s' "$command" | grep -qiF -- "$term"; then
+  if printf '%s' "$scan_target" | grep -qiF -- "$term"; then
     hits+=("$term")
   fi
 done
