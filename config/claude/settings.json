@@ -510,5 +510,6 @@
       }
     }
   },
-  "model": "sonnet[1m]"
+  "model": "sonnet[1m]",
+  "fallbackModel": ["opus", "sonnet", "haiku"]
 }
