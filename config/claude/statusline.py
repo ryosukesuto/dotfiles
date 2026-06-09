@@ -101,17 +101,6 @@ def format_duration(seconds: int) -> str:
     return f"{seconds}s"
 
 
-def detect_skip_permissions() -> bool:
-    try:
-        out = subprocess.run(
-            ["ps", "-o", "command=", "-p", str(os.getppid())],
-            capture_output=True, text=True, timeout=1,
-        ).stdout
-        return "--dangerously-skip-permissions" in out
-    except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
-        return False
-
-
 def fmt_rate(label: str, pct: float, reset_str: str = "", label_width: int = 7) -> str:
     p = round(pct)
     padded = label.ljust(label_width)
@@ -210,10 +199,8 @@ def main():
     repo_owner = repo_field.get("owner")
     repo_name = repo_field.get("name")
 
-    # ── LINE 1: [bypass] | Model | Directory (branch) | PR | Session name | Session | Thinking ──
+    # ── LINE 1: Model | Directory (branch) | PR | Session name | Session | Thinking ──
     parts = []
-    if detect_skip_permissions():
-        parts.append(f"{RED}⚠ bypass{R}")
     parts.append(f"{BLUE}{model_name}{R}")
 
     dir_part = f"{CYAN}{dirname}{R}"
