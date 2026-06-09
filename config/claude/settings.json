@@ -280,7 +280,6 @@
       "Bash(sh <(*))",
       "Bash(bash -c *curl*)",
       "Bash(sh -c *curl*)",
-      "Bash(security find-generic-password:*)",
       "Bash(security find-internet-password:*)",
       "Bash(security dump-keychain:*)",
       "Bash(security export:*)",
