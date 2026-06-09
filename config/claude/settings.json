@@ -268,8 +268,6 @@
       "Write(~/.ssh/**)",
       "Edit(~/.aws/**)",
       "Write(~/.aws/**)",
-      "Edit(~/.config/direnv/**)",
-      "Edit(~/.config/gh/**)",
       "Bash(curl * | bash)",
       "Bash(curl * | sh)",
       "Bash(curl * | zsh)",
@@ -301,8 +299,7 @@
       "Bash(ssh-add -d:*)",
       "Bash(ssh-add -D)",
       "Bash(git remote set-url:*)",
-      "Bash(git remote add:*)",
-      "Bash(git config --global:*)"
+      "Bash(git remote add:*)"
     ],
     "ask": [],
     "defaultMode": "auto",
@@ -545,8 +542,38 @@
   "language": "japanese",
   "sandbox": {
     "excludedCommands": [
-      "cmux"
-    ]
+      "cmux",
+      "gh"
+    ],
+    "autoAllowBashIfSandboxed": true,
+    "enableWeakerNetworkIsolation": true,
+    "network": {
+      "allowLocalBinding": true,
+      "allowUnixSockets": [
+        "/tmp/cmux.sock",
+        "/var/run/docker.sock",
+        "~/Library/Containers/com.docker.docker/Data/docker.raw.sock",
+        "~/.1password/agent.sock",
+        "~/.gnupg/S.gpg-agent.ssh"
+      ]
+    },
+    "filesystem": {
+      "denyRead": [
+        "~/.aws/credentials",
+        "~/.ssh/id_rsa",
+        "~/.ssh/id_ed25519",
+        "~/.ssh/id_ecdsa",
+        "~/.gnupg/**",
+        "**/.env",
+        "**/.env.*",
+        "**/*.pem",
+        "**/*.key",
+        "**/id_rsa*",
+        "**/id_ed25519*",
+        "**/*.tfstate",
+        "**/*.tfstate.backup"
+      ]
+    }
   },
   "showClearContextOnPlanAccept": true,
   "channelsEnabled": true,
