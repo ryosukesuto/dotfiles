@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# Run Claude-oriented hook scripts from Codex hooks.
+#
+# Several existing hook scripts already read Claude/Codex-like JSON from stdin.
+# A few older ones read CLAUDE_TOOL_INPUT_* environment variables instead. This
+# runner keeps both styles working from the same Codex hook payload.
+
+set -u
+
+if [ "$#" -eq 0 ]; then
+  exit 0
+fi
+
+payload=$(cat || true)
+export CODEX_HOOK_PAYLOAD="$payload"
+
+if command -v jq >/dev/null 2>&1 && [ -n "$payload" ]; then
+  export CLAUDE_TOOL_NAME
+  CLAUDE_TOOL_NAME=$(printf '%s' "$payload" | jq -r '.tool_name // .toolName // .tool // empty' 2>/dev/null || true)
+
+  export CLAUDE_TOOL_INPUT_command
+  CLAUDE_TOOL_INPUT_command=$(printf '%s' "$payload" | jq -r '.tool_input.command // .tool_input.cmd // empty' 2>/dev/null || true)
+
+  export CLAUDE_TOOL_INPUT_file_path
+  CLAUDE_TOOL_INPUT_file_path=$(
+    printf '%s' "$payload" | jq -r '
+      [
+        .tool_input.file_path?,
+        .tool_input.filePath?,
+        .tool_input.path?,
+        .tool_response.filePath?,
+        .tool_response.file_path?
+      ]
+      | map(select(type == "string" and length > 0))
+      | .[0] // empty
+    ' 2>/dev/null || true
+  )
+
+  # apply_patch-style payloads do not always expose a single file_path. Export
+  # the first patch path as a compatibility fallback for env-based scripts.
+  if [ -z "${CLAUDE_TOOL_INPUT_file_path:-}" ]; then
+    patch_text=$(printf '%s' "$payload" | jq -r '.tool_input.patch // .tool_input.input // .tool_input.diff // empty' 2>/dev/null || true)
+    if [ -n "$patch_text" ]; then
+      CLAUDE_TOOL_INPUT_file_path=$(
+        printf '%s\n' "$patch_text" |
+          awk '/^\*\*\* (Add|Update|Delete) File: / { sub(/^\*\*\* (Add|Update|Delete) File: /, ""); print; exit }'
+      )
+      export CLAUDE_TOOL_INPUT_file_path
+    fi
+  fi
+fi
+
+status=0
+
+for script in "$@"; do
+  if [ ! -x "$script" ]; then
+    echo "[codex-hook-runner] executable hook not found: $script" >&2
+    status=2
+    break
+  fi
+
+  out_file=$(mktemp "${TMPDIR:-/tmp}/codex-hook-out.XXXXXX") || exit 2
+  err_file=$(mktemp "${TMPDIR:-/tmp}/codex-hook-err.XXXXXX") || {
+    rm -f "$out_file"
+    exit 2
+  }
+
+  if printf '%s' "$payload" | "$script" >"$out_file" 2>"$err_file"; then
+    rc=0
+  else
+    rc=$?
+  fi
+
+  if [ -s "$err_file" ]; then
+    cat "$err_file" >&2
+  fi
+
+  # Some Claude hooks pass stdin back through stdout. Do not echo raw hook JSON
+  # into Codex output, but keep intentional messages from other scripts visible.
+  base=$(basename "$script")
+  if [ -s "$out_file" ] && [ "$base" != "claude-suggest-compact" ] && [ "$base" != "claude-pre-compact" ]; then
+    cat "$out_file" >&2
+  fi
+
+  rm -f "$out_file" "$err_file"
+
+  if [ "$rc" -ne 0 ]; then
+    status=$rc
+    break
+  fi
+done
+
+exit "$status"

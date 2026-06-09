@@ -1,0 +1,187 @@
+# Codex command policy aligned with the Claude Code deny list.
+
+prefix_rule(
+    pattern = ["rm", "-rf"],
+    decision = "forbidden",
+    justification = "Recursive force deletion is blocked. Use trash or ask the user for an explicit safer command.",
+)
+
+prefix_rule(
+    pattern = ["rm", "-r"],
+    decision = "forbidden",
+    justification = "Recursive deletion is blocked. Use trash or ask the user for confirmation.",
+)
+
+prefix_rule(
+    pattern = ["rm", "-f"],
+    decision = "forbidden",
+    justification = "Force deletion is blocked. Use trash or ask the user for confirmation.",
+)
+
+prefix_rule(
+    pattern = ["sudo"],
+    decision = "forbidden",
+    justification = "Privilege escalation is blocked in agent sessions.",
+)
+
+prefix_rule(
+    pattern = ["doas"],
+    decision = "forbidden",
+    justification = "Privilege escalation is blocked in agent sessions.",
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Hard reset can discard user changes. Ask the user before destructive git operations.",
+)
+
+prefix_rule(
+    pattern = ["git", "clean"],
+    decision = "forbidden",
+    justification = "git clean can delete untracked user files. Ask the user before cleanup.",
+)
+
+prefix_rule(
+    pattern = ["git", "push", "--force"],
+    decision = "forbidden",
+    justification = "Force push is blocked. Use --force-with-lease only with explicit user approval.",
+)
+
+prefix_rule(
+    pattern = ["git", "push", "-f"],
+    decision = "forbidden",
+    justification = "Force push is blocked. Use --force-with-lease only with explicit user approval.",
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", "merge"],
+    decision = "forbidden",
+    justification = "PR merge is a user-controlled action.",
+)
+
+prefix_rule(
+    pattern = ["gh", "release", "create"],
+    decision = "forbidden",
+    justification = "Release creation is a user-controlled action.",
+)
+
+prefix_rule(
+    pattern = ["gh", "release", "delete"],
+    decision = "forbidden",
+    justification = "Release deletion is a user-controlled action.",
+)
+
+prefix_rule(
+    pattern = ["docker", "system", "prune"],
+    decision = "forbidden",
+    justification = "Docker prune can delete broad local state. Ask the user before cleanup.",
+)
+
+prefix_rule(
+    pattern = ["docker", "volume", "rm"],
+    decision = "forbidden",
+    justification = "Docker volume deletion can destroy persistent data.",
+)
+
+prefix_rule(
+    pattern = ["docker", "push"],
+    decision = "forbidden",
+    justification = "Publishing images is a user-controlled action.",
+)
+
+prefix_rule(
+    pattern = ["chmod", "-R"],
+    decision = "forbidden",
+    justification = "Recursive chmod is blocked. Change the narrowest path only with explicit approval.",
+)
+
+prefix_rule(
+    pattern = ["chmod", "777"],
+    decision = "forbidden",
+    justification = "World-writable permissions are blocked.",
+)
+
+prefix_rule(
+    pattern = ["npm", "install"],
+    decision = "forbidden",
+    justification = "Use pnpm/corepack for dependency changes in this environment.",
+)
+
+prefix_rule(
+    pattern = ["npm", "add"],
+    decision = "forbidden",
+    justification = "Use pnpm/corepack for dependency changes in this environment.",
+)
+
+prefix_rule(
+    pattern = ["npm", "ci"],
+    decision = "forbidden",
+    justification = "Use pnpm/corepack for dependency installation in this environment.",
+)
+
+prefix_rule(
+    pattern = ["npx"],
+    decision = "forbidden",
+    justification = "npx is blocked for supply-chain safety. Use pinned pnpm/mise tools.",
+)
+
+prefix_rule(
+    pattern = ["yarn"],
+    decision = "forbidden",
+    justification = "Use pnpm/corepack in this environment.",
+)
+
+prefix_rule(
+    pattern = ["npm", "publish"],
+    decision = "forbidden",
+    justification = "Package publishing is a user-controlled action.",
+)
+
+prefix_rule(
+    pattern = ["pnpm", "publish"],
+    decision = "forbidden",
+    justification = "Package publishing is a user-controlled action.",
+)
+
+prefix_rule(
+    pattern = ["security", "dump-keychain"],
+    decision = "forbidden",
+    justification = "Keychain export/read operations are blocked.",
+)
+
+prefix_rule(
+    pattern = ["security", "export"],
+    decision = "forbidden",
+    justification = "Keychain export/read operations are blocked.",
+)
+
+prefix_rule(
+    pattern = ["crontab"],
+    decision = "forbidden",
+    justification = "Persistent scheduler changes require explicit user control.",
+)
+
+prefix_rule(
+    pattern = ["launchctl", "load"],
+    decision = "forbidden",
+    justification = "Persistent launch agent changes require explicit user control.",
+)
+
+prefix_rule(
+    pattern = ["launchctl", "bootstrap"],
+    decision = "forbidden",
+    justification = "Persistent launch agent changes require explicit user control.",
+)
+
+prefix_rule(
+    pattern = ["ssh-keygen"],
+    decision = "forbidden",
+    justification = "SSH key operations require explicit user control.",
+)
+
+prefix_rule(
+    pattern = ["ssh-add", "-D"],
+    decision = "forbidden",
+    justification = "Clearing all SSH identities is blocked.",
+)

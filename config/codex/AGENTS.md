@@ -129,6 +129,30 @@
 - 過去の作業履歴を考慮
 - ユーザーの好みを学習して適応
 
+## Claude Code互換レイヤー
+
+### 読み込み対象
+- Codexは`project_doc_fallback_filenames = ["CLAUDE.md"]`により、AGENTS.mdがないリポジトリではClaude Code用の`CLAUDE.md`もプロジェクト指示として扱う
+- Claude Code用のglobal rulesは`~/.codex/claude-rules/`から参照できる。該当領域の作業では必要なruleだけ読む
+- Claude Code用のcontextsは`~/.codex/contexts/`から参照できる
+
+### Skillの扱い
+- `install.sh`は`config/claude/skills/*`を`~/.agents/skills/*`へ個別にリンクする。Codexでは明示起動時に`$skill-name`として呼び出す
+- Claude skill内の`${CLAUDE_SKILL_DIR}`は、そのskillディレクトリ自身を指すものとして読み替える
+- `allowed-tools`、`user-invocable`、`disable-model-invocation`、`paths`などClaude固有frontmatterは運用上のヒントとして扱い、Codexの実際の権限はconfig/hooks/rulesに従う
+
+### Hookと安全策
+- Codex hooksは`~/.codex/hooks.json`で管理し、既存の`bin/claude-*` hookを`bin/codex-hook-runner`経由で再利用する
+- 編集時はmain/master直接編集とメインチェックアウト上のfeatureブランチ編集をブロックし、`git-wt`によるworktree作業を促す
+- Bash実行時はmain/masterへの直接push、PR本文への個人スコープ語彙混入、quoted heredocの不要escape、git authorの社内メール混入を検査する
+- hookが未承認で実行されない場合はCodex CLIで`/hooks`を開き、内容を確認してtrustする
+
+### Subagentの対応
+- Claudeの`Explore`相当はCodexのbuilt-in `explorer`または必要に応じたsubagent依頼を使う
+- Claudeの`Plan`相当は`planner` agentを使う
+- レビュー専用の分離作業は`reviewer` agentまたは`$code-review` skillを使う
+- 実装分離はCodex subagentだけに任せず、リポジトリ規約どおり`git-wt`でworktreeを作ってから作業する
+
 ## 📚 参考情報
 
 ### 関連ツール

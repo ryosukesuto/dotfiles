@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# Codex PreToolUse(Edit|Write) guard.
+#
+# This mirrors claude-guard-main-edit and claude-guard-worktree-edit, with
+# additional support for apply_patch payloads that may touch multiple files.
+
+set -euo pipefail
+
+payload=$(cat || true)
+
+collect_paths() {
+  if [ -n "${CLAUDE_TOOL_INPUT_file_path:-}" ]; then
+    printf '%s\n' "$CLAUDE_TOOL_INPUT_file_path"
+  fi
+
+  if command -v jq >/dev/null 2>&1 && [ -n "$payload" ]; then
+    printf '%s' "$payload" | jq -r '
+      [
+        .tool_input.file_path?,
+        .tool_input.filePath?,
+        .tool_input.path?,
+        .tool_response.filePath?,
+        .tool_response.file_path?
+      ]
+      | map(select(type == "string" and length > 0))
+      | .[]
+    ' 2>/dev/null || true
+
+    patch_text=$(printf '%s' "$payload" | jq -r '.tool_input.patch // .tool_input.input // .tool_input.diff // empty' 2>/dev/null || true)
+    if [ -n "$patch_text" ]; then
+      printf '%s\n' "$patch_text" |
+        awk '/^\*\*\* (Add|Update|Delete) File: / { sub(/^\*\*\* (Add|Update|Delete) File: /, ""); print }'
+    fi
+  fi
+}
+
+nearest_existing_dir() {
+  local path="$1"
+  local dir
+
+  if [[ "$path" = /* ]]; then
+    dir=$(dirname "$path")
+  else
+    dir=$(dirname "$PWD/$path")
+  fi
+
+  while [ ! -d "$dir" ] && [ "$dir" != "/" ]; do
+    dir=$(dirname "$dir")
+  done
+
+  [ -d "$dir" ] && printf '%s\n' "$dir"
+}
+
+check_path() {
+  local path="$1"
+  local dir git_dir git_common_dir current_branch allow
+
+  [ -n "$path" ] || return 0
+
+  dir=$(nearest_existing_dir "$path" || true)
+  [ -n "$dir" ] || return 0
+
+  git_dir=$(git -C "$dir" rev-parse --absolute-git-dir 2>/dev/null || true)
+  [ -n "$git_dir" ] || return 0
+
+  git_common_dir=$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+  current_branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  [ -n "$current_branch" ] || return 0
+
+  allow=$(git -C "$dir" config --bool wt.allowDirectCommit 2>/dev/null || true)
+  [ "$allow" = "true" ] && return 0
+
+  if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+    cat >&2 <<EOF
+[BLOCKED] ${current_branch}ブランチで直接編集はできません
+
+  先にworktreeを作成してください:
+    git-wt add feature/xxx
+
+  除外設定: git config --local wt.allowDirectCommit true
+EOF
+    return 2
+  fi
+
+  [ "$current_branch" = "HEAD" ] && return 0
+
+  if [ "$git_dir" = "$git_common_dir" ]; then
+    cat >&2 <<EOF
+[BLOCKED] メインチェックアウトでfeatureブランチを直接編集しています (branch: ${current_branch})
+
+  worktreeで作業してください:
+    git stash
+    git switch main
+    git-wt add ${current_branch}
+    cd .worktrees/${current_branch} && git stash pop
+
+  除外設定: git config --local wt.allowDirectCommit true
+EOF
+    return 2
+  fi
+}
+
+paths=$(collect_paths | awk 'NF' | sort -u)
+[ -n "$paths" ] || exit 0
+
+while IFS= read -r path; do
+  check_path "$path"
+done <<EOF
+$paths
+EOF
+
+exit 0

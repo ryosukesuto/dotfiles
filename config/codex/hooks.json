@@ -1,0 +1,103 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-session-start",
+            "timeout": 10,
+            "statusMessage": "Preparing Codex session"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-hook-runner \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-guard-worktree-edit\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-obsidian-frontmatter\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-suggest-compact\"",
+            "timeout": 30,
+            "statusMessage": "Checking edit policy"
+          }
+        ]
+      },
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-hook-runner \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-main-push\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-pr-writing\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-heredoc-escape\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-cyberagent-email\"",
+            "timeout": 30,
+            "statusMessage": "Checking shell policy"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-hook-runner \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-pre-compact\"",
+            "timeout": 30,
+            "statusMessage": "Saving compact state"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-hook-runner \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-after-edit-checks\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-suggest-proofread\"",
+            "timeout": 60,
+            "statusMessage": "Running after-edit checks"
+          }
+        ]
+      },
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-hook-runner \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-commit-log\"",
+            "timeout": 30,
+            "statusMessage": "Checking command result"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-post-compact",
+            "timeout": 10,
+            "statusMessage": "Restoring compact state"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-hook-runner \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-session-end\"",
+            "timeout": 30,
+            "statusMessage": "Finishing Codex session"
+          }
+        ]
+      }
+    ]
+  }
+}

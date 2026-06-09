@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Report saved compact state after Codex compaction.
+
+set -euo pipefail
+
+rm -f "$HOME/.claude/.compact-counter"
+
+state="$HOME/.claude/compact-state.md"
+if [ -f "$state" ]; then
+  echo "[Hook] コンテキスト圧縮完了。以下は圧縮前の作業状態です:" >&2
+  cat "$state" >&2
+else
+  echo "[Hook] コンテキスト圧縮完了。カウンターをリセットしました。" >&2
+fi

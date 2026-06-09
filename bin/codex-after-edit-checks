@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Run existing after-edit checks for every file touched by a Codex edit event.
+
+set -euo pipefail
+
+payload=$(cat || true)
+repo_bin=$(cd "$(dirname "$0")" && pwd)
+
+collect_paths() {
+  if [ -n "${CLAUDE_TOOL_INPUT_file_path:-}" ]; then
+    printf '%s\n' "$CLAUDE_TOOL_INPUT_file_path"
+  fi
+
+  if command -v jq >/dev/null 2>&1 && [ -n "$payload" ]; then
+    printf '%s' "$payload" | jq -r '
+      [
+        .tool_input.file_path?,
+        .tool_input.filePath?,
+        .tool_input.path?,
+        .tool_response.filePath?,
+        .tool_response.file_path?
+      ]
+      | map(select(type == "string" and length > 0))
+      | .[]
+    ' 2>/dev/null || true
+
+    patch_text=$(printf '%s' "$payload" | jq -r '.tool_input.patch // .tool_input.input // .tool_input.diff // empty' 2>/dev/null || true)
+    if [ -n "$patch_text" ]; then
+      printf '%s\n' "$patch_text" |
+        awk '/^\*\*\* (Add|Update|Delete) File: / { sub(/^\*\*\* (Add|Update|Delete) File: /, ""); print }'
+    fi
+  fi
+}
+
+normalize_path() {
+  local path="$1"
+  if [[ "$path" = /* ]]; then
+    printf '%s\n' "$path"
+  else
+    printf '%s\n' "$PWD/$path"
+  fi
+}
+
+run_checker() {
+  local checker="$1"
+  local file="$2"
+  local event
+
+  [ -x "$checker" ] || return 0
+
+  if command -v jq >/dev/null 2>&1; then
+    event=$(jq -nc --arg file "$file" '{tool_input:{file_path:$file}, tool_response:{filePath:$file}}')
+  else
+    return 0
+  fi
+
+  printf '%s' "$event" | "$checker"
+}
+
+paths=$(collect_paths | awk 'NF' | sort -u)
+[ -n "$paths" ] || exit 0
+
+status=0
+while IFS= read -r raw_path; do
+  file=$(normalize_path "$raw_path")
+  [ -f "$file" ] || continue
+
+  for checker in \
+    "$repo_bin/claude-shellcheck-after-edit" \
+    "$repo_bin/claude-go-after-edit" \
+    "$repo_bin/claude-terraform-after-edit"
+  do
+    if ! run_checker "$checker" "$file"; then
+      status=2
+      break
+    fi
+  done
+
+  [ "$status" -eq 0 ] || break
+done <<EOF
+$paths
+EOF
+
+exit "$status"

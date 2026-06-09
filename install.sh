@@ -259,25 +259,37 @@ create_symlink() {
         fi
     fi
     
+    # ディレクトリが存在しない場合は作成
+    local dest_dir=$(dirname "$dest")
+    if [ ! -d "$dest_dir" ]; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] ディレクトリを作成: $dest_dir"
+        else
+            info "ディレクトリを作成: $dest_dir"
+            mkdir -p "$dest_dir"
+        fi
+    fi
+
     # 既存のファイルやリンクがある場合の処理
     if [ -e "$dest" ] || [ -L "$dest" ]; then
         if [ "$BACKUP" = true ]; then
             local backup_file="${dest}.backup.$(date +%Y%m%d_%H%M%S)"
-            warn "既存のファイルをバックアップ: $dest -> $backup_file"
-            mv "$dest" "$backup_file"
+            if [ "$DRY_RUN" = true ]; then
+                warn "[DRY RUN] 既存のファイルをバックアップ: $dest -> $backup_file"
+            else
+                warn "既存のファイルをバックアップ: $dest -> $backup_file"
+                mv "$dest" "$backup_file"
+            fi
         else
-            warn "既存のファイルを削除: $dest"
-            rm -rf "$dest"
+            if [ "$DRY_RUN" = true ]; then
+                warn "[DRY RUN] 既存のファイルを削除: $dest"
+            else
+                warn "既存のファイルを削除: $dest"
+                rm -rf "$dest"
+            fi
         fi
     fi
-    
-    # ディレクトリが存在しない場合は作成
-    local dest_dir=$(dirname "$dest")
-    if [ ! -d "$dest_dir" ]; then
-        info "ディレクトリを作成: $dest_dir"
-        mkdir -p "$dest_dir"
-    fi
-    
+
     # ドライランモードのチェック
     if [ "$DRY_RUN" = true ]; then
         info "[DRY RUN] シンボリックリンク作成: $src -> $dest"
@@ -413,6 +425,18 @@ if [ ! -d "$HOME/.codex" ]; then
 fi
 create_symlink "$DOTFILES_DIR/config/codex/config.toml" "$HOME/.codex/config.toml"
 create_symlink "$DOTFILES_DIR/config/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
+create_symlink "$DOTFILES_DIR/config/codex/hooks.json" "$HOME/.codex/hooks.json"
+
+# Codex Rules（コマンド実行ポリシー）
+if [ ! -d "$HOME/.codex/rules" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Codex Rules ディレクトリを作成: ~/.codex/rules"
+    else
+        mkdir -p "$HOME/.codex/rules"
+        info "Codex Rules ディレクトリを作成: ~/.codex/rules"
+    fi
+fi
+create_symlink "$DOTFILES_DIR/config/codex/rules/dotfiles.rules" "$HOME/.codex/rules/dotfiles.rules"
 
 # Codex CLIカスタムプロンプト
 if [ ! -d "$HOME/.codex/prompts" ]; then
@@ -425,6 +449,26 @@ if [ ! -d "$HOME/.codex/prompts" ]; then
 fi
 create_symlink "$DOTFILES_DIR/config/codex/prompts/create-pr-pro.md" "$HOME/.codex/prompts/create-pr-pro.md"
 
+# Codex Agents（サブエージェント）
+if [ ! -d "$HOME/.codex/agents" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Codex Agents ディレクトリを作成: ~/.codex/agents"
+    else
+        mkdir -p "$HOME/.codex/agents"
+        info "Codex Agents ディレクトリを作成: ~/.codex/agents"
+    fi
+fi
+if [ -d "$DOTFILES_DIR/config/codex/agents" ]; then
+    while IFS= read -r agent_file; do
+        agent_name="$(basename "$agent_file")"
+        create_symlink "$agent_file" "$HOME/.codex/agents/$agent_name"
+    done < <(find "$DOTFILES_DIR/config/codex/agents" -maxdepth 1 -name '*.toml' -type f | sort)
+fi
+
+# Claude Rules / Contexts を Codex から参照できるようにする
+create_symlink "$DOTFILES_DIR/config/claude/rules" "$HOME/.codex/claude-rules"
+create_symlink "$DOTFILES_DIR/config/claude/contexts" "$HOME/.codex/contexts"
+
 # Codex Skills（ユーザー層: ~/.agents/skills、freee-api-skill 等の lock 管理 skill と共存させるため個別 symlink）
 if [ ! -d "$HOME/.agents/skills" ]; then
     if [ "$DRY_RUN" = true ]; then
@@ -435,6 +479,15 @@ if [ ! -d "$HOME/.agents/skills" ]; then
     fi
 fi
 create_symlink "$DOTFILES_DIR/config/codex/skills/code-review" "$HOME/.agents/skills/code-review"
+
+# Claude Skills を Codex Skills としても公開する
+if [ -d "$DOTFILES_DIR/config/claude/skills" ]; then
+    while IFS= read -r skill_dir; do
+        [ -f "$skill_dir/SKILL.md" ] || continue
+        skill_name="$(basename "$skill_dir")"
+        create_symlink "$skill_dir" "$HOME/.agents/skills/$skill_name"
+    done < <(find "$DOTFILES_DIR/config/claude/skills" -mindepth 1 -maxdepth 1 -type d | sort)
+fi
 
 # ============================================================================
 # dotfiles-private（機密設定ファイルのシンボリックリンク）
