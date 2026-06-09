@@ -10,9 +10,12 @@ allowed-tools:
   - mcp__linear-server__list_issues
   - mcp__linear-server__list_cycles
   - mcp__linear-server__list_projects
+  - mcp__linear-server__list_milestones
   - mcp__linear-server__get_issue
+  - mcp__linear-server__get_project
   - mcp__linear-server__get_status_updates
   - mcp__linear-server__save_issue
+  - mcp__linear-server__save_project
   - mcp__linear-server__save_comment
   - mcp__linear-server__save_status_update
   - AskUserQuestion
@@ -29,7 +32,7 @@ allowed-tools:
 ```
 Phase 1: PR-Issue紐づけチェック
 Phase 2: プロジェクト横断タスク取得
-Phase 3: プロジェクトUpdates更新
+Phase 3: プロジェクト設定の欠落チェック + Updates更新
 Phase 4: プロジェクト外Issueの整理
 Phase 5: Current Cycle修正 + 進捗なしプロジェクトの起動Issue投入
 Phase 6: デイリーノート更新（任意）
@@ -89,11 +92,37 @@ Linear の GitHub 連携が org で有効化されている前提。ブランチ
 
 出力フォーマットは `${CLAUDE_SKILL_DIR}/reference.md` を参照。
 
-## Phase 3: プロジェクトUpdates更新
+## Phase 3: プロジェクト設定の欠落チェック + Updates更新
+
+Initiativeを俯瞰する金曜定例の前提として、Project側のメタデータ（Milestone・Dates・descriptionのゴールセクション）が揃っている必要がある。欠落していると俯瞰時に状態が読めないため、Updates更新の前にメタデータの存在を確認する。
+
+### 3-1. プロジェクト設定の欠落チェック
+
+Phase 2で取得した各プロジェクトについて、以下を確認する。
+
+| チェック項目 | 取得方法 | 欠落判定 |
+|---|---|---|
+| description先頭の `## ゴール` セクション | `list_projects` のdescription | `## ゴール` (or `## Goal`) が含まれない |
+| Milestone | `list_milestones(project: <id>)` | 0件 (定常運用PJを除く) |
+| targetDate (PJ全体の終了目安) | `list_projects` のtargetDate | null (定常運用PJを除く) |
+
+定常運用PJ判定: descriptionに `定常運用PJ` または `恒常プロジェクト` の文字列が含まれる場合は対象外。
+
+### 手順
+
+1. `list_projects(member: "me", state: "started")` でメタデータ取得 (description, targetDate含む)
+2. 各プロジェクトについて欠落チェック。`list_milestones` は欠落候補のみに対して呼ぶ（無駄打ち抑制）
+3. 欠落プロジェクトをユーザーに提示。各プロジェクトについて以下を選択:
+   - 「今すぐ設定する」: ゴール・Milestone・targetDateの下書きをClaudeが提案、ユーザー承認後 `save_project` で反映
+   - 「定常運用PJなので対象外」: descriptionに `## 種別\n\n定常運用PJ。` を追記して以降スキップ可能にする
+   - 「後で手動対応」: スキップ
+4. ゴールセクション追加時のテンプレートは個人dotfilesの `linear-workflow` skill「プロジェクト必須項目」参照。targetDateのデフォルトは半期末 (下期=`YYYY-08-31`、上期=`YYYY-02-末日`)
+
+### 3-2. Updates更新
 
 Updateが古いとステークホルダーに誤った状況認識を与える。最新のタスク状況との差分を埋める。
 
-### 手順
+#### 手順
 
 1. 各プロジェクトの直近Updateを `get_status_updates(type: "project", project: <id>, limit: 1)` で取得
 2. Phase 2のタスク状況と比較し、差分を分析
