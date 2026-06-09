@@ -43,6 +43,9 @@ fi
 REVIEW_PR_DIR="$SKILLS_DIR/review-pr"
 REVIEW_TRIAGE_DIR="$SKILLS_DIR/review-triage"
 REVIEW_ORCH_DIR="$SKILLS_DIR/review-orchestrator"
+if [ ! -f "$REVIEW_ORCH_DIR/scripts/build-bundle.py" ] && [ -d "$HOME/.claude/skills/review-orchestrator" ]; then
+  REVIEW_ORCH_DIR="$HOME/.claude/skills/review-orchestrator"
+fi
 REVIEW_PR_REFERENCE="$REVIEW_PR_DIR/review-pr-reference.md"
 TRIAGE_SCRIPT="$REVIEW_TRIAGE_DIR/scripts/triage.py"
 REVIEW_PROMPT_SCRIPT="$REVIEW_PR_DIR/scripts/build-reviewer-prompt.py"
@@ -50,7 +53,7 @@ if [ ! -f "$REVIEW_PROMPT_SCRIPT" ]; then
   REVIEW_PROMPT_SCRIPT="$REVIEW_ORCH_DIR/scripts/build-reviewer-prompt.py"
 fi
 
-if [ ! -f "$REVIEW_PR_REFERENCE" ] || [ ! -f "$TRIAGE_SCRIPT" ] || [ ! -f "$REVIEW_PROMPT_SCRIPT" ]; then
+if [ ! -f "$REVIEW_PR_REFERENCE" ] || [ ! -f "$TRIAGE_SCRIPT" ] || [ ! -f "$REVIEW_PROMPT_SCRIPT" ] || [ ! -f "$REVIEW_ORCH_DIR/scripts/build-bundle.py" ]; then
   echo "ERROR: review-pr skill dependencies are missing under $SKILLS_DIR" >&2
   exit 1
 fi

@@ -491,6 +491,12 @@ if [ -d "$DOTFILES_DIR/config/claude/skills" ]; then
     while IFS= read -r skill_dir; do
         [ -f "$skill_dir/SKILL.md" ] || continue
         skill_name="$(basename "$skill_dir")"
+        case "$skill_name" in
+            bug-bounty-triage|codex-review|create-skill|review-orchestrator|vibe-implement|vibe-review)
+                info "Codex から直接使わない Claude Skill の公開をスキップ: $skill_name"
+                continue
+                ;;
+        esac
         if [ -f "$DOTFILES_DIR/config/codex/skills/$skill_name/SKILL.md" ]; then
             info "Codex専用 Skill が存在するため Claude Skill の公開をスキップ: $skill_name"
             continue
