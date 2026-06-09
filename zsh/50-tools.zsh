@@ -24,7 +24,7 @@ fi
 
 # Claude Code
 if (( $+commands[claude] )); then
-  alias claude='claude --model "claude-opus-4-7[1m]" --permission-mode auto'
+  alias claude='claude --model "claude-opus-4-7[1m]" --dangerously-skip-permissions'
   _claude_ctx="$HOME/.claude/contexts"
   alias claude-review='claude --system-prompt "$(cat "$_claude_ctx/review.md" 2>/dev/null)"'
   alias claude-research='claude --system-prompt "$(cat "$_claude_ctx/research.md" 2>/dev/null)"'
