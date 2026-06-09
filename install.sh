@@ -491,6 +491,10 @@ if [ -d "$DOTFILES_DIR/config/claude/skills" ]; then
     while IFS= read -r skill_dir; do
         [ -f "$skill_dir/SKILL.md" ] || continue
         skill_name="$(basename "$skill_dir")"
+        if [ -f "$DOTFILES_DIR/config/codex/skills/$skill_name/SKILL.md" ]; then
+            info "Codex専用 Skill が存在するため Claude Skill の公開をスキップ: $skill_name"
+            continue
+        fi
         create_symlink "$skill_dir" "$HOME/.agents/skills/$skill_name"
     done < <(find "$DOTFILES_DIR/config/claude/skills" -mindepth 1 -maxdepth 1 -type d | sort)
 fi
