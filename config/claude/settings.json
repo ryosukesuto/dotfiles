@@ -542,7 +542,12 @@
   "sandbox": {
     "excludedCommands": [
       "cmux",
-      "gh"
+      "cmux:*",
+      "gh",
+      "gh:*",
+      "command gh:*",
+      "mise",
+      "mise:*"
     ],
     "autoAllowBashIfSandboxed": true,
     "enableWeakerNetworkIsolation": true,
