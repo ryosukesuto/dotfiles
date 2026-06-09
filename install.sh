@@ -189,6 +189,7 @@ validate_files() {
     local required_files=(
         ".zshrc"
         ".zprofile"
+        ".zshenv"
         "config/git/gitconfig"
         "config/gh/config.yml"
         "config/gh/hosts.yml"
@@ -296,6 +297,7 @@ echo ""
 # ホームディレクトリ直下のドットファイル
 create_symlink "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 create_symlink "$DOTFILES_DIR/.zprofile" "$HOME/.zprofile"
+create_symlink "$DOTFILES_DIR/.zshenv" "$HOME/.zshenv"
 create_symlink "$DOTFILES_DIR/.inputrc" "$HOME/.inputrc"
 create_symlink "$DOTFILES_DIR/.editorconfig" "$HOME/.editorconfig"
 

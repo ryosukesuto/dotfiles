@@ -7,27 +7,8 @@
 # 補完キャッシュディレクトリ
 [[ -d ~/.zsh/cache ]] || mkdir -p ~/.zsh/cache
 
-# GitHub API レート制限回避（遅延評価 - gh/mise初回実行時にセット）
-if (( $+commands[gh] )) && [[ -z "$GITHUB_TOKEN" ]]; then
-  export GITHUB_TOKEN
-  _gh_ensure_token() {
-    if [[ -z "$GITHUB_TOKEN" ]]; then
-      GITHUB_TOKEN="$(gh auth token 2>/dev/null)"
-    fi
-  }
-  # gh実行前にトークンをセットするラッパ
-  gh() {
-    _gh_ensure_token
-    unfunction gh 2>/dev/null
-    command gh "$@"
-  }
-  # mise実行前にもトークンをセット
-  mise() {
-    _gh_ensure_token
-    unfunction mise 2>/dev/null
-    command mise "$@"
-  }
-fi
+# GitHub API レート制限回避 (gh/mise の lazy token wrapper) は .zshenv で定義済み。
+# 非対話 subprocess (Claude Code の Bash tool 等) でも有効にするため移設した。
 
 # mise初期化（shims方式 - envセクション未使用のためhook不要）
 if (( $+commands[mise] )); then
