@@ -19,6 +19,14 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).parent.parent
 
+
+def skill_path_hint(skill_name: str) -> str:
+    return (
+        f"`~/.agents/skills/{skill_name}/SKILL.md`"
+        f"（Codex優先。存在しない場合は `~/.claude/skills/{skill_name}/SKILL.md`）"
+    )
+
+
 OBSERVATION_POINTS = {
     "codex-baseline": "実装詳細、エッジケース（境界値、空入力、ゼロ値、同時実行、権限不足）、シェル/Goスクリプトのロバスト性、nil参照、エラーハンドリング漏れ",
     "opus-baseline": "設計意図、影響範囲、APIコントラクト整合性、既存コードとの一貫性、仕様の曖昧さ、将来の保守性",
@@ -29,28 +37,29 @@ OBSERVATION_POINTS = {
 }
 
 # specialist reviewer ごとに追加で読み込ませる既存 skill / ガイダンス。
-# subagent が指摘を返す前に該当 skill を読むことで、サービス固有の規約・観点を反映させる。
+# reviewer agent またはローカル複数パスが指摘を返す前に該当 skill を読むことで、
+# サービス固有の規約・観点を反映させる。
 SPECIALIST_SKILL_HINTS = {
     "review-server": (
         "このレビューは WinTicket/server リポジトリ専用の specialist 観点で行う。"
-        "subagent は最初に `~/.claude/skills/review-server/SKILL.md` を Read し、"
+        f"reviewer は最初に {skill_path_hint('review-server')} を Read し、"
         "クリーンアーキテクチャ / コーディング規約 / クロスリポジトリ整合性 / ローカル知識を把握してから findings を抽出する。"
         "review-server skill 内部のチェックリストと本プロンプトの出力フォーマットの両方に従うこと。"
     ),
     "security-review-opus": (
         "このレビューはセキュリティ観点（Opus系）の specialist。"
-        "subagent は `~/.claude/skills/security-review/SKILL.md` を Read し、OWASP Top 10 / 認証・認可 / シークレット露出を中心に評価する。"
+        f"reviewer は {skill_path_hint('security-review')} を Read し、OWASP Top 10 / 認証・認可 / シークレット露出を中心に評価する。"
         "LLM 単独の推測でなく、diff や relevant_snippets の具体箇所に必ず紐付ける（false positive 抑制のため）。"
     ),
     "security-review-codex": (
         "このレビューはセキュリティ観点（Codex系）の specialist で、security-review-opus と cross-validation する役割。"
-        "subagent は `~/.claude/skills/security-review/SKILL.md` を Read したうえで、"
+        f"reviewer は {skill_path_hint('security-review')} を Read したうえで、"
         "SQLi / XSS / SSRF / path traversal / コマンド injection / 権限チェック漏れ など実装詳細寄りの脆弱性に焦点を当てる。"
         "Semgrep/gosec 相当の静的解析観点から、パターン一致を evidence として抜粋する。"
     ),
     "cross-repo": (
         "このレビューは cross-repo specialist。triage.must_check_interfaces の各エントリについて、"
-        "候補リポで consumer 側の参照箇所を調査する。`~/.claude/skills/cross-repo/SKILL.md` を参照。"
+        f"候補リポで consumer 側の参照箇所を調査する。{skill_path_hint('cross-repo')} を参照。"
         "pinpoint（ファイル・シンボル指定）→ Read、scoped（ディレクトリ+パターン）→ Grep+Read、survey（概念検索）は原則禁止で最後の手段。"
         "entity_key は consumer 側の位置ではなく triage.must_check_interfaces.source_repo:source_path:source_symbol を使う。"
         "consumer 側の具体位置は related_locations[] に入れる。"
