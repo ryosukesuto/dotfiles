@@ -192,7 +192,6 @@ validate_files() {
         ".zshenv"
         "config/git/gitconfig"
         "config/gh/config.yml"
-        "config/gh/hosts.yml"
         "config/tmux/tmux.conf"
         "config/vim/vimrc"
         "config/ssh/config"

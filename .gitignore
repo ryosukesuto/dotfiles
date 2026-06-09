@@ -33,7 +33,7 @@ Temporary Items
 *.swo
 
 # Sensitive files
-.config/gh/hosts.yml
+config/gh/hosts.yml
 .config/gcloud/
 .boto
 .zsh_history
