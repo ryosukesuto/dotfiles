@@ -16,7 +16,11 @@ if (( $+commands[gh] )) && [[ -z "$GITHUB_TOKEN" ]]; then
     fi
   }
   gh() {
-    _gh_ensure_token
+    # gh auth サブコマンドは GITHUB_TOKEN 未設定で動かす必要があるため
+    # wrapper をスキップ（login/logout/refresh は env token が居ると拒否される）
+    if [[ "$1" != "auth" ]]; then
+      _gh_ensure_token
+    fi
     unfunction gh 2>/dev/null
     command gh "$@"
   }
