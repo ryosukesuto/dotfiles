@@ -1,0 +1,4 @@
+interface:
+  display_name: "Migrate Claude to Codex"
+  short_description: "Port Claude setup to Codex"
+  default_prompt: "Migrate this Claude Code setup to Codex and report any gaps."

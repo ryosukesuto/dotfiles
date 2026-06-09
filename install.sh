@@ -478,7 +478,13 @@ if [ ! -d "$HOME/.agents/skills" ]; then
         info "Codex Skills ディレクトリを作成: ~/.agents/skills"
     fi
 fi
-create_symlink "$DOTFILES_DIR/config/codex/skills/code-review" "$HOME/.agents/skills/code-review"
+if [ -d "$DOTFILES_DIR/config/codex/skills" ]; then
+    while IFS= read -r skill_dir; do
+        [ -f "$skill_dir/SKILL.md" ] || continue
+        skill_name="$(basename "$skill_dir")"
+        create_symlink "$skill_dir" "$HOME/.agents/skills/$skill_name"
+    done < <(find "$DOTFILES_DIR/config/codex/skills" -mindepth 1 -maxdepth 1 -type d | sort)
+fi
 
 # Claude Skills を Codex Skills としても公開する
 if [ -d "$DOTFILES_DIR/config/claude/skills" ]; then
