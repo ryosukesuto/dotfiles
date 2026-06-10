@@ -132,7 +132,8 @@ PR全体の差分（`gh pr diff`）を対象にフルレビューを行い、ト
 
 ## Bot PR（dependabot / renovate）
 
-依存更新PRの場合、以下の観点のみ確認する:
+通常は workflow の job-level `if` で bot PR を成功スキップするため、Claude はレビューしない。
+手動実行や方針変更で依存更新PRをレビューする場合のみ、以下の観点に限定する:
 - 破壊的変更（メジャーバージョンアップ）の有無
 - lockfile / go.sum 等の整合性
 - セキュリティアドバイザリの内容

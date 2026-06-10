@@ -7,6 +7,7 @@ name: PR Review (Claude Code)
 # （issue_comment + gh pr checkout で attacker-controlled な PR head を
 # trusted context = secrets 付きジョブに持ち込む）を発生させないため。
 # 再レビューは新コミット push（synchronize）で自動発火する。
+# bot PR は allowed_bots を許可せず、job-level if で成功スキップする。
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -27,7 +28,7 @@ jobs:
   review:
     name: Claude Code Review
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.type == 'User'
     timeout-minutes: 15
     steps:
       # persist-credentials: false で actions/checkout が git credential helper に
@@ -227,7 +228,7 @@ jobs:
           # (claude-code-action should not use wildcard or dependabot in allowed_bots, HIGH) は
           # dependabot / renovate 双方を Confused Deputy 攻撃ベクトルとして検出する。
           # @dependabot recreate / @renovate run 経由の actor 偽装や、依存パッケージ release note
-          # 経由の prompt injection を防ぐため、bot PR は Claude レビュー対象外とし人間レビューに委ねる。
+          # 経由の prompt injection を防ぐため、bot PR は job-level if で成功スキップし人間レビューに委ねる。
           # 参考: https://www.wiz.io/blog/github-actions-security-ai-powered-actions-vulnerabilities
           # bot コメントを Claude のコンテキストから除外
           exclude_comments_by_actor: "*[bot]"
