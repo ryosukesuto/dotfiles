@@ -268,6 +268,8 @@ enabled = true
 
 [tui]
 alternate_screen = false
+status_line = ["model-with-reasoning", "context-remaining", "git-branch", "current-dir"]
+terminal_title = ["spinner", "project", "git-branch", "model"]
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
