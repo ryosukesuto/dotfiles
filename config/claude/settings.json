@@ -270,7 +270,6 @@
       "Bash(git push -f:*)",
       "Bash(git reset --hard:*)",
       "Bash(git reset --hard HEAD~:*)",
-      "Bash(gh pr merge:*)",
       "Bash(docker volume rm:*)",
       "Bash(docker system prune:*)",
       "Edit(~/.zshrc)",
@@ -292,6 +291,12 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
+  "model": "claude-opus-4-7[1m]",
+  "fallbackModel": [
+    "opus",
+    "sonnet",
+    "haiku"
+  ],
   "skillOverrides": {
     "review-orchestrator": "user-invocable-only",
     "review-triage": "user-invocable-only"
@@ -525,26 +530,16 @@
   },
   "language": "japanese",
   "sandbox": {
-    "excludedCommands": [
-      "cmux",
-      "cmux:*",
-      "gh",
-      "gh:*",
-      "command gh:*",
-      "mise",
-      "mise:*"
-    ],
     "autoAllowBashIfSandboxed": true,
-    "enableWeakerNetworkIsolation": true,
     "network": {
-      "allowLocalBinding": true,
       "allowUnixSockets": [
         "/tmp/cmux.sock",
         "/var/run/docker.sock",
         "~/Library/Containers/com.docker.docker/Data/docker.raw.sock",
         "~/.1password/agent.sock",
         "~/.gnupg/S.gpg-agent.ssh"
-      ]
+      ],
+      "allowLocalBinding": true
     },
     "filesystem": {
       "denyRead": [
@@ -562,11 +557,22 @@
         "**/*.tfstate",
         "**/*.tfstate.backup"
       ]
-    }
+    },
+    "enableWeakerNetworkIsolation": true,
+    "excludedCommands": [
+      "cmux",
+      "cmux:*",
+      "gh",
+      "gh:*",
+      "command gh:*",
+      "mise",
+      "mise:*"
+    ]
   },
   "showClearContextOnPlanAccept": true,
   "channelsEnabled": true,
   "showThinkingSummaries": true,
+  "skipWorkflowUsageWarning": true,
   "theme": "dark-ansi",
   "showTurnDuration": true,
   "skipAutoPermissionPrompt": true,
@@ -580,7 +586,5 @@
         "callbackPort": 3118
       }
     }
-  },
-  "model": "sonnet[1m]",
-  "fallbackModel": ["opus", "sonnet", "haiku"]
+  }
 }

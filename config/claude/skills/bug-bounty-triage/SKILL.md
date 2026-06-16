@@ -75,6 +75,43 @@ mcp__issuehunt__list_reports(orgId=<WINTICKET org>, perPage=50, page=1..N)
 - Firebase の `getRecaptchaConfig` のように SDK が叩く client-facing endpoint からの設定取得は exploit ではない
 - 「設定が UNSPECIFIED」「protection が disabled」の主張は hardening recommendation であって vulnerability ではない
 
+#### Priority (P1-P5) 判定
+
+Bugcrowd VRT 1.18 (<https://bugcrowd.com/vulnerability-rating-taxonomy>) の priority 体系で finding ごとに P1-P5 を決める。Severity (Informational/Low/Medium/High/Critical) と並列に VRT 公式の baseline priority を明示することで、program 側の reward range マッピングと突き合わせやすくなる。
+
+判定基準 (典型例):
+
+- **P1 (Critical)**: 認証バイパスでの管理者権限奪取、リモートコード実行 (Server-Side / Client-Side RCE)、SQL Injection でデータベース全取得、本番 secret の直接露出 (API gateway master key / DB credential 等で実害導通)、決済・残高操作系
+- **P2 (High)**: 認証された他ユーザーのアカウント乗っ取り (cross-account IDOR / 認可バイパス)、Stored XSS で全ユーザー影響、SSRF で内部 metadata service 到達、機微 PII の大量漏洩
+- **P3 (Medium)**: Reflected XSS (cross-site で他人に投げ込める前提)、CSRF で状態変更、限定的 IDOR、Open Redirect で phishing 経路成立、サブドメインテイクオーバー、PR preview 用 secret の production への configuration drift
+- **P4 (Low)**: 認証フローの軽微な弱点 (rate limit 不備、メール送信フラッディング)、HTML Injection、内部ホスト名露出、CSP / セキュリティヘッダ不足、外部から悪用しにくい情報漏洩
+- **P5 (Informational)**: Self-XSS、Disclosure of Known Public Information、hardening 推奨、設定オフ系の指摘で実害シナリオなし、Intentionally Public / Sample / Invalid な key 露出
+
+判定フロー:
+
+1. reporter 自申告の VRT カテゴリ (`<category>|<subcategory>|<variant>` 形式) と CVSS スコアを確認 (信用せずあくまで初期値として扱う)
+2. ステップ 2 のコードレベル検証結果と組み合わせて actual な exploit 可能性を判定
+3. VRT 1.18 公式 JSON で該当カテゴリの `priority` フィールドを確認
+
+   ```bash
+   curl -fsSL https://bugcrowd.com/vulnerability-rating-taxonomy/1.18.json \
+     | jq '.content[] | recurse(.children[]?) | select(.id == "<category_id>")'
+   ```
+
+4. program 側で variant rule (例: Self-XSS の P5 固定、認証不要 RCE の P1 固定) を当てはめる
+5. Severity と Priority が乖離する場合は内部メモに理由を明記する (例: VRT 上は P3 だが影響範囲が極小なので reward は影響度「中」枠で算定)
+
+VRT mapping の書式 (内部メモ・Slack 投下に共通):
+
+```
+- Finding N: <VRT category path> (P<priority>)
+- 代替マッピング (該当する場合): <alt category path> (P<priority>)
+```
+
+VRT カテゴリ ID が複数該当しうる場合 (例: Reflected XSS + Disclosure of Known Public Information) は両方を列挙し、最も重い方を採用する。
+
+1 レポート N findings の場合は finding ごとに独立して Priority を判定する (Severity と同様)。最終的な IssueHunt state は最も重い Priority に対応する action にマッピングする (P1-P2 → `To Fix`、P3 → 影響度と修正必要性次第、P4-P5 → `Close (Informative)` または hardening の `To Fix`)。
+
 #### 実装側コードレベル検証 (production 影響を避ける優先経路)
 
 reporter の主張 (特に「rate-limit がない」「特定 endpoint で auth が通る」「fix されていない」等) を裏取りする際は、ライブ PoC 再現を即実行する前に実装側コードを読んで結論を出す経路を**優先する**。
@@ -220,6 +257,10 @@ skill 側は state 値の提案までで、実更新は PF チームに委ねる
 ```
 【判定】 {Informative / To Fix / Invalidate ...}
 【Severity】 {Informational / Low / Medium / High / Critical}
+【Priority】 {P1 / P2 / P3 / P4 / P5} (Bugcrowd VRT 1.18 baseline)
+【VRT mapping】
+- {Finding N (該当する場合)}: <VRT category path> (P<priority>)
+- 代替マッピング (該当する場合): <alt path> (P<priority>)
 【根拠】
 - {1行サマリ}
 - {重要な技術的論点}
@@ -231,13 +272,15 @@ skill 側は state 値の提案までで、実更新は PF チームに委ねる
 
 【Engineering ハンドオフ】
 - 修正範囲: {サービス / リポ / コード位置}
-- 優先度: {P0/P1/P2}
+- 修正優先度: {P1 / P2 / P3} (Engineering ticket 上の優先度、VRT Priority とは別軸)
 - 確認ポイント: {互換性検証等}
 
 【報奨金提案】 {額 / 該当なしの理由}
 
 【返信ドラフトの所在】 Slack thread: {URL}
 ```
+
+`【Priority】` は finding ごとに独立して付ける (1 レポート N findings の場合)。`【Severity】` は本邦運用ラベル、`【Priority】` は Bugcrowd VRT baseline で意味が違うので両方記載する。`【Engineering ハンドオフ】 修正優先度` は VRT Priority と紛らわしいため、エンジニアリングチームの内部 ticket 優先度であることを明示する。
 
 skill 側はドラフトを `/tmp/bug-bounty-internal-note-{reportId}.md` に書き出すまでにとどめ、`add_internal_note` の実投稿は PF チームに委ねる。
 
@@ -325,16 +368,17 @@ WINTICKET Security Team
 
 #### 投下内容 (1 メッセージにまとめる)
 
-1. トリアージサマリ (Severity / Disposition / 関連報告)
+1. トリアージサマリ (Severity / Priority (Bugcrowd VRT 1.18) / Disposition / 関連報告)
 2. 評価サマリ (箇条書き)
 3. 実装側コードレベル検証結果 (該当する場合、commit hash / PR / 行番号を引用)
-4. 推奨 IssueHunt アクション + state
-5. canonical duplicate target の state cleanup 依頼 (該当する場合)
-6. 報奨金提案額 + 根拠
-7. Engineering ハンドオフ (PoC アカウント削除 / 中長期 hardening / 追加検証論点)
-8. 英語返信ドラフト本文 (コードブロック)
-9. 内部メモのドラフト (コードブロック、`/tmp/` パス参照ではなく本文を貼る)
-10. 末尾: `最終判断・送信は PF チームでお願いします。`
+4. VRT mapping (finding ごとに `<VRT path> (P<priority>)` 形式、複数該当する場合は併記)
+5. 推奨 IssueHunt アクション + state
+6. canonical duplicate target の state cleanup 依頼 (該当する場合)
+7. 報奨金提案額 + 根拠
+8. Engineering ハンドオフ (PoC アカウント削除 / 中長期 hardening / 追加検証論点)
+9. 英語返信ドラフト本文 (コードブロック)
+10. 内部メモのドラフト (コードブロック、`/tmp/` パス参照ではなく本文を貼る)
+11. 末尾: `最終判断・送信は PF チームでお願いします。`
 
 トーンルール ([[feedback-slack-post-tone]]):
 - 紅莉栖キャラ口調 (「〜わ」「〜じゃない」) は持ち込まない
@@ -356,16 +400,17 @@ destructive 系操作 (スレッド削除・編集) を依頼された場合は 
 
 ## よくあるパターンと対応
 
-| 報告内容 | 脅威レベル | 対応 | 理由 |
-|---------|-----------|------|------|
-| Firebase API Key 公開 | Informational | Close (Informative) | Not Applicable (client 埋め込み前提) |
-| Datadog Client Token 公開 | Informational | Close (Informative) | Not Applicable (pub* は client 配布前提) |
-| Sentry DSN 公開 | Informational | Close (Informative) | Not Applicable |
-| ユーザー列挙 (標準機能) | Low/Informational | Close (Informative) | Not Applicable |
-| 古いライブラリバージョン (悪用不可) | Informational | Close (Informative) | Not Applicable |
-| Firebase config dump (`getRecaptchaConfig` 等) | Informational | Close (Informative) | hardening recommendation |
-| CORS 設定ミス (実害あり) | Medium〜High | To Fix | - |
-| 認証バイパス | High〜Critical | To Fix | - |
+| 報告内容 | 脅威レベル | VRT Priority | 対応 | 理由 |
+|---------|-----------|--------------|------|------|
+| Firebase API Key 公開 | Informational | P5 | Close (Informative) | Not Applicable (client 埋め込み前提) |
+| Datadog Client Token 公開 | Informational | P5 | Close (Informative) | Not Applicable (pub* は client 配布前提) |
+| Sentry DSN 公開 | Informational | P5 | Close (Informative) | Not Applicable |
+| ユーザー列挙 (標準機能) | Low/Informational | P4-P5 | Close (Informative) | Not Applicable |
+| 古いライブラリバージョン (悪用不可) | Informational | P5 | Close (Informative) | Not Applicable |
+| Firebase config dump (`getRecaptchaConfig` 等) | Informational | P5 | Close (Informative) | hardening recommendation |
+| Self-XSS (custom header reflection) | Informational | P5 | Close (Informative) | Self-only、cache 非伝播 |
+| CORS 設定ミス (実害あり) | Medium〜High | P3-P2 | To Fix | - |
+| 認証バイパス | High〜Critical | P2-P1 | To Fix | - |
 
 ## 注意事項
 

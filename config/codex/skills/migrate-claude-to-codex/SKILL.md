@@ -72,6 +72,43 @@ For each Claude skill:
 
 For this dotfiles repo, add native Codex skills under `config/codex/skills/<skill-name>/SKILL.md` and ensure `install.sh` links every `config/codex/skills/*` directory into `~/.agents/skills`.
 
+### 4.5. Codex-Native Optimization Pass
+
+After the first translation, run a Codex-native pass instead of stopping at compatibility. The goal is that Codex is the primary executor, with Claude compatibility only as a fallback when the same file is shared.
+
+First decide whether the migrated artifact is shared or forked:
+
+| Mode | When to use | Rule |
+| --- | --- | --- |
+| Shared compatibility | The same `SKILL.md` remains under `config/claude/skills` and is also exposed to Codex | Do not remove behavior Claude Code still depends on. Only add neutral path resolution, compatibility notes, and Codex-safe fallbacks. |
+| Codex-native fork | Codex should behave differently from Claude Code | Copy the Claude skill into `config/codex/skills/<skill-name>` as a tracked fork, then optimize that copy. Keep `config/claude/skills/<skill-name>` intact. |
+
+Do not rewrite a shared Claude skill into Codex-only behavior unless the user explicitly accepts the Claude Code impact. For this dotfiles repo, `config/claude/skills/*` is linked both to `~/.claude/skills` and `~/.agents/skills`, so changing it changes Claude Code behavior after install.
+
+Prefer a tracked fork over copying directly into `~/.agents/skills`: runtime copies drift, are hard to review, and can be lost or silently overwritten by reinstall. The install step should link the tracked Codex fork into `~/.agents/skills`.
+
+Apply this checklist to every migrated skill or workflow:
+
+- Prefer `~/.agents/skills/<name>` and skill-relative paths. Keep `~/.claude/skills/<name>` only as an explicit fallback for shared Claude/Codex files.
+- Remove Claude tool API examples such as `Agent(...)`, `Bash tool`, `Read tool`, `dangerouslyDisableSandbox`, and `allowed-tools` as execution instructions. Translate them to Codex tools, shell commands, hooks, rules, or body guidance.
+- Do not make "spawn another Codex pane" the default path. If the current Codex session can do the work, make that the primary path.
+- Use Codex subagents only when the user explicitly asks for parallel or multi-agent work. Otherwise, convert the old subagent split into local multi-pass review or analysis steps.
+- If subagents are part of the explicit path, describe `multi_agent_v1.spawn_agent` style tasks as bounded work units with concrete input/output files. Do not leave Claude `Agent(subagent_type=...)` snippets in the migrated skill.
+- Replace `${CLAUDE_SKILL_DIR}` with a neutral skill directory variable such as `SKILLS_DIR`, `SKILL_DIR`, or a path resolved from `~/.agents/skills`, then fallback to `~/.claude/skills` only when needed.
+- Store intermediate files under a stable per-task directory such as `$HOME/.cache/<skill>/<id>` instead of fixed `/tmp/<name>.json` paths. This avoids collisions and cross-sandbox temp path mismatches.
+- Prefer direct `python3` execution for bundled scripts with no third-party dependencies. Use `uv run --with <pkg>` only for scripts that really need a package such as `pyyaml`.
+- Keep old Claude frontmatter (`allowed-tools`, `user-invocable`, `disable-model-invocation`, `paths`) only when it helps Claude compatibility. Codex trigger behavior should be driven by `name` and `description`, with operational constraints in the body.
+- When generated prompts reference other skills, generate Codex-first hints: `~/.agents/skills/<skill>/SKILL.md` first, `~/.claude/skills/<skill>/SKILL.md` fallback.
+- If a Codex-native fork uses the same skill name as a Claude skill, verify install/link precedence. Codex's `~/.agents/skills/<skill-name>` must point to the Codex fork, or the Claude compatibility copy will shadow it. In this dotfiles repo, either link Claude skills before Codex skills, or skip the Claude skill when a same-name `config/codex/skills/<skill-name>` fork exists.
+
+Useful grep after migration:
+
+```bash
+rg -n '~/.claude/skills|CLAUDE_SKILL_DIR|Agent\(|dangerouslyDisableSandbox|Bash tool|Codex pane|tmux|cmux|mcp__' <migrated-paths>
+```
+
+Every hit should be either removed, rewritten, or explicitly justified as a compatibility fallback.
+
 ### 5. Migrate Hooks And Rules
 
 Codex hooks receive JSON on stdin and must be reviewed/trusted with `/hooks`. Use these patterns:

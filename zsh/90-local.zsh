@@ -21,6 +21,13 @@ if [[ -f "$HOME/.supabase/.env.local" ]]; then
   set +a  # 自動エクスポートを無効化
 fi
 
+# Codex ragent MCP用に、Claude CodeのAuthorizationを再利用する
+if [[ -z "${RAGENT_MCP_AUTHORIZATION:-}" && -r "$HOME/.claude.json" ]] && command -v jq >/dev/null 2>&1; then
+  _ragent_auth="$(jq -r '.mcpServers.ragent.headers.Authorization // empty' "$HOME/.claude.json" 2>/dev/null)"
+  [[ -n "$_ragent_auth" && "$_ragent_auth" != "null" ]] && export RAGENT_MCP_AUTHORIZATION="$_ragent_auth"
+  unset _ragent_auth
+fi
+
 # ============================================================================
 # プロジェクト固有の環境変数（セキュリティ強化版）
 # ============================================================================

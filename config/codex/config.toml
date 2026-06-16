@@ -117,6 +117,38 @@ confirm_external_urls = false
 # args = ["-y", "@example/mcp-server"]
 # env = { API_KEY = "${EXAMPLE_API_KEY}" }
 
+[mcp_servers.linear-server]
+url = "https://mcp.linear.app/mcp"
+
+[mcp_servers.datadog-mcp]
+url = "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp"
+
+[mcp_servers.ragent]
+url = "https://ragent.zt-sb.winticket.bet/mcp"
+env_http_headers = { Authorization = "RAGENT_MCP_AUTHORIZATION" }
+
+[mcp_servers.wiz-mcp]
+url = "https://mcp.app.wiz.io"
+
+[mcp_servers.pagerduty]
+url = "https://mcp.pagerduty.com/mcp"
+env_http_headers = { Authorization = "PAGERDUTY_MCP_AUTHORIZATION" }
+
+[mcp_servers.freee-mcp]
+command = "npx"
+args = ["freee-mcp"]
+
+[mcp_servers.issuehunt]
+command = "node"
+args = ["/Users/s32943/gh/github.com/miyukki/issuehunt-mcp-server/dist/index.js"]
+cwd = "/Users/s32943/gh/github.com/miyukki/issuehunt-mcp-server"
+env_vars = ["ISSUEHUNT_API_TOKEN", "ISSUEHUNT_DEFAULT_ORG_ID"]
+
+# Claude Code 側の atlassian は SSE transport のため、Codex の公式対応範囲外。
+# 必要になったら streamable HTTP 対応URLを確認して有効化する。
+# [mcp_servers.atlassian]
+# url = "https://mcp.atlassian.com/v1/sse"
+
 # ==============================================================================
 # Custom Shortcuts / カスタムショートカット
 # ==============================================================================
@@ -267,9 +299,35 @@ enabled = true
 enabled = true
 
 [tui]
-alternate_screen = false
+alternate_screen = "never"
 status_line = ["model-with-reasoning", "context-remaining", "git-branch", "current-dir"]
 terminal_title = ["spinner", "project", "git-branch", "model"]
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
+
+[hooks.state]
+
+[hooks.state."/Users/s32943/.codex/hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:608ecc776c82049e877e14f8584eaf0ea26cf38a0acb6ec03910fd3182399eea"
+
+[hooks.state."/Users/s32943/.codex/hooks.json:pre_tool_use:1:0"]
+trusted_hash = "sha256:38fe73338043cc9869158a4eba1b02275da89567b96f2c2ce47146c17d7c3495"
+
+[hooks.state."/Users/s32943/.codex/hooks.json:post_tool_use:0:0"]
+trusted_hash = "sha256:5b438748b825ccbb3dbc33c7f89bc70ccdcfabd9e870fdf8df8318319f6d6f51"
+
+[hooks.state."/Users/s32943/.codex/hooks.json:post_tool_use:1:0"]
+trusted_hash = "sha256:661859de0fba172abd84e1c7314e7de2843805fb471278958f6c0afd2f878e7e"
+
+[hooks.state."/Users/s32943/.codex/hooks.json:pre_compact:0:0"]
+trusted_hash = "sha256:b8d5ff5596bc6ba49b13f374a6fc78e52c0e925ba3cca3cecd5891f187d7b5b0"
+
+[hooks.state."/Users/s32943/.codex/hooks.json:post_compact:0:0"]
+trusted_hash = "sha256:47ad803fb19793df32eee2e172c203706d004c38c34d59e72541366d14d80845"
+
+[hooks.state."/Users/s32943/.codex/hooks.json:session_start:0:0"]
+trusted_hash = "sha256:7f31564d9e648b14e72deb7ba5a55344711286b5f634087bcd0289359591685a"
+
+[hooks.state."/Users/s32943/.codex/hooks.json:stop:0:0"]
+trusted_hash = "sha256:4e8da48ec7fa75df30c41b2c1beed7873706084a5a7897b95a86e5b1815d91f9"
