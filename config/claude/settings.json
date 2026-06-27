@@ -571,6 +571,7 @@
   },
   "showClearContextOnPlanAccept": true,
   "channelsEnabled": true,
+  "autoMemoryEnabled": true,
   "showThinkingSummaries": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark-ansi",
