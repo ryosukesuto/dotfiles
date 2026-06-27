@@ -506,6 +506,13 @@ if [ -d "$PRIVATE_DIR" ]; then
         dest="$DOTFILES_DIR/$rel"
         create_symlink "$src" "$dest"
     done < <(find "$PRIVATE_DIR" -name '*.local.md' -type f)
+
+    # claude-review-coverage allowlist は dotfiles 側のディレクトリ構造と
+    # リンク先 ($HOME/.config/...) が一致しないので個別にリンクする
+    ALLOWLIST_SRC="$PRIVATE_DIR/config/claude-review-coverage/allowlist.local"
+    if [ -f "$ALLOWLIST_SRC" ]; then
+        create_symlink "$ALLOWLIST_SRC" "$HOME/.config/claude-review-coverage/allowlist"
+    fi
 else
     warn "dotfiles-private が見つかりません（ghq get ryosukesuto/dotfiles-private）"
 fi

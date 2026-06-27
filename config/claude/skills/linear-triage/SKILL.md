@@ -246,6 +246,7 @@ PR レビュー自動化（Claude Code Action / Greptile）を導入して、AI 
 - 一度に大量起票しない。月 5 件を目安に、優先度の高いリポから順次（重要度: ops > server-config > 業務リポ > その他）
 - 既に Issue がある場合は新規起票せず、既存 Issue にコメントで「{YYYY-MM-DD} 時点で未適用継続」と追記する選択肢を提示
 - 個人 / experimental リポは「適用しない判断」として手動でカバレッジから除外する候補をユーザーに確認
+- 別経路 (reusable workflow / org 必須チェック等) で導入済みのリポは `claude-review-coverage` の allowlist に追記して未適用判定から外す。`${XDG_CONFIG_HOME:-$HOME/.config}/claude-review-coverage/allowlist` または `--allowlist <file>` 指定。`--only-missing` 実行時は別経路適用も自動スキップされる
 
 ## 設定
 

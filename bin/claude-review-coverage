@@ -6,6 +6,7 @@
 #   claude-review-coverage --org WinTicket    # 特定 org に絞る
 #   claude-review-coverage --format json      # JSON で出力（Linear 自動起票等で使用）
 #   claude-review-coverage --only-missing     # 未適用リポのみ出力
+#   claude-review-coverage --allowlist <file> # 別経路導入済みリポを記載した allowlist
 #
 # チェック対象ファイル:
 #   必須:
@@ -18,13 +19,23 @@
 # 状態:
 #   完全適用: 必須 2 つとも存在
 #   部分適用: 必須のうち片方だけ
-#   未適用: 必須 2 つとも欠落
+#   別経路適用: allowlist に記載 (reusable workflow 等で別経路導入済み)
+#   未適用: 必須 2 つとも欠落かつ allowlist にも無い
+#
+# allowlist:
+#   ファイル形式は 1 行 1 リポ (ghq list と同じ "host/owner/repo")。
+#   # 以降はコメント、空行は無視。
+#   デフォルトパスは $CLAUDE_REVIEW_COVERAGE_ALLOWLIST、未設定なら
+#   ${XDG_CONFIG_HOME:-$HOME/.config}/claude-review-coverage/allowlist。
+#   ファイルが存在しなければ何もしない (誤検出は --allowlist 指定で潰す)。
 
 set -euo pipefail
+export LC_ALL=C
 
 SCOPE_ORG=""
 FORMAT="md"
 ONLY_MISSING=0
+ALLOWLIST_FILE="${CLAUDE_REVIEW_COVERAGE_ALLOWLIST:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-review-coverage/allowlist}"
 
 usage() {
   sed -n 's/^# \{0,1\}//; 2,/^$/p' "$0" | sed -n '1,/^$/p'
@@ -36,6 +47,7 @@ while [ $# -gt 0 ]; do
     --org) SCOPE_ORG="${2:-}"; shift 2 ;;
     --format) FORMAT="${2:-md}"; shift 2 ;;
     --only-missing) ONLY_MISSING=1; shift ;;
+    --allowlist) ALLOWLIST_FILE="${2:-}"; shift 2 ;;
     -h|--help) usage ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
@@ -47,6 +59,17 @@ if ! command -v ghq >/dev/null 2>&1; then
 fi
 
 GHQ_ROOT="$(ghq root)"
+
+declare -A ALLOWLIST=()
+if [ -n "$ALLOWLIST_FILE" ] && [ -f "$ALLOWLIST_FILE" ]; then
+  while IFS= read -r line; do
+    line="${line%%#*}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [ -z "$line" ] && continue
+    ALLOWLIST["$line"]=1
+  done < "$ALLOWLIST_FILE"
+fi
 
 # ghq list は "host/owner/repo" を返す
 mapfile -t REPOS < <(ghq list 2>/dev/null | sort)
@@ -72,6 +95,7 @@ ROW_STATUS=()
 
 count_full=0
 count_partial=0
+count_external=0
 count_missing=0
 
 for repo in "${REPOS[@]}"; do
@@ -92,6 +116,10 @@ for repo in "${REPOS[@]}"; do
   if [ "$has_workflow" -eq 1 ] && [ "$has_skill" -eq 1 ]; then
     status="完全適用"
     count_full=$((count_full + 1))
+  elif [ -n "${ALLOWLIST[$repo]+x}" ]; then
+    # allowlist は部分適用/未適用より優先。完全適用は別経路に上書きしない
+    status="別経路適用"
+    count_external=$((count_external + 1))
   elif [ "$has_workflow" -eq 1 ] || [ "$has_skill" -eq 1 ]; then
     status="部分適用"
     count_partial=$((count_partial + 1))
@@ -100,7 +128,7 @@ for repo in "${REPOS[@]}"; do
     count_missing=$((count_missing + 1))
   fi
 
-  if [ "$ONLY_MISSING" -eq 1 ] && [ "$status" = "完全適用" ]; then
+  if [ "$ONLY_MISSING" -eq 1 ] && { [ "$status" = "完全適用" ] || [ "$status" = "別経路適用" ]; }; then
     continue
   fi
 
@@ -132,6 +160,9 @@ case "$FORMAT" in
     printf '生成日時: %s\n' "$(date '+%Y-%m-%d %H:%M')"
     printf 'ghq root: `%s`\n' "$GHQ_ROOT"
     [ -n "$SCOPE_ORG" ] && printf '対象 org: `%s`\n' "$SCOPE_ORG"
+    if [ -f "$ALLOWLIST_FILE" ]; then
+      printf 'allowlist: `%s` (%d 件)\n' "$ALLOWLIST_FILE" "${#ALLOWLIST[@]}"
+    fi
     printf '対象リポ数: %d\n\n' "${#ROW_REPO[@]}"
 
     printf '## 詳細\n\n'
@@ -150,6 +181,7 @@ case "$FORMAT" in
     printf '\n## サマリ\n\n'
     printf -- '- 完全適用: %d 件\n' "$count_full"
     printf -- '- 部分適用: %d 件\n' "$count_partial"
+    printf -- '- 別経路適用: %d 件\n' "$count_external"
     printf -- '- 未適用: %d 件\n' "$count_missing"
     ;;
   json)
@@ -157,9 +189,12 @@ case "$FORMAT" in
     printf '  "generated_at": "%s",\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     printf '  "ghq_root": "%s",\n' "$GHQ_ROOT"
     printf '  "scope_org": "%s",\n' "$SCOPE_ORG"
+    printf '  "allowlist_file": "%s",\n' "$ALLOWLIST_FILE"
+    printf '  "allowlist_count": %d,\n' "${#ALLOWLIST[@]}"
     printf '  "summary": {\n'
     printf '    "full": %d,\n' "$count_full"
     printf '    "partial": %d,\n' "$count_partial"
+    printf '    "external": %d,\n' "$count_external"
     printf '    "missing": %d\n' "$count_missing"
     printf '  },\n'
     printf '  "repos": [\n'
