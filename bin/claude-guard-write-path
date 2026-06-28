@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# PreToolUse(Write) hook: block Write to paths whose parent directory does
+# not exist. Surfaces Vault / repo-name typos before a new directory is
+# created by accident.
+#
+# Why: CLAUDE.md「新規ファイル作成時のパス確認: Write前に親ディレクトリの
+# 存在を `ls -d` で1回確認する」というルールがあるが、エージェントは忘れる。
+# 機械的に止めることで Obsidian Vault のタイポ (notes/ vs obsidian-notes/)
+# や別リポへの誤配置を防ぐ。書き込みは exit 2 でブロックし、ユーザーへ
+# permission prompt を出す。
+#
+# Detection:
+#   - Tool: Write only (Edit は既存ファイルなので除外)
+#   - Block if: tool_input.file_path の親ディレクトリが存在しない
+#   - Strong warn if: Vault / 既存リポ名と紛らわしい未存在ディレクトリ
+#
+# Past incident:
+#   2026-06-29 plan-day で /Users/s32943/gh/github.com/ryosukesuto/notes/
+#   を新規作成してしまった (Vault は obsidian-notes/)。
+#   trash 回収が sandbox 制限で 1 回失敗するなど往復が増えた。
+
+set -euo pipefail
+export LC_ALL=C
+
+payload=$(cat)
+tool_name=$(printf '%s' "$payload" | jq -r '.tool_name // ""')
+
+[ "$tool_name" = "Write" ] || exit 0
+
+file_path=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // ""')
+
+# 絶対パスのみ対象
+case "$file_path" in
+  /*) ;;
+  *) exit 0 ;;
+esac
+
+parent_dir=$(dirname "$file_path")
+
+if [ -d "$parent_dir" ]; then
+  # 親ディレクトリ存在。OK
+  exit 0
+fi
+
+# 親が存在しない。Vault / 既存リポ名と紛らわしいパスを検出
+vault_typo=""
+case "$file_path" in
+  */ryosukesuto/notes/*)
+    vault_typo="Obsidian Vault は obsidian-notes/。notes/ はタイポの可能性が高い"
+    ;;
+  */ryosukesuto/dotfiles[0-9]*/*|*/ryosukesuto/dotfile/*)
+    vault_typo="dotfiles リポ名のタイポの可能性あり"
+    ;;
+esac
+
+{
+  echo "[claude-guard-write-path] BLOCK:"
+  echo "  Write 先の親ディレクトリが存在しません: $parent_dir"
+  if [ -n "$vault_typo" ]; then
+    echo "  注意: $vault_typo"
+  fi
+  echo "  CLAUDE.md「新規ファイル作成時のパス確認: Write前に親ディレクトリの存在を ls -d で1回確認する」"
+  echo "  対処:"
+  echo "    1. パスが正しいか確認 (Vault=obsidian-notes/、dotfiles=dotfiles/)"
+  echo "    2. 親ディレクトリを新規作成する意図があれば、明示的に mkdir -p してから再 Write"
+  echo "    3. 紛らわしいパスは ls /Users/s32943/gh/github.com/ryosukesuto/ で確認"
+} >&2
+
+exit 2
