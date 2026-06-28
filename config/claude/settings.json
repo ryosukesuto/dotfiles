@@ -86,6 +86,8 @@
       "Bash(Obsidian:*)",
       "Bash(gnews:*)",
       "Bash(ntn:*)",
+      "Bash(gws-personal:*)",
+      "Bash(gws:*)",
       "Bash(trash:*)",
       "Bash(reload)",
       "Bash(exec zsh)",

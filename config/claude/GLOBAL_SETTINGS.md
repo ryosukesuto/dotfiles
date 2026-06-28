@@ -47,7 +47,8 @@
 - 段階的実装: 探索（コード理解）→ 計画（設計・TODO作成）→ 実装の3段階で進める
 - 読んでから書く: コードを読まずに編集しない。変更対象のファイルは必ず先にReadで内容を確認し、既存の設計意図を理解してから修正する
 - 新規ファイル作成時のパス確認: Write前に親ディレクトリの存在を `ls -d` で1回確認する。Obsidian Vault や別リポジトリのパスを誤って打鍵すると、サブディレクトリが勝手に作成されて誤配置の事故になる。Write後の trash 回収は sandbox制限で失敗しやすく往復が増える
-- sandbox制限エラーの初手対処: `Operation not permitted` / `permission denied` / keychain アクセス失敗等が出た瞬間に `dangerouslyDisableSandbox: true` で即リトライする。`gws-personal` / `gcloud` / `bw` / `trash` 等のkeychain・OS依存コマンドは sandbox 環境で書き込み/復号失敗が頻発するため、最初から dangerously disable を選んでよい。3回リトライしてから気付くと往復が増える
+- sandbox制限エラーの初手対処: `Operation not permitted` / `permission denied` / keychain アクセス失敗等が出た瞬間に `dangerouslyDisableSandbox: true` で即リトライする。`gws` / `gws-personal` / `gcloud` / `bw` / `trash` 等のkeychain・OS依存コマンドは sandbox 環境で書き込み/復号失敗が頻発するため、最初から dangerously disable を選んでよい。3回リトライしてから気付くと往復が増える
+- Bash 許可ルールと wrapper prefix: `Bash(<cmd>:*)` の allow ルールはコマンド文字列の先頭 token のみマッチする。`eval "$(mise activate zsh)" && gws-personal ...` のように wrapper を前置すると先頭が `eval` になり許可から外れて `Permission to use Bash with command ... has been denied` で落ちる。`gws-personal` / `gws` のような zshrc シェル関数も含めて、許可対象コマンドは必ず先頭で直接叩く。2026-06-29 plan-day カレンダー登録で `eval` prefix のため 3 回 deny、prefix を外して解消した事例あり
 - 成功条件定義: タスク開始前に「何をもって完了とするか」を明文化し、検証手段を確保
 - 確認優先: 実装方針に複数の選択肢がある場合、または要件が曖昧な場合はAskUserQuestionで確認してから進める。明らかに判断できることは聞かない。確認が複数ある場合は一度にまとめて聞く（往復を増やさない）
 - MVP方式: 改善項目はセキュリティ > パフォーマンス > 保守性 > 可読性の順で一つずつ実装
