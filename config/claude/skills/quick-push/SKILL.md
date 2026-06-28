@@ -230,5 +230,12 @@ PRマージ後にエラーが発生した場合:
 ## Gotchas
 
 - `wt.allowDirectCommit=true` のリポジトリ（dotfiles等）でworktree作成を提案しない。CLAUDE.mdの「worktree必須」はopt-out前提のルール。main/masterブランチに入ったら即座に worktree を作ろうとせず、先に `git config --get wt.allowDirectCommit` を確認する
+- push コマンドは `git push origin <branch>` の literal 形式で叩く。auto mode 中の自動承認は `~/.claude/settings.json` の `Bash(git push:*)` および `~/gh/github.com/ryosukesuto/dotfiles/.claude/settings.local.json` の `Bash(git push origin main)` / `Bash(git push origin master)` への prefix match に依存する。以下のような揺れた形式はマッチを外して auto mode で block されるか permission prompt が出る:
+  - `git push`（単独）
+  - `git push -u origin HEAD`
+  - `git push origin $(git rev-parse --abbrev-ref HEAD)`（シェル展開を含む形式）
+  - `git push --set-upstream origin <branch>`（フラグが prefix からズレる）
+
+  手順は: (1) `branch=$(git rev-parse --abbrev-ref HEAD)` で先に branch 名を確定 → (2) Claude 側で literal な `git push origin main` のような文字列を組み立てて Bash に渡す。Bash コマンド文字列に `$(...)` を残さない。upstream 未設定で初回 push の場合は `git push -u origin <branch>` ではなく、`git push origin <branch>` を叩いた後に `git branch --set-upstream-to=origin/<branch>` で別途設定する
 - `git push` は最初から `dangerouslyDisableSandbox: true` で実行する。SSH 鍵（`~/.ssh/id_ed25519`）はサンドボックスの read deny に含まれており、サンドボックス内では `Permission denied (publickey)` で必ず失敗する。失敗→再試行の無駄な permission prompt を避けるため、push の Bash 呼び出しでは最初から sandbox 外で叩く。HTTPS remote の場合はこの限りでないが、個人リポは SSH remote 前提で扱う
 - Claude Code のメイン cwd（`.`）の外にあるリポジトリで `git add` / `git commit` を叩く場合も最初から `dangerouslyDisableSandbox: true` を付ける。sandbox の write allowOnly は `.` 直下しか含まれず、別リポの `.git/index.lock` 作成が `Operation not permitted` で失敗する（例: メイン cwd が `~/gh/github.com/WinTicket/gws-terraform` のまま `cd ~/gh/github.com/ryosukesuto/dotfiles && git add ...` を叩いたケース）。push だけでなく commit / add も同様、と覚えておく。`.` 内のリポジトリでの commit / add は sandbox 内で動くので無効化は不要
