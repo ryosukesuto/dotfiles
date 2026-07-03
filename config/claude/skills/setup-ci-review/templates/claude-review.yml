@@ -7,6 +7,7 @@ name: PR Review (Claude Code)
 # （issue_comment + gh pr checkout で attacker-controlled な PR head を
 # trusted context = secrets 付きジョブに持ち込む）を発生させないため。
 # 再レビューは新コミット push（synchronize）で自動発火する。
+# bot PR は allowed_bots を許可せず、job-level if で成功スキップする。
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -27,7 +28,7 @@ jobs:
   review:
     name: Claude Code Review
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.type == 'User'
     timeout-minutes: 15
     steps:
       # persist-credentials: false で actions/checkout が git credential helper に
