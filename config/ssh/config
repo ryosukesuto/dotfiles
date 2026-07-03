@@ -1,5 +1,9 @@
 Include /Users/s32943/.config/colima/ssh_config
 
+# マシン固有のホスト設定は ~/.ssh/config.local に記載
+# Hostブロックより前に置くこと（Hostブロック内のIncludeは条件付き読み込みになる）
+Include ~/.ssh/config.local
+
 # SSH設定ファイル
 # 効率的で安全なSSH接続設定
 
@@ -32,8 +36,10 @@ Host *
     ChallengeResponseAuthentication no
     
     # 接続の再利用（高速化）
+    # %h だと HostName 解決後の値になり、マルチアカウント用エイリアスがソケットを共有してしまう
+    # %n（コマンドラインで指定したホスト名）でエイリアスごとに分離する
     ControlMaster auto
-    ControlPath ~/.ssh/sockets/%r@%h-%p
+    ControlPath ~/.ssh/sockets/%r@%n-%p
     ControlPersist 600
     
     # ホスト鍵の確認
@@ -72,7 +78,3 @@ Host i-*
     ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
     User ec2-user
     IdentityFile ~/.ssh/id_ed25519
-
-# ===== 追加ホスト設定 =====
-# マシン固有のホスト設定は ~/.ssh/config.local に記載
-Include ~/.ssh/config.local
