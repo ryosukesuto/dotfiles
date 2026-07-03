@@ -293,7 +293,6 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
-  "model": "claude-opus-4-7[1m]",
   "fallbackModel": [
     "opus",
     "sonnet",
