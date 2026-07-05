@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/obsidian-notes/**"
+---
+
 # ObsidianでMermaidを書くときのルール
 
 ## `graph TD`を使う

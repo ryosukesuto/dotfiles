@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.go"
+---
+
 # Go コード品質ルール
 
 `.go` を書く/レビューするときに守る最低限のガイドライン。Effective Go と Google Go Style Best Practices から、実害につながりやすいものを抜粋している。

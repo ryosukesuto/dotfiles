@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/*.tf"
+  - "**/*.tfvars"
+---
+
 # Terraform で IAM binding / log sink を destroy する時のチェック
 
 `google_*_iam_member` (non-authoritative) や `google_logging_project_sink` を destroy する Terraform PR では、共有所有問題で他 stack を巻き込む事故が起きやすい。plan を読む段階で必ず以下を確認する。

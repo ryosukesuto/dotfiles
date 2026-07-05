@@ -1,3 +1,10 @@
+---
+paths:
+  - "**/*.sh"
+  - "**/bin/**"
+  - "**/.github/scripts/**"
+---
+
 # Shell スクリプト品質ルール
 
 `.sh` を書くとき / レビューするときに守る最低限のガイドライン。Google Shell Style Guide と sharats.me/posts/shell-script-best-practices の定番チェック項目から、実害につながりやすいものを抜粋している。

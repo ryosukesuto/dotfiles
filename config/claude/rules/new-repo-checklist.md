@@ -1,4 +1,12 @@
+---
+paths:
+  - "**/.github/**"
+  - "**/renovate.json"
+---
+
 # 新規リポジトリ立ち上げチェックリスト
+
+<!-- 常時ロードをやめた条件付きルール。new-repo-bootstrap / setup-renovate / linear-triage の各 skill が絶対パスで参照しているため、リポ立ち上げ作業では paths マッチを待たず skill 経由で Read される。 -->
 
 新しい GitHub リポジトリを作ったあと、AI コーディングエージェントが自走できる土壌（ハーネス）を最低限整えるための手順。チェック順は「依存関係が浅い → 深い」の順。
 
