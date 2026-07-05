@@ -505,13 +505,29 @@ if [ -d "$PRIVATE_DIR" ]; then
         rel="${src#$PRIVATE_DIR/}"
         dest="$DOTFILES_DIR/$rel"
         create_symlink "$src" "$dest"
-    done < <(find "$PRIVATE_DIR" -name '*.local.md' -type f)
+    done < <(find "$PRIVATE_DIR" -name '*.local.md' -type f -not -path "$PRIVATE_DIR/projects/*")
 
     # claude-review-coverage allowlist は dotfiles 側のディレクトリ構造と
     # リンク先 ($HOME/.config/...) が一致しないので個別にリンクする
     ALLOWLIST_SRC="$PRIVATE_DIR/config/claude-review-coverage/allowlist.local"
     if [ -f "$ALLOWLIST_SRC" ]; then
         create_symlink "$ALLOWLIST_SRC" "$HOME/.config/claude-review-coverage/allowlist"
+    fi
+
+    # projects/ 配下はプロジェクトリポジトリ（~/gh/ 配下）へのミラーリンク
+    # 例: projects/github.com/<owner>/<repo>/.claude/skills/foo/SKILL.local.md
+    #       -> ~/gh/github.com/<owner>/<repo>/.claude/skills/foo/SKILL.local.md
+    # リポジトリ未clone時はリンクを作らず警告のみ（clone後に install.sh 再実行で解消）
+    if [ -d "$PRIVATE_DIR/projects" ]; then
+        while IFS= read -r src; do
+            rel="${src#$PRIVATE_DIR/projects/}"
+            repo=$(echo "$rel" | cut -d/ -f1-3)
+            if [ -d "$HOME/gh/$repo" ]; then
+                create_symlink "$src" "$HOME/gh/$rel"
+            else
+                warn "projects リンク先リポジトリが未clone: ~/gh/$repo（ghq get $repo）"
+            fi
+        done < <(find "$PRIVATE_DIR/projects" -name '*.local.*' -type f)
     fi
 else
     warn "dotfiles-private が見つかりません（ghq get ryosukesuto/dotfiles-private）"
