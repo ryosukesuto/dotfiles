@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/*.tf"
+  - "**/*.tfvars"
+---
+
 # Terraform コード品質ルール
 
 `.tf` / `.tfvars` を書く/レビューするときに守る最低限のガイドライン。terraform-best-practices.com と HashiCorp recommended practices から実害につながりやすいものを抜粋している。

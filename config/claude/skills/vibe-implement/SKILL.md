@@ -1,7 +1,6 @@
 ---
 name: vibe-implement
 description: バイブコーディング実装フェーズ - Codexに実装させ、Claudeがレビューする
-model: opus
 argument-hint: "[sprint-N]"
 user-invocable: true
 allowed-tools:

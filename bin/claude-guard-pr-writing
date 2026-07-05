@@ -19,6 +19,14 @@ case "$command" in
   *) exit 0 ;;
 esac
 
+# Personal repos are exempt: the "reviewer" is the owner, and skill / rule
+# names are the repo's own contents (PRs against ryosukesuto/dotfiles would
+# otherwise always be blocked when they touch skills).
+origin=$(git remote get-url origin 2>/dev/null || true)
+case "$origin" in
+  *github.com:ryosukesuto/*|*github.com/ryosukesuto/*) exit 0 ;;
+esac
+
 # Strip ref-name flag values (`--head` / `--base` and short forms `-H` / `-B`)
 # before scanning. These carry branch / ref names — technical metadata that is
 # never read as prose by reviewers — so matching skill names there produces
