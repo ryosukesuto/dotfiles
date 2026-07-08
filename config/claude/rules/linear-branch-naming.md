@@ -50,6 +50,22 @@ suto-ryosuke/pf-1862
 
 Linear Issue 画面の右上「Copy git branch name」ボタン、または MCP の `gitBranchName` フィールドからコピーできる。
 
+### 日本語タイトルのIssueは英語スラッグ化する
+
+Linear の `gitBranchName` が日本語タイトルをそのままスラッグとして含む場合、そのまま使わず Issue ID 部分のみ残して英語化する。
+
+```
+# Bad（Linearが生成したまま）
+suto-ryosuke/pfif-88-production環境の構築（aftアカウントリクエスト着手）
+
+# Good
+suto-ryosuke/pfif-88
+```
+
+理由: 日本語ブランチ名は GitHub の「hidden characters」警告（実際に危険な制御文字が含まれていなくても、非ASCII文字混入に対して一律表示される）、PR URL のパーセントエンコード化による可読性低下、シェル操作での引用符処理の手間増加を招く。Linear の自動連携（PR自動リンク・Status自動遷移）は Issue ID がブランチ名に含まれていれば機能するため、日本語部分を削っても支障はない。
+
+2026-07-08、PFIF-88 の PR 作成時に確認。日本語込みブランチ名で GitHub の「hidden characters」警告が発生（16進ダンプで確認した結果、実際には危険な bidi 制御文字やゼロ幅文字は含まれておらず、日本語文字混入への一般的な注意書きだった）。
+
 ### 例外
 
 - ハーネス整備など Issue を切らない雑多な作業: `chore/<topic>` で良い。ただし PR 作成時に対応 Issue を後付けで決める手間が発生するため、原則は Issue を先に切る

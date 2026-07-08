@@ -110,3 +110,9 @@
 
 [include]
 	path = ~/.gitconfig.local
+[gpg]
+	format = ssh
+[user]
+	signingkey = /Users/s32943/.ssh/id_ed25519.pub
+[commit]
+	gpgsign = true
