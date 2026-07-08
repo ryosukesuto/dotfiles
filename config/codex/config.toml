@@ -124,8 +124,7 @@ url = "https://mcp.linear.app/mcp"
 url = "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp"
 
 [mcp_servers.ragent]
-url = "https://ragent.zt-sb.winticket.bet/mcp"
-env_http_headers = { Authorization = "RAGENT_MCP_AUTHORIZATION" }
+url = "https://ragent.zt.winticket.bet/mcp"
 
 [mcp_servers.wiz-mcp]
 url = "https://mcp.app.wiz.io"
