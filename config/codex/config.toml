@@ -129,10 +129,6 @@ url = "https://ragent.zt.winticket.bet/mcp"
 [mcp_servers.wiz-mcp]
 url = "https://mcp.app.wiz.io"
 
-[mcp_servers.pagerduty]
-url = "https://mcp.pagerduty.com/mcp"
-env_http_headers = { Authorization = "PAGERDUTY_MCP_AUTHORIZATION" }
-
 [mcp_servers.freee-mcp]
 command = "npx"
 args = ["freee-mcp"]
