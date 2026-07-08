@@ -15,5 +15,5 @@ if [ -S "${CMUX_SOCKET_PATH:-/tmp/cmux.sock}" ] && [ -n "${CMUX_WORKSPACE_ID:-}"
 
   printf '{"method":"workspace.rename","params":{"title":"%s","workspace_id":"%s"}}\n' \
     "$title" "$CMUX_WORKSPACE_ID" |
-    nc -U "$CMUX_SOCKET_PATH" 2>/dev/null || true
+    nc -U "$CMUX_SOCKET_PATH" >/dev/null 2>&1 || true
 fi
