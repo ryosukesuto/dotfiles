@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slack via Claude"
+  short_description: "Claude Code経由でSlackリンクを安全に読み取る"
+  default_prompt: "$slack-via-claude を使って、このSlackリンクの内容を取得してください。"
