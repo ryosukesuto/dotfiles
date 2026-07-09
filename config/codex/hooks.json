@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-hook-runner \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-main-push\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-pr-writing\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-heredoc-escape\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-cyberagent-email\"",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/codex-hook-runner \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-command-policy\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-main-push\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-pr-writing\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-heredoc-escape\" \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-cyberagent-email\"",
             "timeout": 30,
             "statusMessage": "Checking shell policy"
           }

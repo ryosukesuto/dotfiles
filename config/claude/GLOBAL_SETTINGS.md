@@ -91,7 +91,8 @@
 - パスワードや秘密鍵はハードコードしない（コミット前に必ず確認）
 - 環境固有の情報は `.env.local` で管理、gitignore設定必須
 - APIキーや認証情報は環境変数経由でのみ使用
-- パッケージマネージャ: pnpm（corepack経由）。npm/npx/yarnは使わない
+- パッケージマネージャ: pnpm（corepack経由）。npm/npx/yarnは使わず、単発CLIはpnpxを使う。ユーザーが明示的に例外を承認した場合のみ、対象コマンドへ `AI_ALLOW_NON_PNPM=1` を付ける
+- EULA・利用規約・ライセンスへの同意は法的・外部状態を変更する操作として扱う。内容確認目的でもaccept系コマンドを実行せず、ユーザーの明示承認後に限り対象コマンドへ `AI_ALLOW_LEGAL_CONSENT=1` を付ける
 - サービス固有の知識（環境名、プロジェクトID、内部URL、メトリクス名、メールアドレス、SlackチャンネルID等）はpublicリポジトリに含めない
   - 配置先: 各skill/rulesディレクトリの `*.local.md`（`.gitignore`の`*.local.*`パターンで除外）
   - skill/rulesファイルからは `${CLAUDE_SKILL_DIR}/SKILL.local.md` で参照する（サービス名をファイル名に含めない）

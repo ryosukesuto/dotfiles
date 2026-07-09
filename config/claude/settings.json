@@ -360,6 +360,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-command-policy"
+          },
+          {
+            "type": "command",
             "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-main-push"
           },
           {

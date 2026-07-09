@@ -1,0 +1,297 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export LC_ALL=C
+
+# PreToolUse(Bash) hook: enforce the pnpm-only policy and prevent an agent from
+# accepting legal terms without the user's explicit approval.
+
+payload=$(cat || true)
+command_text="${CLAUDE_TOOL_INPUT_command:-}"
+
+if [[ -z "$command_text" ]] && [[ -n "$payload" ]] && command -v jq >/dev/null 2>&1; then
+  command_text=$(printf '%s' "$payload" | jq -r '.tool_input.command // .tool_input.cmd // ""' 2>/dev/null || true)
+fi
+
+[[ -n "$command_text" ]] || exit 0
+
+tokens=()
+token_types=()
+current_token=""
+word_started=0
+
+flush_word() {
+  if [[ "$word_started" -eq 1 ]]; then
+    tokens+=("$current_token")
+    token_types+=("word")
+    current_token=""
+    word_started=0
+  fi
+}
+
+append_operator() {
+  flush_word
+  tokens+=("$1")
+  token_types+=("operator")
+}
+
+tokenize_command() {
+  local input="$1"
+  local state="plain"
+  local character next_character
+  local i
+  local length=${#input}
+
+  for ((i = 0; i < length; i++)); do
+    character=${input:i:1}
+
+    case "$state" in
+      plain)
+        case "$character" in
+          "'" )
+            state="single_quote"
+            word_started=1
+            ;;
+          '"')
+            state="double_quote"
+            word_started=1
+            ;;
+          \\)
+            word_started=1
+            if ((i + 1 < length)); then
+              i=$((i + 1))
+              current_token+="${input:i:1}"
+            fi
+            ;;
+          ' '|$'\t'|$'\r')
+            flush_word
+            ;;
+          $'\n'|';'|'|'|'&'|'('|')'|'{'|'}')
+            append_operator "$character"
+            ;;
+          '#')
+            if [[ "$word_started" -eq 0 ]]; then
+              state="comment"
+            else
+              current_token+="$character"
+            fi
+            ;;
+          *)
+            current_token+="$character"
+            word_started=1
+            ;;
+        esac
+        ;;
+      single_quote)
+        if [[ "$character" == "'" ]]; then
+          state="plain"
+        else
+          current_token+="$character"
+        fi
+        ;;
+      double_quote)
+        if [[ "$character" == '"' ]]; then
+          state="plain"
+        elif [[ "$character" == \\ ]] && ((i + 1 < length)); then
+          i=$((i + 1))
+          next_character=${input:i:1}
+          current_token+="$next_character"
+        else
+          current_token+="$character"
+        fi
+        ;;
+      comment)
+        if [[ "$character" == $'\n' ]]; then
+          append_operator "$character"
+          state="plain"
+        fi
+        ;;
+    esac
+  done
+
+  flush_word
+}
+
+is_assignment() {
+  [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]
+}
+
+command_basename() {
+  local value="$1"
+  printf '%s\n' "${value##*/}"
+}
+
+block_package_manager() {
+  local executable="$1"
+
+  {
+    echo "[guard-command-policy] npm/npx/yarn の実行をブロックしました"
+    echo ""
+    echo "  検出: $executable"
+    echo "  pnpmを使用してください。単発CLIはpnpxを使用します"
+    echo ""
+    echo "  ユーザーが明示的に例外を承認した場合のみ:"
+    echo "    AI_ALLOW_NON_PNPM=1 <command>"
+  } >&2
+
+  exit 2
+}
+
+block_legal_consent() {
+  {
+    echo "[guard-command-policy] EULA・利用規約・ライセンスへの同意操作をブロックしました"
+    echo ""
+    echo "  同意は法的・外部状態を変更するため、内容確認目的でも自動実行しません"
+    echo "  ユーザーの明示承認を得てから再実行してください"
+    echo ""
+    echo "  明示承認済みの場合のみ:"
+    echo "    AI_ALLOW_LEGAL_CONSENT=1 <command>"
+  } >&2
+
+  exit 2
+}
+
+is_read_only_inspector() {
+  case "$1" in
+    rg|grep|egrep|fgrep|cat|head|tail|sed|awk|printf|echo|find|fd|fdfind|less|more|bat|jq)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_direct_consent_token() {
+  local value="$1"
+
+  [[ "$value" =~ ^(--?)?(accept|agree-to|agreeto)[_-]?(eula|license|terms|tos)(=.*)?$ ]] ||
+    [[ "$value" =~ ^(--?)?(yes[-_]i[-_]agree|i[-_]agree)(=.*)?$ ]]
+}
+
+is_consent_noun() {
+  [[ "$1" =~ ^(eula|license|terms|tos|terms-of-service)$ ]]
+}
+
+is_consent_verb() {
+  [[ "$1" =~ ^(accept|agree)$ ]]
+}
+
+inspect_segment() {
+  local -a words=("$@")
+  local count=${#words[@]}
+  local index=0
+  local executable=""
+  local executable_index=-1
+  local allow_non_pnpm=0
+  local allow_legal_consent=0
+  local value base next_value
+
+  [[ "$count" -gt 0 ]] || return 0
+
+  while ((index < count)); do
+    value=${words[$index]}
+
+    if [[ "$value" == "AI_ALLOW_NON_PNPM=1" ]]; then
+      allow_non_pnpm=1
+      index=$((index + 1))
+      continue
+    fi
+    if [[ "$value" == "AI_ALLOW_LEGAL_CONSENT=1" ]]; then
+      allow_legal_consent=1
+      index=$((index + 1))
+      continue
+    fi
+    if is_assignment "$value" || [[ "$value" == "!" ]]; then
+      index=$((index + 1))
+      continue
+    fi
+
+    base=$(command_basename "$value")
+    case "$base" in
+      env)
+        index=$((index + 1))
+        while ((index < count)); do
+          value=${words[$index]}
+          if [[ "$value" == "-u" ]] || [[ "$value" == "--unset" ]]; then
+            index=$((index + 2))
+          elif [[ "$value" == "--" ]] || [[ "$value" == -* ]] || is_assignment "$value"; then
+            index=$((index + 1))
+          else
+            break
+          fi
+        done
+        ;;
+      command)
+        if ((index + 1 < count)) && [[ "${words[$((index + 1))]}" =~ ^-[vV]$ ]]; then
+          return 0
+        fi
+        index=$((index + 1))
+        if ((index < count)) && [[ "${words[$index]}" == "--" ]]; then
+          index=$((index + 1))
+        fi
+        ;;
+      builtin|exec|nohup)
+        index=$((index + 1))
+        if ((index < count)) && [[ "${words[$index]}" == "--" ]]; then
+          index=$((index + 1))
+        fi
+        ;;
+      corepack)
+        index=$((index + 1))
+        if ((index < count)) && [[ "${words[$index]}" == "--" ]]; then
+          index=$((index + 1))
+        fi
+        ;;
+      *)
+        executable="$base"
+        executable_index=$index
+        break
+        ;;
+    esac
+  done
+
+  [[ -n "$executable" ]] || return 0
+
+  if [[ "$allow_non_pnpm" -eq 0 ]]; then
+    case "$executable" in
+      npm|npx|yarn|yarnpkg)
+        block_package_manager "$executable"
+        ;;
+    esac
+  fi
+
+  [[ "$allow_legal_consent" -eq 0 ]] || return 0
+  is_read_only_inspector "$executable" && return 0
+
+  shopt -s nocasematch
+  for ((index = executable_index + 1; index < count; index++)); do
+    value=${words[$index]}
+    if is_direct_consent_token "$value"; then
+      block_legal_consent
+    fi
+
+    if ((index + 1 < count)); then
+      next_value=${words[$((index + 1))]}
+      if { is_consent_verb "$value" && is_consent_noun "$next_value"; } ||
+        { is_consent_noun "$value" && is_consent_verb "$next_value"; }; then
+        block_legal_consent
+      fi
+    fi
+  done
+  shopt -u nocasematch
+}
+
+tokenize_command "$command_text"
+
+segment=()
+for ((token_index = 0; token_index < ${#tokens[@]}; token_index++)); do
+  if [[ "${token_types[$token_index]}" == "operator" ]]; then
+    inspect_segment "${segment[@]}"
+    segment=()
+  else
+    segment+=("${tokens[$token_index]}")
+  fi
+done
+inspect_segment "${segment[@]}"
+
+exit 0
