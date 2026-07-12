@@ -234,7 +234,7 @@ gws slides presentations get --params '{"presentationId": "PRESENTATION_ID"}'
 - Drive書き込みは `gws` / `gws-personal` どちらでも可能（2026-04-24検証）
   - `gws-personal`: 自分が所有者のファイル・フォルダは作成・アップロード・移動・リネーム・削除すべてOK
   - `gws`（仕事）: 新規作成したファイル・フォルダについて同じ操作すべてOK（テストフォルダで検証済み）。既存の他人所有ファイルについては未検証
-- GCPプロジェクト: `~/.claude/rules/gcp-accounts.local.md` を参照
+- GCPプロジェクト: `~/.claude/skills/gcp-auth/SKILL.local.md` を参照
 
 ## 注意事項
 

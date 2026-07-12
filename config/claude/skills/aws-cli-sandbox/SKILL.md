@@ -1,4 +1,16 @@
-# AWS CLI と sandbox 制限
+---
+name: aws-cli-sandbox
+description: >-
+  sandbox環境でAWS CLIコマンドを叩いたときの認証エラー対処と、SAMLフェデレーション認証の時間制限を扱う。
+  「Unable to locate credentials」「aws sts」「aws-bastion」「assume-role-with-saml」
+  「SAMLアサーション」「ExpiredTokenException」「Token must be redeemed」等のキーワード、
+  またはAWS CLIコマンドの実行に失敗した場面で起動する。
+user-invocable: false
+allowed-tools:
+  - Bash
+---
+
+# aws-cli-sandbox - AWS CLIとsandbox制限
 
 ## 症状
 
@@ -14,7 +26,7 @@ sandboxのファイル読み取り制限で `~/.aws/credentials` が明示的に
 
 `gcloud` / `gh` 等と違い、AWS CLI はこの制限に無条件で引っかかる。sandbox が原因の失敗であって、認証情報そのものが壊れているわけではない、と判断する材料として記録する。
 
-対処は毎回そのコマンド固有の状況を見て判断する。`~/.claude/CLAUDE.md` の「sandbox制限エラーの初手対処」に沿って、上記のエラーメッセージが出た時点でsandbox起因と判定し、必要なら `dangerouslyDisableSandbox: true` での再実行を検討する。
+対処は毎回そのコマンド固有の状況を見て判断する。上記のエラーメッセージが出た時点でsandbox起因と判定し、必要なら `dangerouslyDisableSandbox: true` での再実行を検討する。
 
 ## SAML フェデレーション認証の時間制限
 
@@ -26,12 +38,12 @@ sandboxのファイル読み取り制限で `~/.aws/credentials` が明示的に
 
 ## 実例
 
-2026-07-05、PF-1914 (Wiz HIGH特権コンテナ) の実態確認でAWS IAM/EC2をread-onlyで確認する際に発生。
+WinTicket Wiz HIGH特権コンテナの実態確認でAWS IAM/EC2をread-onlyで確認する際に発生。
 
 1. `aws sts get-caller-identity` が sandbox内で `Unable to locate credentials` → エラーメッセージからsandbox起因と判断し、都度確認のうえ `dangerouslyDisableSandbox: true` で再実行して解決
 2. ユーザーが貼った `assume-role-with-saml` コマンドのSAMLアサーションが発行から時間が経っていて `ExpiredTokenException` → 再ログインを依頼し、新しいアサーションで再実行して解決
 
-## 関連
+## Gotchas
 
 - 認証情報をチャットに貼る運用そのものについては、短命トークン（5分限定のアサーション、15分程度のセッション）かつ read-only ロール限定であれば実害は小さいが、可能なら「認証した」とだけ伝えてもらい、資格情報の中身は貼らせない方が望ましい
-- WinTicket AWSアカウントの構成（account ID・SAML provider・role名）は `~/gh/github.com/ryosukesuto/dotfiles-private/config/claude/rules/aws-accounts.local.md` を参照
+- WinTicket AWSアカウントの構成（account ID・SAML provider・role名）は `${CLAUDE_SKILL_DIR}/SKILL.local.md` を参照

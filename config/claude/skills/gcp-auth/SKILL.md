@@ -145,3 +145,5 @@ Impersonation やセキュアなサービス間通信の基盤は IAM Service Ac
 -   [User Identities](https://docs.cloud.google.com/iam/docs/user-identities)
 -   [Application Default Credentials](https://docs.cloud.google.com/docs/authentication/provide-credentials-adc)
 -   [Service Account Best Practices](https://docs.cloud.google.com/iam/docs/best-practices-service-accounts)
+
+WinTicket 固有のプロジェクトID・config切替・kubectl認証トラブルシュートは `${CLAUDE_SKILL_DIR}/SKILL.local.md` を参照。
