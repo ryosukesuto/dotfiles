@@ -1,0 +1,3 @@
+# Personal repositories use the default branch directly.
+[wt]
+	allowDirectCommit = true

@@ -147,7 +147,7 @@
 
 ### Hookと安全策
 - Codex hooksは`~/.codex/hooks.json`で管理し、既存の`bin/claude-*` hookを`bin/codex-hook-runner`経由で再利用する
-- 編集時はmain/master直接編集とメインチェックアウト上のfeatureブランチ編集をブロックし、`git-wt`によるworktree作業を促す
+- 編集前に`git config --bool wt.allowDirectCommit`でリポジトリ固有の例外を確認する。`true`ならworktreeを自動作成せず、プロジェクト固有ルールに従う。未設定または`false`の場合はmain/master直接編集とメインチェックアウト上のfeatureブランチ編集をブロックし、`git-wt`によるworktree作業を促す
 - Bash実行時はmain/masterへの直接push、PR本文への個人スコープ語彙混入、quoted heredocの不要escape、git authorの社内メール混入を検査する
 - hookが未承認で実行されない場合はCodex CLIで`/hooks`を開き、内容を確認してtrustする
 

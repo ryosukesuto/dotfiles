@@ -110,6 +110,9 @@
 
 [include]
 	path = ~/.gitconfig.local
+
+[includeIf "gitdir:~/gh/github.com/ryosukesuto/"]
+	path = ~/gh/github.com/ryosukesuto/dotfiles/config/git/ryosukesuto.gitconfig
 [gpg]
 	format = ssh
 [user]
