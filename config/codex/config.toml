@@ -15,11 +15,11 @@ approval_policy = "never"
 # Model Settings / モデル設定
 # ==============================================================================
 # モデル名（GPT-5 Codexを使用）
-model = "gpt-5.6-sol"
+model = "gpt-5.5"
 
 # 推論努力レベル（low, medium, high）
 # PRレビューなど実用的なタスクには "medium" が最適（速度と品質のバランス）
-model_reasoning_effort = "max"
+model_reasoning_effort = "xhigh"
 personality = "pragmatic"
 project_doc_fallback_filenames = ["CLAUDE.md"]
 project_doc_max_bytes = 65536
@@ -284,6 +284,12 @@ trust_level = "trusted"
 [projects."/Users/s32943"]
 trust_level = "trusted"
 
+[projects."/Users/s32943/gh/github.com/CyberAgentCard/processing-infrastructure"]
+trust_level = "trusted"
+
+[projects."/Users/s32943/gh/github.com/mediphone/mediment"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 gpt-5-codex = "gpt-5.2-codex"
 "gpt-5.2-codex" = "gpt-5.4"
@@ -309,6 +315,7 @@ terminal_title = ["spinner", "project", "git-branch", "model"]
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
+"gpt-5.6-sol" = 4
 
 [hooks.state]
 
@@ -316,7 +323,7 @@ terminal_title = ["spinner", "project", "git-branch", "model"]
 trusted_hash = "sha256:608ecc776c82049e877e14f8584eaf0ea26cf38a0acb6ec03910fd3182399eea"
 
 [hooks.state."/Users/s32943/.codex/hooks.json:pre_tool_use:1:0"]
-trusted_hash = "sha256:38fe73338043cc9869158a4eba1b02275da89567b96f2c2ce47146c17d7c3495"
+trusted_hash = "sha256:d24b139973a33745cb5cb64ee1b3c63bebcf844f610d3606c45bfc48d013445b"
 
 [hooks.state."/Users/s32943/.codex/hooks.json:post_tool_use:0:0"]
 trusted_hash = "sha256:5b438748b825ccbb3dbc33c7f89bc70ccdcfabd9e870fdf8df8318319f6d6f51"
@@ -335,3 +342,12 @@ trusted_hash = "sha256:7f31564d9e648b14e72deb7ba5a55344711286b5f634087bcd0289359
 
 [hooks.state."/Users/s32943/.codex/hooks.json:stop:0:0"]
 trusted_hash = "sha256:4e8da48ec7fa75df30c41b2c1beed7873706084a5a7897b95a86e5b1815d91f9"
+
+[hooks.state."/Users/s32943/gh/github.com/ryosukesuto/obsidian-notes/.codex/hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:1ef72cdf219e1a1dcdfec79de21f9b72f3150330776860eac071950a93ee5b49"
+
+[hooks.state."/Users/s32943/gh/github.com/ryosukesuto/obsidian-notes/.codex/hooks.json:pre_tool_use:1:0"]
+trusted_hash = "sha256:08d707c0c0f9aaa6bf289e9e3dad5f4e4cc34d63edee6f512a269f172784db88"
+
+[hooks.state."/Users/s32943/gh/github.com/ryosukesuto/obsidian-notes/.codex/hooks.json:post_tool_use:0:0"]
+trusted_hash = "sha256:11456d5ecf6d90069289f9fcf047dcedb0a938e396ed650de7a09e0f5959a97f"
