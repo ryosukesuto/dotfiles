@@ -13,6 +13,7 @@ PR title / body / commit message / PR レビューコメント（approve・chang
 
 - 個人 skill 名（例: `/harness-audit`, `/post-merge`, `/work-log`, `/review-pr` など、チームに共有されていない自作スキル）
 - 個人 skill 内のカテゴリ名（例: `should-fix`, `must-fix`, `P0/P1`, `must-fix なし` など、内部レビューツールの出力フォーマット由来の語彙）
+- Codex 等、個人ローカル環境で使う AI セカンドオピニオンツールへの言及（例: 「Codex second opinion」「Codex 提案」「Codex 確認済み」）。チームメンバーには参照不能なため、結論を裏付ける技術的事実（公式 docs・実観測ログ等）だけを書く
 - 個人 dotfiles / ローカルノートのパス（例: `~/dotfiles-private/...`、Obsidian デイリーノートの相対リンク）
 - チームのリポジトリに存在しないローカル運用スクリプト名
 - 実装者の作業状態（`stash 済`、`既に退避済` 等）— 読む側には不要な情報
@@ -23,7 +24,7 @@ PR title / body / commit message / PR レビューコメント（approve・chang
 
 レビュワー / PR 作成者にはこれらのリソースが共有されておらず参照不能。PR の背景が追えず、レビュー効率が落ちる。
 
-PR #6925・#6931 で PR 本文に内部用語を残し、PR #6977 の approve コメントで「review-pr で should-fix 2件」という内部表現を使ってしまい、PR 作成者から見て意味不明な表現になった。
+PR #6925・#6931 で PR 本文に内部用語を残し、PR #6977 の approve コメントで「review-pr で should-fix 2件」という内部表現を使ってしまい、PR 作成者から見て意味不明な表現になった。2026-07-08 には PR #65 (PF-2793) の PR 本文・Linear Issue 本文で「Codex second opinion 確認済み」と書いて同様の指摘を受けた。
 
 ## 書き換え方
 
