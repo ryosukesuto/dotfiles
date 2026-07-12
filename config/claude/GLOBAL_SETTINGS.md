@@ -37,7 +37,7 @@
 
 ### Subagent委譲ルール
 - 実装作業（ファイル変更を伴う）: `Agent(isolation: "worktree")` で委譲。メイン会話はオーケストレーター役
-- コード探索・広範な調査: `Explore` agent（"quick" / "medium" / "very thorough"）
+- コード探索・広範な調査: `Explore` agent（"quick" / "medium" / "very thorough"）。`quick`はコストを抑える探索が目的のため `model: "haiku"` を明示指定する（v2.1.198以降セッションモデル継承がデフォルトで、指定を忘れると親のモデルがそのまま重い探索に使われる）
 - 実装計画・設計: `Plan` agent
 - 設計判断・難バグ・アーキテクチャ検討: 上記いずれかに `model: "opus"` を追加
 - 定型・機械的な処理（整形・抽出・単純なlist化）: `model: "haiku"` を追加。詳細は `rules/model-selection.md` 参照

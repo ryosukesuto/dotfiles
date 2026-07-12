@@ -6,8 +6,8 @@
 
 | モデル | 用途 | 具体例 |
 |-------|------|-------|
-| `haiku` | 定型・機械的な処理 | 文字列整形、grep結果のフィルタ、ログ抽出、簡単なファイル名列挙 |
-| `sonnet` | 通常の実装・調査（格下げ先の第一候補） | Explore（quick/medium）、Plan、一般的な実装、code review。Sonnet 5 は coding/agentic で旧 Opus 級のため、この層の主力 |
+| `haiku` | 定型・機械的な処理 | 文字列整形、grep結果のフィルタ、ログ抽出、簡単なファイル名列挙、Explore の `quick` モード |
+| `sonnet` | 通常の実装・調査（格下げ先の第一候補） | Explore（medium/very thorough）、Plan、一般的な実装、code review。Sonnet 5 は coding/agentic で旧 Opus 級のため、この層の主力 |
 | `opus` | 深い思考が要るもの（Sonnetセッション時） | 設計判断、難バグの根本原因調査、アーキテクチャ検討、大規模リファクタ計画 |
 | 省略（親を継承） | 最高品質が要るもの | セッションが Fable / Opus のとき、深い思考が要る subagent は指定なしで親を継承させる |
 
@@ -24,7 +24,7 @@ Fable は Sonnet 5 の約 3.3 倍（導入価格中は 5 倍）。さらに Fabl
 
 判断基準: 省略 = 最高品質がデフォルト、明示指定 = コストを抑える格下げ。格下げ先の第一候補は `sonnet`（Sonnet 5）。迷ったら `sonnet`、間違えたときの手戻りがコスト差より高くつくもの（設計判断・難バグ・adversarial verify）は省略で親を継承させる。
 
-注意: Explore agent は v2.1.198 からセッションモデル継承（opus 上限）が既定になった。以前の「Explore は haiku で動く」前提は無効。quick な探索でコストを抑えたいなら `model: "haiku"` の明示指定が必須になった。
+注意: Explore agent は v2.1.198 からセッションモデル継承（opus 上限）が既定になった。以前の「Explore は haiku で動く」前提は無効。`quick` モードは指定を忘れると親の重いモデル（Fable / Opus）がそのまま軽い探索に使われてしまうため、`model: "haiku"` の明示指定を必須とする（判断を個別の場面に委ねず、`quick` = haiku で固定する）。
 
 ## Haikuを指定する条件
 
@@ -35,7 +35,7 @@ Fable は Sonnet 5 の約 3.3 倍（導入価格中は 5 倍）。さらに Fabl
 - 失敗しても影響が小さい（読み取り専用、試行錯誤可能）
 
 典型例:
-- Exploreでquickモード、かつキーワード検索だけで済むとき
+- Exploreの`quick`モード（原則すべて。個別のケース判断は不要）
 - grep/lsの結果から特定パターンを抽出するとき
 - ファイル一覧を整形して返すとき
 
