@@ -2,7 +2,7 @@
 
 ## PR本文テンプレート
 
-必須セクションは `概要 / Linear / 変更内容 / Test plan` の4つ。それ以外は「該当する場合のみ」格下げ。空欄や `N/A` で残さず、不要なら削る。目安は 30-50 行。
+必須セクションは `概要 / 変更内容 / Test plan / Linear` の4つ。それ以外は「該当する場合のみ」格下げ。空欄や `N/A` で残さず、不要なら削る。目安は 30-50 行。
 
 ### 必須テンプレート（最小構成）
 
@@ -10,16 +10,19 @@
 ## 概要
 [1-2行で変更の目的を説明]
 
-<!-- Linear -->
-Linear: [PF-XXXX](https://linear.app/winticket/issue/PF-XXXX)
-
 ## 変更内容
 - [主要な変更点を3-5項目]
 
 ## Test plan
 - [ ] [この PR で確認する項目]
 - [ ] POST-MERGE: [マージ後に確認する項目]
+
+## Linear
+
+Closes PF-XXXX
 ```
+
+`Linear` セクションはPR本文の末尾に置く（GitHub-Linear連携がMagic Wordを検出する位置のため、概要直後には置かない）。中身は `Closes` / `Refs` の判定結果のみ（詳しくは下記「Linear Issue連携」節）。
 
 ### 任意セクション（該当時のみ追加）
 
@@ -98,9 +101,34 @@ fi
 
 ## Linear Issue連携
 
+### Closes / Refs の判定
+
+`get_issue` で取得したIssueの Acceptance Criteria（またはdescription内のTODOリスト）を確認し、このPRで全項目を満たすかどうかで書き分ける。1つでも残るなら `Refs`、最終PRで `Closes` に切り替える。
+
+| Magic Word | 効果 | 使う場面 |
+|---|---|---|
+| `Closes` | マージで自動的にIssueがDoneになる | この PR でAcceptance Criteriaを全て満たす場合 |
+| `Refs` | リンクのみ、ステータス変化なし | 部分対応・複数PRにまたがる中間PRの場合 |
+
+```markdown
+## Linear
+
+Closes PF-XXXX
+```
+
+```markdown
+## Linear
+
+Refs PF-XXXX
+```
+
+- 判断系Issue（成果物がPRでなく「決定」「整理」等）の場合はマジックワードを使わず、Linearセクション自体を省略する
+- PF-XXXXが紐づかない場合（ユーザーがスキップした場合）もLinearセクションを省略する
+- 複数PRにまたがると分かった時点で、Issue粒度の見直し（親Issue + 子Issueへの分割）をユーザーに提案する
+
 ### PR作成後のIssueステータス更新
 
-PR作成後、紐づいたLinear Issueのステータスを `In Review` に更新する:
+GitHub-Linear連携が有効なら、PRの open/ready for review/merged に応じてIssueステータスは自動遷移する（`merged` は上記Magic Wordが前提）。連携が機能していない場合のフォールバックとして、PR作成後に手動更新してもよい:
 
 ```
 mcp__linear-server__save_issue(id: "PF-XXXX", state: "In Review")
@@ -108,22 +136,7 @@ mcp__linear-server__save_issue(id: "PF-XXXX", state: "In Review")
 
 - Issueが既にDone/Cancelledの場合はスキップ
 - `In Review` ステータスがチームに存在しない場合はスキップ
-
-### PR本文へのLinearリンク挿入位置
-
-概要セクションの直後、変更内容の前に配置する:
-
-```markdown
-## 概要
-[説明]
-
-<!-- Linear -->
-Linear: [PF-XXXX](https://linear.app/winticket/issue/PF-XXXX)
-
-## 変更内容
-```
-
-PF-XXXXが紐づかない場合（ユーザーがスキップした場合）はLinearセクションを省略する。
+- draft PRの場合、自動連携ではまだ `In Progress` 段階（`In Review` は `ready for review` 後）のため、手動更新するなら `In Progress` のままにする
 
 ## 注意事項
 
@@ -133,3 +146,4 @@ PF-XXXXが紐づかない場合（ユーザーがスキップした場合）はL
 4. worktree優先: デフォルトブランチでの作業は worktree を使用
 5. worktree削除: PRマージ後は worktree の削除を忘れずに
 6. checklist completion: リポジトリで task-list-checker が有効な場合、PR body 内の未チェックのチェックボックス（`- [ ]`）があると CI が通らない。マージ後に確認する項目には `POST-MERGE:` プレフィックスを付けること（例: `- [ ] POST-MERGE: Pod が正常起動することを確認`）。`POST-MERGE:` または `N/A` タグ付きの項目はスキップされる
+7. gh アカウント確認: WinTicket org配下のリポジトリでは `gh pr create` 前に `gh auth status` でアクティブアカウントが `ryosukesuto` か確認する（mediphone作業用の `ryosukesuto-mp` のままだと401になる）

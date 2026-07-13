@@ -67,6 +67,7 @@ ISSUE_ID=$(echo "$BRANCH" | grep -oiE '(PF|ASICS|SRV)-[0-9]+' | tail -1 | tr 'a-
 - 見つからない場合: ステップ2の変更内容からIssueタイトル・説明を推定し、`save_issue` で起票する
   - 起票前にユーザーにタイトル・チーム・説明を提示して確認を取る
   - ユーザーが「不要」「スキップ」と回答した場合のみ起票しない
+- Issue取得後、Acceptance Criteria（またはdescription内のTODOリスト）を確認し、このPRで全項目を満たすかで `Closes` / `Refs` を判定する（詳細は `reference.md` の「Closes / Refs の判定」）。判断系Issue（成果物がPRでない）の場合はマジックワードを使わない
 - Issue情報はステップ5のPR本文生成で使用する
 
 ### 4. 変更タイプの自動判定
@@ -153,13 +154,14 @@ git rebase "origin/$DEFAULT_BRANCH"
 
 ### 10. PRの作成
 
-1. Terraformリポジトリの場合は `terraform fmt -recursive` を実行
-2. `git add -A && git commit && git push -u origin HEAD`
-3. `gh pr create --draft` でdraft PRを作成（Linear Issueリンクを含むbodyを使用）。bodyにコードブロック（` ``` `）を含む場合は `--body-file` でファイルから渡す（heredoc内の ``` はBashにエスケープされてレンダリングが壊れるため）。ユーザーが明示的に `--no-draft` や「draftなしで」と指定した場合のみ通常PRにする
-4. PR作成後、Linear Issueのステータスを `In Review` に更新（`save_issue`）
-5. 作業報告をデイリーノートに追記
-6. worktree内の場合は削除方法を案内
-7. CI通過・レビュー準備完了後に `gh pr ready` でReady for reviewにすることをユーザーに案内
+1. WinTicket org配下のリポジトリの場合、`gh auth status` でアクティブアカウントが `ryosukesuto`（mediphone作業用の `ryosukesuto-mp` ではない）か確認する
+2. Terraformリポジトリの場合は `terraform fmt -recursive` を実行
+3. `git add -A && git commit && git push -u origin HEAD`
+4. `gh pr create --draft` でdraft PRを作成。bodyの末尾Linearセクションには `Closes` / `Refs` の判定結果を含める（ステップ3参照）。bodyにコードブロック（` ``` `）を含む場合は `--body-file` でファイルから渡す（heredoc内の ``` はBashにエスケープされてレンダリングが壊れるため）。ユーザーが明示的に `--no-draft` や「draftなしで」と指定した場合のみ通常PRにする
+5. PR作成後、Linear Issueのステータスを更新（`save_issue`）。GitHub-Linear連携が有効な場合は自動遷移するため任意（draftなら`In Progress`のまま、`In Review`にはしない）
+6. 作業報告をデイリーノートに追記
+7. worktree内の場合は削除方法を案内
+8. CI通過・レビュー準備完了後に `gh pr ready` でReady for reviewにすることをユーザーに案内
 
 詳細なコマンドは `${CLAUDE_SKILL_DIR}/reference.md` を参照。
 
