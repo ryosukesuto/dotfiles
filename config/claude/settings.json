@@ -68,7 +68,6 @@
       "Bash(aws ec2 describe-:*)",
       "Bash(aws iam list-:*)",
       "Bash(aws-bastion:*)",
-      "Bash(gcloud:*)",
       "Bash(bq:*)",
       "Bash(kubectl:*)",
       "Bash(terraform fmt:*)",
@@ -575,7 +574,15 @@
       "gh:*",
       "command gh:*",
       "mise",
-      "mise:*"
+      "mise:*",
+      "gcloud",
+      "gcloud:*"
+    ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "read-only gcloud inspection commands: gcloud auth list, gcloud auth print-access-token, gcloud config list, gcloud * describe *, gcloud * list *, gcloud * get-iam-policy * (e.g. gcloud pubsub topics get-iam-policy) — no mutation, no apply, no delete"
     ]
   },
   "showClearContextOnPlanAccept": true,
