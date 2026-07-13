@@ -24,7 +24,7 @@ allowed-tools:
 
 1. Obsidianデイリーノート末尾（1行の作業ログ）
 2. デイリーノートのTime Blockチェックボックス（完了した枠に `[x]`）
-3. Linear Issue（コメント追加、必要ならステータス更新）
+3. Linear Issue（コメント追加、必要ならステータス更新、本文のTODO・進捗記述の更新）
 
 ## 使い方
 
@@ -81,8 +81,15 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): ${SUMMARY}" >> "$DAILY_NOTE"
    - 現ステータスが `Todo`/`Backlog` → `In Progress` に昇格
    - 現ステータスが `In Progress` のまま、かつ作業内容から完了が明確（PR作成済み、マージ済み、タスク完了の言明あり） → ユーザー確認の上で `Done`
    - それ以外 → ステータスは触らない
-5. `save_comment(issueId: ISSUE_ID, body: SUMMARY)` でコメント追加
-6. コメント本文は Phase 1 の要約をそのまま使う。Markdown可
+5. Issue本文（description）のTODO・進捗記述を更新:
+   - `description` 内のチェックボックス行（`- [ ]` / `- [x]`）を列挙し、Phase 3と同じ基準で完了判定する
+     - 会話履歴と明確に一致 → `- [x]` に反映
+     - 複数候補・部分完了・内容不一致など判断が曖昧 → AskUserQuestionで確認（スキップ可）
+   - チェックボックス以外でも、残タスクの記述やステータス欄など、会話から完了・進捗が明確に読み取れる箇所があれば同様に書き換える。記述の意図が読み取れない箇所は推測で変更しない
+   - 見出し構成や受け入れ条件そのものの意味を変える書き換えはしない。あくまで「完了した項目にチェックが付く／進捗が反映される」範囲に留める
+   - 変更がある場合のみ `save_issue(id: ISSUE_ID, description: 更新後の本文)` を実行。変更なしならスキップ
+6. `save_comment(issueId: ISSUE_ID, body: SUMMARY)` でコメント追加
+7. コメント本文は Phase 1 の要約をそのまま使う。Markdown可
 
 ## 完了報告フォーマット
 
@@ -91,7 +98,7 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): ${SUMMARY}" >> "$DAILY_NOTE"
 
 - デイリーノート: 1行追記
 - Time Block: 2ブロックをチェック（13:00-14:30, 14:40-15:40）
-- Linear: PF-1062 にコメント追加、Todo → In Progress
+- Linear: PF-1062 にコメント追加、Todo → In Progress、本文TODO 2件を更新
 ```
 
 ## 注意事項
@@ -99,6 +106,7 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): ${SUMMARY}" >> "$DAILY_NOTE"
 - Time Blockの書式が `- [ ] HH:MM - HH:MM` から崩れている場合は自動更新せず報告のみ
 - 完了が曖昧なTime Blockを推測で勝手にチェックしない。必ずAskUserQuestion経由
 - Linear Doneへの昇格は必ずユーザー承認を経てから実行（post-merge と同じ原則）
+- Issue本文の書き換えは「会話から完了・進捗が明確に読み取れる箇所」に限定する。見出し構成や受け入れ条件の意味自体を変える推測編集はしない。曖昧なら書き換えずコメントのみで報告する
 - `til` との使い分け: 学び・発見の記録は `til`、作業の進捗記録は `work-log`
 
 ## Gotchas
