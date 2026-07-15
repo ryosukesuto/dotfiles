@@ -772,6 +772,28 @@ else
     info "Deno は既にインストールされています"
 fi
 
+# Deno installer は yes n が効かない環境でも .zshrc / .zprofile に env source を
+# 追記することがある。dotfiles で PATH 管理しているため重複除去する
+# (行例: `. "/Users/suto.ryosuke/.deno/env"`)
+# 注意: macOS の sed -i は symlink に対応しないため、grep + リダイレクトで実装する
+# (dotfiles管理下のファイルは symlink 経由のため sed -i.bak では失敗する)
+for shell_rc in "$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.bashrc" "$HOME/.bash_profile"; do
+    [ -f "$shell_rc" ] || continue
+    if grep -qE '^\. +"[^"]*/\.deno/env"' "$shell_rc" 2>/dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] Deno env source 行を削除: $shell_rc"
+        else
+            deno_tmp=$(mktemp)
+            # 該当行を除いた内容を tmp に書き出し、symlink 経由で書き戻す
+            # (`>` は symlink を辿って target file を書き換える)
+            grep -vE '^\. +"[^"]*/\.deno/env"' "$shell_rc" > "$deno_tmp"
+            cat "$deno_tmp" > "$shell_rc"
+            rm -f "$deno_tmp"
+            info "Deno env source 行を削除: $shell_rc (dotfiles で PATH 管理済みのため)"
+        fi
+    fi
+done
+
 # ============================================================================
 # グローバルCLIツールのインストール（pnpm）
 # ============================================================================
