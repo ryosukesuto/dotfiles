@@ -273,13 +273,9 @@
       "Bash(git reset --hard HEAD~:*)",
       "Bash(docker volume rm:*)",
       "Bash(docker system prune:*)",
-      "Edit(~/.zshrc)",
       "Edit(~/.bashrc)",
       "Edit(~/.zprofile)",
-      "Edit(~/.gitconfig)",
-      "Write(~/.zshrc)",
-      "Write(~/.bashrc)",
-      "Write(~/.gitconfig)"
+      "Write(~/.bashrc)"
     ],
     "ask": [
       "Edit(~/.claude/hooks/**)",
@@ -292,6 +288,7 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
+  "model": "sonnet",
   "fallbackModel": [
     "opus",
     "sonnet",
@@ -579,12 +576,6 @@
       "gcloud:*"
     ]
   },
-  "autoMode": {
-    "allow": [
-      "$defaults",
-      "read-only gcloud inspection commands: gcloud auth list, gcloud auth print-access-token, gcloud config list, gcloud * describe *, gcloud * list *, gcloud * get-iam-policy * (e.g. gcloud pubsub topics get-iam-policy) — no mutation, no apply, no delete"
-    ]
-  },
   "showClearContextOnPlanAccept": true,
   "channelsEnabled": true,
   "autoMemoryEnabled": true,
@@ -593,6 +584,12 @@
   "theme": "dark-ansi",
   "showTurnDuration": true,
   "skipAutoPermissionPrompt": true,
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "read-only gcloud inspection commands: gcloud auth list, gcloud auth print-access-token, gcloud config list, gcloud * describe *, gcloud * list *, gcloud * get-iam-policy * (e.g. gcloud pubsub topics get-iam-policy) — no mutation, no apply, no delete"
+    ]
+  },
   "voiceEnabled": true,
   "mcpServers": {
     "slack": {
@@ -603,6 +600,5 @@
         "callbackPort": 3118
       }
     }
-  },
-  "model": "sonnet"
+  }
 }
