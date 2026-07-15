@@ -314,17 +314,6 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/gh/github.com/ryosukesuto/dotfiles/bin/claude-session-title"
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write",

@@ -188,9 +188,6 @@ def main():
     if isinstance(effort_field, dict):
         effort_level = str(effort_field.get("level") or "")
 
-    # Session name (set via /rename)
-    session_name = data.get("session_name") or data.get("session", {}).get("name")
-
     # PR info (v2.1.145+): pr.number, pr.url, pr.review_state
     pr_field = data.get("pr") or {}
     pr_number = pr_field.get("number")
@@ -223,9 +220,6 @@ def main():
         if repo_owner and repo_name:
             repo_prefix = f"{COMMENT}{repo_owner}/{repo_name}{R}"
         parts.append(f"{repo_prefix}{pr_color}#{pr_number}{R}")
-
-    if session_name:
-        parts.append(f"{PURPLE}{session_name}{R}")
 
     if session_duration:
         parts.append(f"{FG}{session_duration}{R}")
