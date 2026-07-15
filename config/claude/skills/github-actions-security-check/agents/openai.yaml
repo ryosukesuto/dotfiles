@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Actions Security Check"
+  short_description: "GitHub Actionsの設定とWorkflowを読み取り専用で監査"
+  default_prompt: "Use $github-actions-security-check to audit this repository’s GitHub Actions security without changing files."
