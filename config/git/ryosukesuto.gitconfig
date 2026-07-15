@@ -1,3 +1,7 @@
 # Personal repositories use the default branch directly.
 [wt]
 	allowDirectCommit = true
+
+# 個人リポでは業務メールではなく個人メールで commit する
+[user]
+	email = ryosuke.suto+gh@gmail.com

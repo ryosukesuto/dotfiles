@@ -27,7 +27,10 @@ elif [[ -d "$HOME/google-cloud-sdk/bin" ]]; then
 fi
 
 # pnpm
+# pnpm 10+ は $PNPM_HOME/bin に global bin を配置するため両方 PATH に入れる
+# (pnpm 8/9 との互換性のため $PNPM_HOME 直下も残す)
 export PNPM_HOME="$HOME/.local/share/pnpm"
+[[ -d "$PNPM_HOME/bin" ]] && path=("$PNPM_HOME/bin" $path)
 [[ -d "$PNPM_HOME" ]] && path=("$PNPM_HOME" $path)
 
 # Deno

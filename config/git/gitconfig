@@ -4,7 +4,10 @@
 	autocrlf = input
 	quotepath = false
 	precomposeunicode = true
-	hooksPath = /Users/s32943/gh/github.com/ryosukesuto/dotfiles/git/hooks
+	hooksPath = /Users/suto.ryosuke/gh/github.com/ryosukesuto/dotfiles/git/hooks
+
+[init]
+	defaultBranch = main
 
 [interactive]
 	diffFilter = delta --color-only
@@ -66,9 +69,27 @@
 [diff]
 	colorMoved = default
 	algorithm = histogram
+	mnemonicPrefix = true
 
 [merge]
-	conflictstyle = diff3
+	conflictstyle = zdiff3
+
+[rerere]
+	enabled = true
+	autoUpdate = true
+
+[commit]
+	verbose = true
+	gpgsign = true
+
+[gpg]
+	format = ssh
+
+[branch]
+	sort = -committerdate
+
+[help]
+	autocorrect = 10
 
 [alias]
 	st = status
@@ -102,20 +123,13 @@
 [maintenance]
 	auto = false
 
-# ユーザー情報は.gitconfig.localに記載してください
-# 例:
-# [user]
-#     name = Your Name
-#     email = your.email@example.com
-
+# ============================================================================
+# マシン固有 / ユーザー情報の読み込み
+# ============================================================================
+# ~/.gitconfig.local に user.name / user.email / user.signingkey を記載する
 [include]
 	path = ~/.gitconfig.local
 
+# 個人リポジトリでは email を個人アカウントに上書きする
 [includeIf "gitdir:~/gh/github.com/ryosukesuto/"]
 	path = ~/gh/github.com/ryosukesuto/dotfiles/config/git/ryosukesuto.gitconfig
-[gpg]
-	format = ssh
-[user]
-	signingkey = /Users/s32943/.ssh/id_ed25519.pub
-[commit]
-	gpgsign = true

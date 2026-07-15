@@ -3,7 +3,9 @@
 
 # Taps
 # (homebrew/cask-fonts は廃止、homebrew-cask に統合済み)
-tap "datadog-labs/pack"  # pup（Datadog CLI）用
+tap "datadog-labs/pack"      # pup（Datadog CLI）用
+tap "hashicorp/tap"          # terraform（BSL移行でhomebrew-coreから削除）
+tap "1password/tap"          # 1password-cli
 
 # ===== 必須 =====
 brew "git"
@@ -32,8 +34,9 @@ brew "terminal-notifier"  # macOS通知
 brew "mise"
 
 # ===== IaCツール =====
-brew "terraform"     # fmt/validate/補完用（apply/planはGitOps経由）
-brew "tflint"        # Terraform linter
+brew "hashicorp/tap/terraform"  # fmt/validate/補完用（apply/planはGitOps経由）
+# tflint はGitHub Releases から直接installする（install.sh 参照）
+# brew "tflint" は homebrew-core / 公式tap 双方で不安定なため除外
 brew "trivy"         # セキュリティスキャナ
 brew "kubeconform"   # K8sマニフェスト検証
 brew "argocd"        # ArgoCD CLI（K8s GitOps）
@@ -68,7 +71,7 @@ cask "ghostty"
 
 # ===== アプリケーション =====
 cask "1password"           # パスワード管理
-brew "1password-cli"       # 1Password CLI (op)
+cask "1password/tap/1password-cli"  # 1Password CLI (op)。formulaではなくcask配布
 cask "arc"                 # ブラウザ
 cask "bitwarden"           # パスワード管理（OSS）
 cask "chatgpt"             # ChatGPTデスクトップ
@@ -76,6 +79,8 @@ cask "figma"               # デザインツール
 cask "keeper-password-manager"  # パスワード管理
 cask "meetingbar"          # カレンダー連携会議通知
 cask "microsoft-teams"     # コミュニケーション
+cask "slack"               # コミュニケーション
+cask "zoom"                # ビデオ会議
 cask "obsidian"            # ノートアプリ
 cask "google-japanese-ime" # 日本語入力
 cask "alt-tab"             # ウィンドウスイッチャー

@@ -56,18 +56,32 @@ Host *
 
 # ===== GitHub設定 =====
 
+# デフォルトの github.com は個人アカウント (ryosukesuto) を使う
 Host github.com
     HostName github.com
     User git
     Port 22
     IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
-    
+
     # GitHub固有設定
     StrictHostKeyChecking yes
     UserKnownHostsFile ~/.ssh/known_hosts
-    
+
     # 接続の最適化
+    TCPKeepAlive yes
+    ServerAliveInterval 60
+
+# 業務アカウント (ryosukesuto-mp / mediphone) 用エイリアス
+# 使い方: git clone git@github-mediphone:mediphone/xxx.git
+Host github-mediphone
+    HostName github.com
+    User git
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519_mediphone
+    IdentitiesOnly yes
+    StrictHostKeyChecking yes
+    UserKnownHostsFile ~/.ssh/known_hosts
     TCPKeepAlive yes
     ServerAliveInterval 60
 

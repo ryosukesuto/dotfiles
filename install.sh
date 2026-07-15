@@ -99,6 +99,73 @@ done
 # dotfilesディレクトリのパスを取得
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 対話式インストーラで追加されるツールをスクリプトの後半からも見えるようにする
+# (Homebrew / Claude Code / Deno / mise shims 等)
+export PATH="$HOME/.local/bin:$HOME/.deno/bin:$PATH"
+if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# Homebrew インストール関数
+# - 未導入時のみ実行 (冪等性)
+# - FORCE=false かつ TTY 有りなら確認プロンプトを出す
+# - 失敗しても set -e で全体を止めないよう、呼び出し側で `|| true` する
+install_homebrew() {
+    if command -v brew &> /dev/null; then
+        return 0
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] Homebrew をインストール"
+        return 0
+    fi
+
+    if [ "$FORCE" = false ] && [ -t 0 ]; then
+        echo ""
+        echo -n "Homebrewがありません。インストールしますか？ (Y/n): "
+        read -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            warn "Homebrewインストールをスキップします"
+            return 1
+        fi
+    fi
+
+    # NONINTERACTIVE=1 は sudo -n (パスワードキャッシュ済み前提) を強制するため、
+    # 事前に sudo -v で認証を済ませておく必要がある。これがないと macOS admin ユーザー
+    # でも "Need sudo access" で失敗する
+    info "sudoパスワードを入力してください (Homebrewが /opt/homebrew を作成するために必要)"
+    if ! sudo -v; then
+        warn "sudo認証に失敗しました。Homebrewインストールを中止します"
+        return 1
+    fi
+    # sudo credential を維持するバックグラウンドプロセスを起動
+    # (Homebrew インストールが数分かかる間にキャッシュが切れないように)
+    ( while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null ) &
+    local sudo_keepalive_pid=$!
+    # bash の job control による "Terminated: 15" メッセージを抑制
+    disown "$sudo_keepalive_pid" 2>/dev/null || true
+    # サブシェル終了時に必ずバックグラウンドプロセスを止める
+    trap 'kill "$sudo_keepalive_pid" 2>/dev/null || true' RETURN
+
+    info "Homebrewをインストール中..."
+    if ! NONINTERACTIVE=1 /bin/bash -c \
+        "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+        warn "Homebrewのインストールに失敗しました"
+        return 1
+    fi
+
+    # brew を現在のシェルの PATH に追加 (これがないと以降の brew コマンドが失敗する)
+    if [ -x /opt/homebrew/bin/brew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -x /usr/local/bin/brew ]; then
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
+    info "Homebrewインストール完了"
+}
+
 # 依存関係チェック関数
 check_dependencies() {
     local missing_deps=()
@@ -525,12 +592,12 @@ if [ -d "$PRIVATE_DIR" ]; then
             if [ -d "$HOME/gh/$repo" ]; then
                 create_symlink "$src" "$HOME/gh/$rel"
             else
-                warn "projects リンク先リポジトリが未clone: ~/gh/$repo（ghq get $repo）"
+                warn "projects リンク先リポジトリが未clone: ~/gh/$repo (ghq get $repo)"
             fi
         done < <(find "$PRIVATE_DIR/projects" -name '*.local.*' -type f)
     fi
 else
-    warn "dotfiles-private が見つかりません（ghq get ryosukesuto/dotfiles-private）"
+    warn "dotfiles-private が見つかりません (ghq get ryosukesuto/dotfiles-private)"
 fi
 
 # orphanチェック: シンボリックリンクでない *.local.md を検出
@@ -558,19 +625,77 @@ if [ -d "$DOTFILES_DIR/bin" ]; then
 fi
 
 # ============================================================================
+# Homebrew と brewパッケージのインストール
+# ============================================================================
+# Homebrew を未導入なら入れる。失敗しても以降を継続 (mise/pnpm チェーンは
+# brew に依存するが、手動で他手段を用意しているユーザーも許容する)
+install_homebrew || true
+
+if command -v brew &> /dev/null && [ -f "$DOTFILES_DIR/Brewfile" ]; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] brew bundle install --file=$DOTFILES_DIR/Brewfile"
+    else
+        # Homebrew 5.0+ は第三者tapに明示的な trust を要求する
+        # Brewfile 内の `tap "..."` 宣言と `brew "user/tap/name"` 形式から
+        # taps を抽出して自動 trust する。これがないと `k1low/tap/git-wt` 等が
+        # "Refusing to load formula ... from untrusted tap" で失敗する
+        if brew trust --help &> /dev/null; then
+            info "第三者tapを trust しています..."
+            while IFS= read -r tap; do
+                [ -n "$tap" ] || continue
+                brew tap "$tap" &> /dev/null || true
+                brew trust "$tap" &> /dev/null || true
+            done < <(
+                {
+                    grep -oE '^tap "[^"]+"' "$DOTFILES_DIR/Brewfile" \
+                        | sed -E 's/tap "([^"]+)"/\1/'
+                    grep -oE '^brew "[^"]+/[^"]+/[^"]+"' "$DOTFILES_DIR/Brewfile" \
+                        | sed -E 's|brew "([^/]+/[^/]+)/.*|\1|'
+                    grep -oE '^cask "[^"]+/[^"]+/[^"]+"' "$DOTFILES_DIR/Brewfile" \
+                        | sed -E 's|cask "([^/]+/[^/]+)/.*|\1|'
+                } | tr '[:upper:]' '[:lower:]' | sort -u
+            )
+        fi
+
+        # mise は Node.js/pnpm チェーンの起点なので、bundle失敗時の fallback として
+        # 先に個別installしておく (brew bundle は formula 検証を先に行うため、
+        # 1件でも missing formula があると mise を含む全体が install されない)
+        if ! command -v mise &> /dev/null; then
+            info "mise を先行installしています..."
+            brew install mise 2>/dev/null || warn "mise の先行installに失敗しました"
+        fi
+
+        info "Brewfile からツールをインストール中... (初回は数分かかります)"
+        if brew bundle install --file="$DOTFILES_DIR/Brewfile"; then
+            info "brew bundle install 完了"
+        else
+            warn "brew bundle install が一部失敗しました (詳細: ./install.sh --brew で再実行)"
+        fi
+    fi
+elif ! command -v brew &> /dev/null; then
+    warn "Homebrew が使えないため brew bundle をスキップしました"
+fi
+
+# ============================================================================
 # miseでツールをインストール
 # ============================================================================
 if command -v mise &> /dev/null; then
+    # mise shims を現在のシェルの PATH に追加
+    # (これがないと直後の corepack / node が command -v で見つからない)
+    export PATH="$HOME/.local/share/mise/shims:$PATH"
+
     if [ "$DRY_RUN" = true ]; then
         info "[DRY RUN] mise install を実行"
     else
         info "mise でツールをインストール中..."
-        mise install --yes 2>/dev/null && \
-            info "mise install 完了" || \
+        if mise install --yes; then
+            info "mise install 完了"
+        else
             warn "mise install に失敗しました（後で手動実行してください）"
+        fi
     fi
 else
-    info "mise が見つかりません。./install.sh --brew 後に再実行してください"
+    warn "mise が見つかりません。Homebrew インストール後に再実行してください"
 fi
 
 # ============================================================================
@@ -581,9 +706,16 @@ if command -v corepack &> /dev/null; then
         info "[DRY RUN] corepack enable pnpm を実行"
     else
         info "corepack で pnpm を有効化中..."
-        corepack enable pnpm 2>/dev/null && \
-            info "pnpm の有効化完了" || \
+        if corepack enable pnpm; then
+            info "pnpm の有効化完了"
+            # mise 管理下の corepack が新しく作った pnpm shim を mise の shims に登録
+            # (これがないと直後の `command -v pnpm` が見つけられない)
+            if command -v mise &> /dev/null; then
+                mise reshim 2>/dev/null || true
+            fi
+        else
             warn "pnpm の有効化に失敗しました"
+        fi
     fi
     # PNPM_HOME ディレクトリを作成
     PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"
@@ -624,9 +756,17 @@ if ! command -v deno &> /dev/null; then
         info "[DRY RUN] Deno をインストール"
     else
         info "Deno をインストール中..."
-        curl -fsSL https://deno.land/install.sh | bash 2>/dev/null && \
-            info "Deno のインストール完了" || \
+        # Deno installer は "Edit shell configs..." で対話プロンプトを出す。
+        # dotfiles の zsh/20-path.zsh で ~/.deno/bin を PATH に追加済みなので
+        # shell config 変更は不要 (n を回答)
+        DENO_INSTALLER=$(mktemp)
+        if curl -fsSL https://deno.land/install.sh -o "$DENO_INSTALLER" 2>/dev/null && \
+           yes n 2>/dev/null | bash "$DENO_INSTALLER" > /dev/null 2>&1; then
+            info "Deno のインストール完了"
+        else
             warn "Deno のインストールに失敗しました"
+        fi
+        rm -f "$DENO_INSTALLER"
     fi
 else
     info "Deno は既にインストールされています"
@@ -637,7 +777,9 @@ fi
 # ============================================================================
 if command -v pnpm &> /dev/null; then
     export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"
-    export PATH="$PNPM_HOME:$PATH"
+    # pnpm 10+ は $PNPM_HOME/bin に global bin を配置する
+    mkdir -p "$PNPM_HOME/bin"
+    export PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH"
     PNPM_GLOBAL_PACKAGES=(
         "@openai/codex"
         "@google/clasp"
@@ -650,13 +792,46 @@ if command -v pnpm &> /dev/null; then
             info "[DRY RUN] ${pkg} をインストール（pnpm global）"
         else
             info "${pkg} をインストール中..."
-            pnpm add -g "$pkg" 2>/dev/null && \
-                info "${pkg} のインストール完了" || \
+            # pnpm 10+ は postinstall scripts の実行可否を対話プロンプトで聞く
+            # CI=true + stdin リダイレクトで非対話モードにする (build scripts はスキップ)
+            # サプライチェーン対策として build scripts を実行しない方針は npmrc の
+            # ignore-scripts=true と一貫している
+            if CI=true pnpm add -g "$pkg" < /dev/null 2>&1; then
+                info "${pkg} のインストール完了"
+            else
                 warn "${pkg} のインストールに失敗しました"
+            fi
         fi
     done
 else
     warn "pnpm が見つかりません。corepack enable pnpm 後に再実行してください"
+fi
+
+# ============================================================================
+# tflint のインストール（Terraform linter、GitHub Releases経由）
+# ============================================================================
+# homebrew-core / terraform-linters/tap 双方で入手困難なため直接install
+if ! command -v tflint &> /dev/null; then
+    if [ "$DRY_RUN" = true ]; then
+        info "[DRY RUN] tflint をインストール"
+    else
+        info "tflint をインストール中..."
+        TFLINT_ARCH="amd64"
+        if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
+            TFLINT_ARCH="arm64"
+        fi
+        TFLINT_ZIP=$(mktemp -d)/tflint.zip
+        mkdir -p "$HOME/.local/bin"
+        if curl -sL "https://github.com/terraform-linters/tflint/releases/latest/download/tflint_darwin_${TFLINT_ARCH}.zip" -o "$TFLINT_ZIP" 2>/dev/null && \
+           unzip -o -q "$TFLINT_ZIP" -d "$HOME/.local/bin"; then
+            info "tflint インストール完了"
+        else
+            warn "tflint インストール失敗"
+        fi
+        rm -rf "$(dirname "$TFLINT_ZIP")"
+    fi
+else
+    info "tflint は既にインストールされています"
 fi
 
 # ============================================================================
