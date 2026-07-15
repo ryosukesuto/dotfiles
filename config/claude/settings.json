@@ -227,9 +227,7 @@
       "Bash(gh release delete:*)",
       "Edit(~/.ssh/config)",
       "Edit(~/.ssh/**)",
-      "Write(~/.ssh/**)",
       "Edit(~/.aws/**)",
-      "Write(~/.aws/**)",
       "Bash(curl * | bash)",
       "Bash(curl * | sh)",
       "Bash(curl * | zsh)",
@@ -253,9 +251,8 @@
       "Bash(crontab:*)",
       "Bash(launchctl load:*)",
       "Bash(launchctl bootstrap:*)",
-      "Write(~/Library/LaunchAgents/**)",
       "Edit(~/Library/LaunchAgents/**)",
-      "Write(~/Library/LaunchDaemons/**)",
+      "Edit(~/Library/LaunchDaemons/**)",
       "Bash(ssh-keygen:*)",
       "Bash(ssh-add -d:*)",
       "Bash(ssh-add -D)",
@@ -274,16 +271,13 @@
       "Bash(docker volume rm:*)",
       "Bash(docker system prune:*)",
       "Edit(~/.bashrc)",
-      "Edit(~/.zprofile)",
-      "Write(~/.bashrc)"
+      "Edit(~/.zprofile)"
     ],
     "ask": [
       "Edit(~/.claude/hooks/**)",
-      "Write(~/.claude/hooks/**)",
-      "Edit(/Users/s32943/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-*)",
-      "Write(/Users/s32943/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-*)"
+      "Edit(/Users/s32943/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-*)"
     ],
-    "defaultMode": "auto",
+    "defaultMode": "default",
     "additionalDirectories": [
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
