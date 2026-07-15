@@ -5,6 +5,8 @@ Reads session JSON from stdin and outputs a formatted status line.
 Uses built-in rate_limits field (v2.1.80+) instead of OAuth API calls.
 """
 
+from __future__ import annotations
+
 import json
 import os
 import subprocess
