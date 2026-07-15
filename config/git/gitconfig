@@ -124,6 +124,17 @@
 	auto = false
 
 # ============================================================================
+# アカウント別 SSH エイリアス経由でのアクセス
+# ============================================================================
+# mediphone org 配下のリポは work 用 SSH 鍵 (id_ed25519_mediphone) を使う。
+# エイリアス github-mediphone は ~/.ssh/config で定義。
+# scp-style と ssh:// scheme の両方を書き換える。ghq は URL を
+# ssh:// に正規化してから git clone を呼ぶため後者が必須。
+[url "git@github-mediphone:mediphone/"]
+	insteadOf = git@github.com:mediphone/
+	insteadOf = ssh://git@github.com/mediphone/
+
+# ============================================================================
 # マシン固有 / ユーザー情報の読み込み
 # ============================================================================
 # ~/.gitconfig.local に user.name / user.email / user.signingkey を記載する
