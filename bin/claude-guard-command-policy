@@ -286,12 +286,16 @@ tokenize_command "$command_text"
 segment=()
 for ((token_index = 0; token_index < ${#tokens[@]}; token_index++)); do
   if [[ "${token_types[$token_index]}" == "operator" ]]; then
-    inspect_segment "${segment[@]}"
+    if ((${#segment[@]} > 0)); then
+      inspect_segment "${segment[@]}"
+    fi
     segment=()
   else
     segment+=("${tokens[$token_index]}")
   fi
 done
-inspect_segment "${segment[@]}"
+if ((${#segment[@]} > 0)); then
+  inspect_segment "${segment[@]}"
+fi
 
 exit 0
