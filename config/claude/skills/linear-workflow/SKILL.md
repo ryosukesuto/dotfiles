@@ -141,6 +141,8 @@ Descriptionに「Why 2行」を書く（特にClaude Code生成時）：
 - なぜ今やるか
 - 何を防ぐか
 
+description・コメントはPR本文と同じ「組織共有ドキュメント」として扱う。個人skill名・Codex等セカンドオピニオンツール名・個人dotfilesパス等、チームメンバーが参照できない語彙は書かない。詳細: `~/.claude/rules/pr-writing.md`
+
 Estimateの目安：
 - 対応完了済み（記録目的）: 1 pt
 - 軽微な作業: 1-2 pt
@@ -273,4 +275,4 @@ YYYY-MM-DD（曜）HH:MM-HH:MM（NN分）
 
 ## Gotchas
 
-(運用しながら追記)
+- 2026-07-14、CyberAgentCard/processing-infrastructure PFIF-64のコメントと子Issue（PFIF-112・PFIF-113）のdescriptionに「Codexレビュー」「Codexにレビューしてもらった」と書いてしまい指摘を受けた。`pr-writing.md`のルールはLinear Issueにも適用されるが、うっかり見落としやすい。起票・コメント時に一度チェックリストと突き合わせる

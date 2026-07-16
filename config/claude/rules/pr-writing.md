@@ -8,6 +8,7 @@ PR title / body / commit message / PR レビューコメント（approve・chang
 - リポ内 `docs/*.md` `README.md` `CONTRIBUTING.md` `ROLLOUT.md` 等（個人 → 同リポ利用者へ）
 - Kibela / チーム Wiki エントリ（個人 → 全社へ）
 - Slack の告知投稿（個人 → channel メンバーへ）
+- Linear Issue の description・コメント（個人 → チームへ）
 
 ## 避ける表現
 
@@ -42,7 +43,7 @@ After: `Iris の envelope 承認で使う authorized users 環境変数を Cloud
 
 英語を無秩序に混ぜたタイトル・本文は、チーム外からの参照可否とは別に、日本語話者のレビュワーにとって単純に読みにくい。一般語彙まで英語のまま動詞化すると「ルー語」的な違和感を与え、内容の理解より表現の奇妙さに注意が向いてしまう。
 
-PR #6925・#6931 で PR 本文に内部用語を残し、PR #6977 の approve コメントで「review-pr で should-fix 2件」という内部表現を使ってしまい、PR 作成者から見て意味不明な表現になった。2026-07-08 には PR #65 (PF-2793) の PR 本文・Linear Issue 本文で「Codex second opinion 確認済み」と書いて同様の指摘を受けた。
+PR #6925・#6931 で PR 本文に内部用語を残し、PR #6977 の approve コメントで「review-pr で should-fix 2件」という内部表現を使ってしまい、PR 作成者から見て意味不明な表現になった。2026-07-08 には PR #65 (PF-2793) の PR 本文・Linear Issue 本文で「Codex second opinion 確認済み」と書いて同様の指摘を受けた。2026-07-14 には CyberAgentCard/processing-infrastructure PFIF-64 のコメント、および子 Issue PFIF-112・PFIF-113 の description で「Codex レビュー」「Codex にレビューしてもらった」と書いてしまい、同種の指摘を再度受けた（2回目）。Linear Issue が「組織共有ドキュメント」の対象に明記されていなかったことも一因のため、本ファイルの対象リストに追加した。
 
 ## 書き換え方
 
