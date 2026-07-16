@@ -734,7 +734,6 @@ fi
 # ============================================================================
 # Claude Codeのインストール（ネイティブインストール）
 # ============================================================================
-# Note: Codex CLIはmiseで管理（config/mise/config.toml）
 if ! command -v claude &> /dev/null; then
     if [ "$DRY_RUN" = true ]; then
         info "[DRY RUN] Claude Code をインストール（ネイティブ）"
@@ -746,6 +745,43 @@ if ! command -v claude &> /dev/null; then
     fi
 else
     info "Claude Code は既にインストールされています"
+fi
+
+# ============================================================================
+# Codex CLIのインストール（公式standalone installer）
+# ============================================================================
+# pnpmはnpmrcのminimum-release-ageを尊重するため、最新版をすぐ導入できる
+# standalone installerを使用する。
+# 同じコマンドで新規インストールと更新の両方を行う。
+# 公式ドキュメント: https://learn.chatgpt.com/docs/codex/cli
+codex_install_succeeded=false
+if [ "$DRY_RUN" = true ]; then
+    info "[DRY RUN] Codex CLI をインストールまたは更新（standalone）"
+else
+    info "Codex CLI をインストールまたは更新中（standalone）..."
+    if (set -o pipefail; curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh); then
+        codex_install_succeeded=true
+        info "Codex CLI のインストールまたは更新完了"
+    else
+        warn "Codex CLI のインストールまたは更新に失敗しました"
+    fi
+fi
+
+# 旧pnpm版が残っているとPNPM_HOMEのPATH優先度によりstandalone版を隠すため、
+# standalone版の導入成功後に削除する。
+if command -v pnpm &> /dev/null; then
+    codex_pnpm_root=$(pnpm root -g 2>/dev/null || true)
+    if [ -n "$codex_pnpm_root" ] && [ -d "$codex_pnpm_root/@openai/codex" ]; then
+        if [ "$DRY_RUN" = true ]; then
+            info "[DRY RUN] 旧pnpm版 @openai/codex を削除"
+        elif [ "$codex_install_succeeded" = true ]; then
+            if pnpm remove -g @openai/codex > /dev/null 2>&1; then
+                info "旧pnpm版 @openai/codex の削除完了"
+            else
+                warn "旧pnpm版 @openai/codex の削除に失敗しました"
+            fi
+        fi
+    fi
 fi
 
 # ============================================================================
@@ -803,7 +839,6 @@ if command -v pnpm &> /dev/null; then
     mkdir -p "$PNPM_HOME/bin"
     export PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH"
     PNPM_GLOBAL_PACKAGES=(
-        "@openai/codex"
         "@google/clasp"
         "@googleworkspace/cli"
         "@bitwarden/cli"

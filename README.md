@@ -102,7 +102,7 @@ cd ~/gh/ryosukesuto/dotfiles
 3. Git hooksのセットアップ — mainブランチ保護
 4. mise経由のツールインストール
 5. corepack経由のpnpm有効化
-6. Claude Code, Claude Desktop, Codex CLI, Deno, Biome等のインストール
+6. Claude Code, Claude Desktop, Codex CLI（公式standalone installer）, Deno, Biome等のインストール
 
 | オプション | 説明 |
 |-----------|------|

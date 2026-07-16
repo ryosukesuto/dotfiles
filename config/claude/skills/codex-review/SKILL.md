@@ -48,7 +48,7 @@ tmux/cmuxで右半分にCodexを開いて、インタラクティブにレビュ
 ## 前提条件
 
 - tmuxセッション内またはcmuxターミナル内で実行すること
-- `codex`コマンドがインストールされていること（`npm install -g @openai/codex`）
+- `codex`コマンドがインストールされていること（`curl -fsSL https://chatgpt.com/codex/install.sh | sh`）
 - cmux使用時はソケットAPI（`nc -U`）で直接通信するため、cmux CLIは不要
 
 ### Sandbox 環境での実行

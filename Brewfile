@@ -56,7 +56,7 @@ brew "imagemagick"   # 画像変換・加工
 brew "poppler"       # PDF処理（pdftotext等）
 
 # ===== 開発環境 =====
-# Node.js / Codex CLIはmiseで管理（config/mise/config.toml）
+# Node.jsはmise、Codex CLIは公式standalone installerで管理（install.sh）
 cask "docker-desktop" # Docker Desktop（CLI + Compose V2 + GUI、旧 cask "docker" からリネーム）
 cask "devpod"        # Dev Container管理
 brew "go-task"       # タスクランナー

@@ -83,7 +83,7 @@ tmux_pane_exists() {
 
 tmux_ensure() {
     if ! command -v codex &>/dev/null; then
-        echo "Error: codexコマンドが見つかりません。npm install -g @openai/codex" >&2
+        echo "Error: codexコマンドが見つかりません。curl -fsSL https://chatgpt.com/codex/install.sh | sh" >&2
         exit 1
     fi
 
@@ -394,7 +394,7 @@ cmux_pane_exists() {
 
 cmux_ensure() {
     if ! command -v codex &>/dev/null; then
-        echo "Error: codexコマンドが見つかりません。npm install -g @openai/codex" >&2
+        echo "Error: codexコマンドが見つかりません。curl -fsSL https://chatgpt.com/codex/install.sh | sh" >&2
         exit 1
     fi
 
