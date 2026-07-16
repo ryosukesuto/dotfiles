@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).parent.parent
+PR_REVIEW_STYLE_PATH = SKILL_DIR.parent / "proofread" / "patterns-pr-review.md"
 
 OBSERVATION_POINTS = {
     "codex-baseline": "実装詳細、エッジケース（境界値、空入力、ゼロ値、同時実行、権限不足）、シェル/Goスクリプトのロバスト性、nil参照、エラーハンドリング漏れ",
@@ -76,7 +77,8 @@ FIELD_TABLE = """
 | evidence.excerpt | string | 実際のコード抜粋（空禁止。20文字以上） |
 | evidence.location | object | `{repo, file, lines}` |
 | why_it_matters | string | claim の言い換え禁止。影響・リスクを記述 |
-| fix_hint | string | must-fix/should-fix では必須。watch では任意 |
+| fix_hint | string | must-fix/should-fix では必須。watch では任意。修正方針を常体で書き、`〜ください`は使わない |
+| review_draft | string | GitHubへそのまま貼れる著者向け草案。2〜4文で、事実→理由→お願いの順。内部優先度・reviewer名・confidence・レビュー過程は書かない |
 
 禁止フィールド名: `category` `title` `description` `suggestion` `impact` `recommendation`
 """
@@ -108,7 +110,8 @@ JSONのみ出力。前置き・説明文・まとめは一切禁止。
         "location": {"repo": "REPO", "file": "path/to/file.go", "lines": {"start": 42, "end": 45}}
       },
       "why_it_matters": "claimの言い換えでない影響・リスクの説明",
-      "fix_hint": "具体的な修正方法"
+      "fix_hint": "具体的な修正方法",
+      "review_draft": "著者へそのまま伝えられるレビューコメント草案🙏"
     }
   ],
   "meta": {
@@ -121,6 +124,15 @@ JSONのみ出力。前置き・説明文・まとめは一切禁止。
 
 件数で finding を切り捨てない（coverage 優先）。確信が持てないもの・低 severity のものも、適切な confidence と severity を付けて全て報告する。重複排除・重要度ランク付け・件数調整は後段の normalizer が担う。
 """
+
+
+def load_pr_review_style() -> str:
+    """共有のPRレビュー文体ルールを読み込む。"""
+    try:
+        return PR_REVIEW_STYLE_PATH.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"WARN: PR review style could not be loaded: {exc}", file=sys.stderr)
+        return "内部優先度を表示せず、事実・理由・お願いの順で簡潔なレビュー草案を書く。"
 
 
 def get_diff_for_file(repo_root: str, base_sha: str, head_sha: str, path: str) -> str:
@@ -205,6 +217,7 @@ def build_prompt(bundle: dict, triage: dict, repo_roots: dict, reviewer_id: str)
     diff_context = build_diff_context(bundle, triage, repo_roots, reviewer_id)
     obs_points = OBSERVATION_POINTS.get(reviewer_id, "全般的なコードレビュー")
     specialist_hint = SPECIALIST_SKILL_HINTS.get(reviewer_id, "")
+    pr_review_style = load_pr_review_style()
     specialist_section = ""
     if specialist_hint:
         specialist_section = f"\n## specialist ガイダンス（事前読込み必須）\n{specialist_hint}\n"
@@ -244,13 +257,19 @@ def build_prompt(bundle: dict, triage: dict, repo_roots: dict, reviewer_id: str)
 
 1. 以下の diff を読む
 2. 担当観点で findings を列挙する
-3. 出力フォーマットに厳密に従って JSON のみ出力する
+3. 各 finding に詳細な根拠と、著者向けのレビュー草案を付ける
+4. 出力フォーマットに厳密に従って JSON のみ出力する
 
 ## 担当観点（{reviewer_id}）
 {obs_points}
 {specialist_section}
 ## diff
 {diff_context}
+
+## 著者向けレビュー草案の文体
+次のルールは `review_draft` にだけ適用する。severity や confidence は後段処理用としてJSONに保持するが、草案には書かない。
+
+{pr_review_style}
 
 {FIELD_TABLE}
 

@@ -17,7 +17,8 @@
     "lines",
     "claim",
     "evidence",
-    "why_it_matters"
+    "why_it_matters",
+    "review_draft"
   ],
   "properties": {
     "finding_id": {
@@ -117,6 +118,11 @@
     "fix_hint": {
       "type": ["string", "null"],
       "description": "Concrete suggestion. Optional but recommended for must-fix."
+    },
+    "review_draft": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Author-facing inline review draft. Must not expose internal severity labels, reviewer identities, confidence, or review-process metadata."
     },
     "sources": {
       "type": "array",

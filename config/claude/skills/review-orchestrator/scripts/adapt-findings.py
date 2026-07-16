@@ -172,6 +172,44 @@ def build_evidence(raw_finding: dict, repo: str, file: str, lines: dict) -> dict
     }
 
 
+def build_review_draft(raw_finding: dict, claim: str, why: str, fix: str | None) -> str:
+    """既存出力を優先しつつ、旧形式にも著者向け草案を補う。"""
+    supplied = (
+        raw_finding.get("review_draft")
+        or raw_finding.get("review_comment_draft")
+        or raw_finding.get("review_comment")
+    )
+    if supplied:
+        return str(supplied).strip()[:1200]
+
+    def first_sentence(value: object) -> str:
+        text = str(value or "").strip()
+        end_positions = [text.find(mark) for mark in "。！？" if text.find(mark) >= 0]
+        if end_positions:
+            text = text[: min(end_positions) + 1]
+        return text
+
+    claim_text = first_sentence(claim)
+    if claim_text and claim_text[-1:] not in "。！？":
+        claim_text += "。"
+    parts = [claim_text]
+
+    why_text = first_sentence(why)
+    if why_text and why_text.rstrip("。！？") != claim_text.rstrip("。！？"):
+        if why_text[-1:] not in "。！？":
+            why_text += "。"
+        parts.append(why_text)
+
+    if fix:
+        fix_text = first_sentence(fix).rstrip("。！!？?🙏")
+        if fix_text:
+            if "ください" in fix_text:
+                fix_text = "指摘した条件を扱えるように実装を見直す"
+            parts.append(f"{fix_text}形で進めてもらえると助かります🙏")
+
+    return "".join(part for part in parts if part)[:1200]
+
+
 def adapt_finding(raw: dict, reviewer_id: str) -> dict | None:
     """生の finding を schema 準拠に変換する。変換不可能なら None を返す。"""
     if not isinstance(raw, dict):
@@ -249,9 +287,14 @@ def adapt_finding(raw: dict, reviewer_id: str) -> dict | None:
     # evidence
     evidence = build_evidence(raw, repo, file_path, lines)
 
+    # fix / author-facing draft
+    fix = raw.get("fix_hint") or raw.get("suggestion") or raw.get("remediation")
+    review_draft = build_review_draft(raw, str(claim), str(why), fix)
+
     # finding_id
     finding_id = raw.get("finding_id", "")
-    if not finding_id or not finding_id.startswith(source_reviewer + "-"):
+    expected_id = re.compile(rf"{re.escape(source_reviewer)}-[a-f0-9]{{6}}")
+    if not isinstance(finding_id, str) or not expected_id.fullmatch(finding_id):
         hash_input = f"{repo}{file_path}{lines['start']}{lines['end']}{issue_type}{entity_key}"
         finding_id = f"{source_reviewer}-{sha6(hash_input)}"
 
@@ -268,7 +311,8 @@ def adapt_finding(raw: dict, reviewer_id: str) -> dict | None:
         "claim": str(claim).strip()[:200],
         "evidence": evidence,
         "why_it_matters": str(why).strip()[:500] if why else str(claim).strip()[:200],
-        "fix_hint": raw.get("fix_hint") or raw.get("suggestion") or raw.get("remediation"),
+        "fix_hint": fix,
+        "review_draft": review_draft,
         "related_locations": raw.get("related_locations", []),
     }
 

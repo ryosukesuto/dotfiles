@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-report: normalize.py の出力（JSON）から markdown レポートを自動生成する。
+"""normalize.pyのJSONから、著者向けのMarkdownレビューを生成する。
 
 Usage:
   python3 report.py --report /tmp/report.json [--pr-ref "server#21746"] [--output review.md]
@@ -8,151 +7,199 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 
-def severity_label(sev: str) -> str:
-    return {"must-fix": "🔴 must-fix", "should-fix": "🟡 should-fix", "watch": "⚪ watch"}.get(sev, sev)
+INTERNAL_TERM_RE = re.compile(
+    r"(?i)(?:must-fix|should-fix|\bwatch\b|\bP[0-3]\b|"
+    r"codex-baseline|opus-baseline|review-server|security-review-(?:opus|codex)|"
+    r"cross-repo|review-pr|proofread|triage|dedupe|finding-normalizer)"
+)
+REQUEST_RE = re.compile(
+    r"(?:お願い|もらえると|もらえますか|いただけると|いただけますか|"
+    r"してほしい|したいです|いかがでしょうか|できますか)"
+)
+JA_CHARS = r"\u3040-\u30ff\u3400-\u9fff"
 
 
-def confidence_bar(conf: float) -> str:
-    bars = int(conf * 5)
-    return "█" * bars + "░" * (5 - bars)
+def clean_public_text(value: object) -> str:
+    """内部処理用の語をユーザー向け文章から除く。"""
+    text = str(value or "").strip()
+    text = re.sub(
+        r"(?i)\[\s*(?:must-fix|should-fix|watch|P[0-3])\s*\]\s*",
+        "",
+        text,
+    )
+    text = INTERNAL_TERM_RE.sub("", text)
+    text = re.sub(r"^(?:の確認)?(?:では|で)[、,]?[ \t]*", "", text)
+    text = re.sub(r"\*\*([^*\n]+)\*\*", r"\1", text)
+    text = re.sub(rf"([{JA_CHARS}])[ \t]+(?=[A-Za-z0-9`])", r"\1", text)
+    text = re.sub(rf"(?<=[A-Za-z0-9`)\]])[ \t]+([{JA_CHARS}])", r"\1", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = re.sub(r"[ \t]+([、。！？!?:：])", r"\1", text)
+    return text.strip(" -:：\n")
 
 
-def format_finding(f: dict, idx: int) -> str:
-    sev = f.get("severity", "")
-    conf = f.get("confidence", 0)
-    reviewer = f.get("source_reviewer", "")
-    file_path = f.get("file", "")
-    lines = f.get("lines", {})
-    start = lines.get("start", "?")
-    end = lines.get("end", "?")
+def build_fallback_draft(claim: str, why: str, fix: str) -> str:
+    """旧形式や不適切な草案向けに、構造化フィールドから草案を作る。"""
+    def first_sentence(value: str) -> str:
+        text = value.strip()
+        end_positions = [text.find(mark) for mark in "。！？" if text.find(mark) >= 0]
+        if end_positions:
+            text = text[: min(end_positions) + 1]
+        return text
+
+    claim_text = first_sentence(claim)
+    if claim_text and claim_text[-1:] not in "。！？":
+        claim_text += "。"
+    parts = [claim_text] if claim_text else []
+
+    why_text = first_sentence(why)
+    if why_text and why_text.rstrip("。！？") != claim_text.rstrip("。！？"):
+        if why_text[-1:] not in "。！？":
+            why_text += "。"
+        parts.append(why_text)
+
+    if fix:
+        direction = first_sentence(fix).rstrip("。！!？?🙏")
+        if "ください" in direction:
+            direction = "指摘した条件を扱えるように実装を見直す"
+        parts.append(f"{direction}形で進めてもらえると助かります🙏")
+    return "".join(parts)
+
+
+def clean_review_draft(raw: object, claim: str, why: str, fix: str) -> str:
+    """レビュー草案を公開用に整え、内部語があれば安全な草案へ戻す。"""
+    draft = str(raw or "").strip()
+    if not draft or INTERNAL_TERM_RE.search(draft):
+        draft = build_fallback_draft(claim, why, fix)
+
+    draft = clean_public_text(draft)
+    if "ください" in draft:
+        draft = build_fallback_draft(claim, why, fix)
+
+    draft = re.sub(r"\s+🙏", "🙏", draft).replace("🙏", "").rstrip()
+    if REQUEST_RE.search(draft):
+        draft = draft.rstrip("。.!！ ") + "🙏"
+    return draft
+
+
+def soften_explanation(text: str) -> str:
+    if "ください" in text:
+        return "指摘した条件を扱えるように実装を見直す。"
+    return text
+
+
+def format_quote(text: str) -> str:
+    return "\n".join(">" if not line else f"> {line}" for line in text.splitlines())
+
+
+def format_finding(finding: dict, index: int) -> str:
+    file_path = finding.get("file", "")
+    line_range = finding.get("lines", {})
+    start = line_range.get("start", "?")
+    end = line_range.get("end", "?")
     line_ref = f"{file_path}:{start}" if start == end else f"{file_path}:{start}-{end}"
-    claim = f.get("claim", "")
-    why = f.get("why_it_matters", "")
-    fix = f.get("fix_hint", "")
-    issue_type = f.get("issue_type", "")
 
-    evidence = f.get("evidence", {})
-    excerpt = evidence.get("excerpt", "")
+    claim = soften_explanation(clean_public_text(finding.get("claim"))) or "確認したい点"
+    why = soften_explanation(clean_public_text(finding.get("why_it_matters"))) or claim
+    fix = soften_explanation(clean_public_text(finding.get("fix_hint")))
+    draft = clean_review_draft(finding.get("review_draft"), claim, why, fix)
 
-    lines_block = ""
-    if excerpt and excerpt.strip() and excerpt != "(no excerpt)":
-        # 長すぎる抜粋は折りたたむ
-        if len(excerpt) > 300:
-            excerpt = excerpt[:300] + "..."
-        lines_block = f"\n```\n{excerpt}\n```\n"
+    evidence = finding.get("evidence", {})
+    excerpt = str(evidence.get("excerpt", "") or "").strip()
+    if excerpt == "(no excerpt)":
+        excerpt = ""
+    if len(excerpt) > 500:
+        excerpt = excerpt[:500].rstrip() + "..."
 
-    fix_block = f"\n**修正方法**: {fix}" if fix else ""
+    evidence_block = (
+        f"```\n{excerpt}\n```" if excerpt else "根拠となる抜粋はありません。"
+    )
+    fix_block = fix or "追加の修正案はありません。"
+    draft_block = format_quote(draft or build_fallback_draft(claim, why, fix))
 
-    # 複数 reviewer が corroborate したときは sources を見せる
-    sources = f.get("sources") or []
-    reviewer_label = reviewer
-    if len(sources) > 1:
-        reviewer_label = " + ".join(sources) + f" (lead: {reviewer})"
+    return f"""### {index}. {claim}
 
-    arbitration_block = ""
-    arb = f.get("arbitration") or {}
-    rejected = arb.get("rejected_alternatives") or []
-    if rejected:
-        parts = []
-        for r in rejected:
-            src = r.get("source_reviewer", "?")
-            sev_r = r.get("severity", "?")
-            conf_r = r.get("confidence")
-            conf_s = f"{conf_r:.0%}" if isinstance(conf_r, (int, float)) else "?"
-            it = r.get("issue_type", "?")
-            parts.append(f"`{src}` → severity={sev_r}, issue_type={it}, confidence={conf_s}")
-        arbitration_block = "\n<details><summary>🔀 別観点の指摘（裁定で不採用）</summary>\n\n" + "\n".join(f"- {p}" for p in parts) + "\n\n</details>\n"
+#### 対象箇所
 
-    return f"""**{idx}. {claim}**
-`{line_ref}` | {reviewer_label} | {issue_type} | confidence {confidence_bar(conf)} {conf:.0%}
-{lines_block}
-{why}{fix_block}
-{arbitration_block}
+`{line_ref}`
+
+#### 詳細
+
+{why}
+
+#### 根拠
+
+{evidence_block}
+
+#### 修正の方向
+
+{fix_block}
+
+#### レビュー草案
+
+{draft_block}
+
 """
 
 
 def build_report(data: dict, pr_ref: str) -> str:
-    summary = data.get("summary", {})
-    must_fix = data.get("must_fix", [])
-    should_fix = data.get("should_fix", [])
-    watch = data.get("watch", [])
-    dropped = data.get("dropped", [])
+    # JSON上の区分は並び替えにだけ使い、区分名そのものは表示しない。
+    before_merge = data.get("must_fix", [])
+    additional = data.get("should_fix", [])
+    notes = data.get("watch", [])
+    total = len(before_merge) + len(additional) + len(notes)
 
-    total_input = summary.get("total_input", 0)
-    final = summary.get("final", 0)
-    deduped = total_input - final - len(dropped)
-
-    pr_line = f"**PR**: {pr_ref}\n\n" if pr_ref else ""
-
-    # サマリ行
-    must_n = len(must_fix)
-    should_n = len(should_fix)
-    watch_n = len(watch)
-    dropped_n = len(dropped)
-
-    verdict = ""
-    if must_n > 0:
-        verdict = f"🔴 **マージ前対応必須** — must-fix {must_n}件を先に解決してください"
-    elif should_n > 0:
-        verdict = f"🟡 **対応推奨** — must-fix なし、should-fix {should_n}件を確認してください"
+    if before_merge:
+        verdict = f"マージ前に確認したい点が{len(before_merge)}件あります。"
+    elif additional:
+        verdict = f"マージを止める問題は見つかりませんでした。あわせて確認したい点が{len(additional)}件あります。"
+    elif notes:
+        verdict = f"マージを止める問題は見つかりませんでした。補足が{len(notes)}件あります。"
     else:
-        verdict = "✅ **マージ可能** — 重要な指摘なし"
+        verdict = "マージを止める問題は見つかりませんでした。"
 
-    lines = []
-    lines.append(f"# コードレビュー結果\n")
-    lines.append(f"{pr_line}")
-    lines.append(f"{verdict}\n")
-    lines.append(
-        f"入力 {total_input}件 → dedupe {deduped}件 → drop {dropped_n}件 → **最終 {final}件**"
-        f"（must-fix: {must_n} / should-fix: {should_n} / watch: {watch_n}）\n"
+    lines = ["# コードレビュー結果\n\n"]
+    if pr_ref:
+        lines.append(f"PR `{pr_ref}`\n\n")
+    lines.append(f"{verdict}\n\n確認した指摘は{total}件です。\n")
+
+    sections = (
+        ("マージ前に確認したい点", before_merge),
+        ("あわせて確認したい点", additional),
+        ("補足", notes),
     )
+    for title, findings in sections:
+        if not findings:
+            continue
+        lines.append(f"\n## {title}（{len(findings)}件）\n\n")
+        for index, finding in enumerate(findings, 1):
+            lines.append(format_finding(finding, index))
 
-    if must_fix:
-        lines.append(f"\n## 🔴 must-fix（{must_n}件）\n")
-        for i, f in enumerate(must_fix, 1):
-            lines.append(format_finding(f, i))
-
-    if should_fix:
-        lines.append(f"\n## 🟡 should-fix（{should_n}件）\n")
-        for i, f in enumerate(should_fix, 1):
-            lines.append(format_finding(f, i))
-
-    if watch:
-        lines.append(f"\n## ⚪ watch（{watch_n}件）\n")
-        for i, f in enumerate(watch, 1):
-            lines.append(format_finding(f, i))
-
-    if dropped:
-        lines.append(f"\n---\n\n<details><summary>drop された指摘 {dropped_n}件</summary>\n\n")
-        for d in dropped:
-            finding = d.get("finding", {})
-            reasons = d.get("reasons", [])
-            lines.append(f"- `{finding.get('file', '?')}` — {', '.join(reasons)}\n")
-        lines.append("</details>\n")
-
-    return "".join(lines)
+    return "".join(lines).rstrip() + "\n"
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate markdown review report from normalize.py output")
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Generate an author-facing Markdown review from normalize.py output"
+    )
     parser.add_argument("--report", "-r", required=True)
     parser.add_argument("--pr-ref", default="")
     parser.add_argument("--output", "-o", default="-")
     args = parser.parse_args()
 
-    with open(args.report) as f:
-        data = json.load(f)
+    with open(args.report, encoding="utf-8") as report_file:
+        data = json.load(report_file)
 
-    md = build_report(data, args.pr_ref)
+    markdown = build_report(data, args.pr_ref)
 
     if args.output == "-":
-        print(md)
+        print(markdown, end="")
     else:
-        Path(args.output).write_text(md)
+        Path(args.output).write_text(markdown, encoding="utf-8")
         print(f"Report written to: {args.output}", file=sys.stderr)
 
 

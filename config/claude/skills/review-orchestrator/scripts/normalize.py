@@ -25,6 +25,7 @@ VALID_ISSUE_TYPES = {
     "observability", "other",
 }
 ENTITY_KEY_RE = re.compile(r"^[^:]+:[^:]+(:[^:]+)?$")
+FINDING_ID_RE = re.compile(r"^[a-z0-9-]+-[a-f0-9]{6}$")
 LINE_RANGE_PROXIMITY = 20  # dedupe時に±N行を同一とみなす（reviewer間の行指定ずれを吸収）
 
 SEVERITY_ORDER = {"must-fix": 0, "should-fix": 1, "watch": 2}
@@ -55,6 +56,8 @@ def validate_finding(f: dict) -> list[str]:
     finding_id = f.get("finding_id", "")
     if not finding_id.startswith(source_reviewer + "-"):
         errors.append(f"finding_id prefix mismatch: {finding_id} vs {source_reviewer}")
+    if not FINDING_ID_RE.fullmatch(finding_id):
+        errors.append(f"invalid finding_id format: {finding_id}")
 
     # issue_type
     if f.get("issue_type") not in VALID_ISSUE_TYPES:
@@ -79,6 +82,11 @@ def validate_finding(f: dict) -> list[str]:
         errors.append("evidence.evidence_type missing")
     if not isinstance(evidence, dict) or not evidence.get("excerpt", "").strip():
         errors.append("evidence.excerpt is empty")
+
+    # author-facing review draft
+    review_draft = f.get("review_draft", "")
+    if not isinstance(review_draft, str) or not review_draft.strip():
+        errors.append("review_draft is empty")
 
     # evidence.location lines
     loc = evidence.get("location", {}) if isinstance(evidence, dict) else {}
