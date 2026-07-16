@@ -4,7 +4,7 @@
 	autocrlf = input
 	quotepath = false
 	precomposeunicode = true
-	hooksPath = /Users/suto.ryosuke/gh/github.com/ryosukesuto/dotfiles/git/hooks
+	hooksPath = /Users/s32943/gh/github.com/ryosukesuto/dotfiles/git/hooks
 
 [init]
 	defaultBranch = main
