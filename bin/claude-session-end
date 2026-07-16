@@ -102,9 +102,9 @@ if [[ "$SCORE" -ge 4 ]]; then
   echo "[Hook] 学びの記録を強く推奨します。 /til を実行してください。" >&2
 elif [[ "$SCORE" -ge 2 ]]; then
   echo "[Hook] セッション概要: コミット${COMMIT_COUNT}件、変更${CHANGED_FILES}ファイル" >&2
-  echo "Tip: /til で学びを記録、/times-post でtimesに投稿できます" >&2
+  echo "Tip: /til で学びを記録できます" >&2
 else
-  echo "Tip: /til で学びを記録、/times-post でtimesに投稿できます" >&2
+  echo "Tip: /til で学びを記録できます" >&2
 fi
 
 if [[ -n "$MEMORY_HINT" ]]; then
