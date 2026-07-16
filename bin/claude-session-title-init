@@ -1,24 +1,56 @@
-#!/bin/bash
-# claude-session-title-init: Set initial session title from cwd at SessionStart
+#!/usr/bin/env bash
+# claude-session-title-init: Set a concise session title at SessionStart.
 # Hook: SessionStart (v2.1.152+)
-#
-# Outputs "<repo>" or "<repo>/<branch>" as initial title. The UserPromptSubmit
-# hook (claude-session-title) overwrites this once the first user prompt arrives.
 
-# Resolve repo name from git common dir (worktree-safe)
-common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
-if [ -n "$common_dir" ]; then
-  repo=$(basename "$(dirname "$common_dir")")
+set -euo pipefail
+
+MAX_TITLE_LENGTH=30
+
+normalize_branch() {
+  local branch="$1"
+  local title
+
+  case "$branch" in
+    feat/* | feature/* | fix/* | bugfix/* | hotfix/* | chore/* | refactor/* | \
+      docs/* | test/* | tests/* | ci/* | build/* | perf/* | revert/*)
+      branch=${branch#*/}
+      ;;
+  esac
+
+  title=$(printf '%s' "$branch" |
+    tr '/_-' '   ' |
+    sed -E \
+      -e 's/^[[:space:]]+//' \
+      -e 's/[[:space:]]+$//' \
+      -e 's/[[:space:]]+/ /g' \
+      -e 's/^([[:upper:]][[:upper:][:digit:]]*) ([[:digit:]]+)( |$)/\1-\2\3/')
+
+  if [[ -z "$title" ]]; then
+    title="$branch"
+  fi
+
+  if (( ${#title} > MAX_TITLE_LENGTH )); then
+    local shortened=${title:0:MAX_TITLE_LENGTH}
+    local next_character=${title:MAX_TITLE_LENGTH:1}
+
+    if [[ "$next_character" != " " && "$shortened" == *" "* ]]; then
+      shortened=${shortened% *}
+    fi
+    title=${shortened% }
+  fi
+
+  printf '%s\n' "$title"
+}
+
+branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+
+if [[ -n "$branch" ]]; then
+  title=$(normalize_branch "$branch")
+elif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  short_sha=$(git rev-parse --short HEAD 2>/dev/null || true)
+  title="detached${short_sha:+ $short_sha}"
 else
-  repo=$(basename "$(pwd)")
-fi
-
-branch=$(git symbolic-ref --short HEAD 2>/dev/null)
-
-if [ -n "$branch" ] && [ "$branch" != "main" ] && [ "$branch" != "master" ]; then
-  title="$repo / $branch"
-else
-  title="$repo"
+  title=$(basename "$PWD")
 fi
 
 jq -nc --arg t "$title" '{"hookSpecificOutput":{"hookEventName":"SessionStart","sessionTitle":$t}}'

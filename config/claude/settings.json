@@ -299,7 +299,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "rm -f \"$HOME/.claude/.compact-counter\" \"$HOME/.claude/.session-titled\"; [ -S \"${CMUX_SOCKET_PATH:-/tmp/cmux.sock}\" ] && [ -n \"$CMUX_WORKSPACE_ID\" ] && echo \"{\\\"method\\\":\\\"workspace.rename\\\",\\\"params\\\":{\\\"title\\\":\\\"$(d=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && basename \"$(dirname \"$d\")\" || basename \"$(pwd)\")\\\",\\\"workspace_id\\\":\\\"$CMUX_WORKSPACE_ID\\\"}}\" | nc -U \"$CMUX_SOCKET_PATH\" 2>/dev/null || true"
+            "command": "rm -f \"$HOME/.claude/.compact-counter\" \"$HOME/.claude/.session-titled\"; \"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/cmux-rename-workspace\""
           },
           {
             "type": "command",
@@ -458,7 +458,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -S \"${CMUX_SOCKET_PATH:-/tmp/cmux.sock}\" ] && [ -n \"$CMUX_WORKSPACE_ID\" ] && echo \"{\\\"method\\\":\\\"workspace.rename\\\",\\\"params\\\":{\\\"title\\\":\\\"$(d=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && basename \"$(dirname \"$d\")\" || basename \"$(pwd)\")\\\",\\\"workspace_id\\\":\\\"$CMUX_WORKSPACE_ID\\\"}}\" | nc -U \"$CMUX_SOCKET_PATH\" 2>/dev/null || true"
+            "command": "\"$HOME/gh/github.com/ryosukesuto/dotfiles/bin/cmux-rename-workspace\""
           }
         ]
       }

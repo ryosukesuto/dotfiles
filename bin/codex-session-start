@@ -3,17 +3,8 @@
 
 set -euo pipefail
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 rm -f "$HOME/.claude/.compact-counter" "$HOME/.claude/.session-titled"
 
-if [ -S "${CMUX_SOCKET_PATH:-/tmp/cmux.sock}" ] && [ -n "${CMUX_WORKSPACE_ID:-}" ]; then
-  common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
-  if [ -n "$common_dir" ]; then
-    title=$(basename "$(dirname "$common_dir")")
-  else
-    title=$(basename "$PWD")
-  fi
-
-  printf '{"method":"workspace.rename","params":{"title":"%s","workspace_id":"%s"}}\n' \
-    "$title" "$CMUX_WORKSPACE_ID" |
-    nc -U "$CMUX_SOCKET_PATH" >/dev/null 2>&1 || true
-fi
+"$SCRIPT_DIR/cmux-rename-workspace"

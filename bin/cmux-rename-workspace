@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Rename the current cmux workspace to the repository or directory name.
+
+set -euo pipefail
+
+socket_path="${CMUX_SOCKET_PATH:-/tmp/cmux.sock}"
+workspace_id="${CMUX_WORKSPACE_ID:-}"
+
+if [[ ! -S "$socket_path" || -z "$workspace_id" ]]; then
+  exit 0
+fi
+
+common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+if [[ -n "$common_dir" ]]; then
+  title=$(basename "$(dirname "$common_dir")")
+else
+  title=$(basename "$PWD")
+fi
+
+jq -nc \
+  --arg title "$title" \
+  --arg workspace_id "$workspace_id" \
+  '{method:"workspace.rename",params:{title:$title,workspace_id:$workspace_id}}' |
+  nc -U "$socket_path" >/dev/null 2>&1 || true
