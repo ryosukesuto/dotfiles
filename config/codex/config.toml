@@ -315,6 +315,8 @@ enabled = true
 
 [tui]
 alternate_screen = "never"
+# 長いセッションでも、起動時・リサイズ時の transcript 再描画を省略しない
+terminal_resize_reflow_max_rows = 0
 status_line = ["model-with-reasoning", "context-remaining", "git-branch", "current-dir"]
 terminal_title = ["spinner", "project", "git-branch", "model"]
 
