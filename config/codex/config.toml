@@ -15,11 +15,11 @@ approval_policy = "never"
 # Model Settings / モデル設定
 # ==============================================================================
 # モデル名（GPT-5 Codexを使用）
-model = "gpt-5.5"
+model = "gpt-5.6-sol"
 
 # 推論努力レベル（low, medium, high）
 # PRレビューなど実用的なタスクには "medium" が最適（速度と品質のバランス）
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "max"
 personality = "pragmatic"
 project_doc_fallback_filenames = ["CLAUDE.md"]
 project_doc_max_bytes = 65536
@@ -118,6 +118,11 @@ confirm_external_urls = false
 # env = { API_KEY = "${EXAMPLE_API_KEY}" }
 
 [mcp_servers.linear-server]
+url = "https://mcp.linear.app/mcp"
+
+# Claude Code 側の linear-decent と同じ第2 workspace 用。URL は同一で、
+# server 名ごとに別の OAuth セッションを保持する（初回はログインが必要）
+[mcp_servers.linear-decent]
 url = "https://mcp.linear.app/mcp"
 
 [mcp_servers.datadog-mcp]
