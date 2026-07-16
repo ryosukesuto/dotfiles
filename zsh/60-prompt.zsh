@@ -25,7 +25,7 @@ _start_dirty_check() {
   # 前回のfdが残っていたら閉じる
   if (( _dirty_fd )); then
     zle -F $_dirty_fd 2>/dev/null
-    exec {_dirty_fd}<&- 2>/dev/null
+    exec {_dirty_fd}<&-
     _dirty_fd=0
   fi
   # git リポジトリ外なら空にして終了
@@ -43,7 +43,7 @@ _on_dirty_result() {
   local fd=$1 new=""
   read -r new <&$fd 2>/dev/null
   zle -F $fd 2>/dev/null
-  exec {fd}<&- 2>/dev/null
+  exec {fd}<&-
   _dirty_fd=0
   [[ "$_dirty_result" == "$new" ]] && return
   _dirty_result="$new"

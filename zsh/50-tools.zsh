@@ -7,9 +7,6 @@
 # 補完キャッシュディレクトリ
 [[ -d ~/.zsh/cache ]] || mkdir -p ~/.zsh/cache
 
-# GitHub API レート制限回避 (gh/mise の lazy token wrapper) は .zshenv で定義済み。
-# 非対話 subprocess (Claude Code の Bash tool 等) でも有効にするため移設した。
-
 # mise初期化（shims方式 - envセクション未使用のためhook不要）
 if (( $+commands[mise] )); then
   eval "$(command mise activate zsh --shims)"
@@ -30,4 +27,3 @@ if (( $+commands[claude] )); then
   alias claude-research='claude --system-prompt "$(cat "$_claude_ctx/research.md" 2>/dev/null)"'
   alias claude-incident='claude --mcp-config ~/.claude/mcp-incident.json --system-prompt "$(cat "$_claude_ctx/incident.md" 2>/dev/null)"'
 fi
-
