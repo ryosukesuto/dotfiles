@@ -194,6 +194,7 @@ show_profiling = false
 [features]
 hooks = true
 multi_agent = true
+terminal_resize_reflow = false
 
 # ==============================================================================
 # Agent Settings / サブエージェント設定
