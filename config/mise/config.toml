@@ -6,6 +6,7 @@ argocd = "latest"
 terraform = "latest"
 go = "1.26.1"
 golangci-lint = "2.12.2"
+"npm:ntn" = "0.4.0"
 
 [settings]
 idiomatic_version_file_enable_tools = ["ruby"]
