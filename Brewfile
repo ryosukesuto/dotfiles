@@ -49,6 +49,7 @@ brew "datadog-labs/pack/pup"  # Datadog CLI（要 tap: datadog-labs/pack）
 
 # ===== クラウドCLI =====
 brew "awscli"        # AWS CLI
+cask "session-manager-plugin"  # AWS SSM Session Manager用プラグイン
 cask "gcloud-cli"        # gcloud CLI
 
 # ===== メディア処理 =====
@@ -80,7 +81,6 @@ cask "keeper-password-manager"  # パスワード管理
 cask "meetingbar"          # カレンダー連携会議通知
 cask "microsoft-teams"     # コミュニケーション
 cask "slack"               # コミュニケーション
-cask "zoom"                # ビデオ会議
 cask "obsidian"            # ノートアプリ
 cask "google-japanese-ime" # 日本語入力
 cask "alt-tab"             # ウィンドウスイッチャー
