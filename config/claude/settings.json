@@ -274,7 +274,7 @@
       "Edit(~/.claude/hooks/**)",
       "Edit(/Users/s32943/gh/github.com/ryosukesuto/dotfiles/bin/claude-guard-*)"
     ],
-    "defaultMode": "default",
+    "defaultMode": "auto",
     "additionalDirectories": [
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
