@@ -57,7 +57,15 @@
 - 読んでから書く: コードを読まずに編集しない。変更対象のファイルは必ず先にReadで内容を確認し、既存の設計意図を理解してから修正する
 - 新規ファイル作成時のパス確認: Write前に親ディレクトリの存在を `ls -d` で1回確認する。Obsidian Vault や別リポジトリのパスを誤って打鍵すると、サブディレクトリが勝手に作成されて誤配置の事故になる。Write後の trash 回収は sandbox制限で失敗しやすく往復が増える
 - sandbox制限エラーの初手対処: `Operation not permitted` / `permission denied` / keychain アクセス失敗等が出た瞬間に `dangerouslyDisableSandbox: true` で即リトライする。`gws` / `gws-personal` / `gcloud` / `bw` / `trash` 等のkeychain・OS依存コマンドは sandbox 環境で書き込み/復号失敗が頻発するため、最初から dangerously disable を選んでよい。3回リトライしてから気付くと往復が増える
-- Bash 許可ルールと wrapper prefix: `Bash(<cmd>:*)` の allow ルールはコマンド文字列の先頭 token のみマッチする。`eval "$(mise activate zsh)" && gws-personal ...` のように wrapper を前置すると先頭が `eval` になり許可から外れて `Permission to use Bash with command ... has been denied` で落ちる。`gws-personal` / `gws` のような zshrc シェル関数も含めて、許可対象コマンドは必ず先頭で直接叩く。2026-06-29 plan-day カレンダー登録で `eval` prefix のため 3 回 deny、prefix を外して解消した事例あり
+  - sandbox は権限エラー以外の形でも現れる。`.git` が読み取り deny に含まれる環境では `git` が `fatal: not a git repository (or any of the parent directories)` を返す。`pwd` がリポジトリ内なのに git がリポジトリを見つけられない場合は、リポジトリ破損ではなく sandbox を疑って即 disable する。`No such file or directory` / `command not found` が実在するはずの対象に出た場合も同様
+- Bash 許可ルールと wrapper prefix: `Bash(<cmd>:*)` の allow ルールはコマンド文字列の先頭 token のみマッチする。`eval` / `export` / `cd` / `source` など何であれ wrapper や変数代入を前置すると先頭 token がそちらになり、許可から外れて `Permission to use Bash with command ... has been denied` で落ちる。`gws-personal` / `gws` のような zshrc シェル関数も含めて、許可対象コマンドは必ず先頭で直接叩く
+  - 環境変数は `export VAR=x; cmd` ではなくコマンド引数で渡す（`aws --profile <name>` / `gh --repo <name>` 等）。引数で渡せない場合のみ `VAR=x cmd` の形にする（この形も先頭 token が変わるため deny されうる点は同じ）
+  - 事例: 2026-06-29 plan-day カレンダー登録で `eval` prefix のため 3 回 deny。2026-07-27 processing-infrastructure で `export AWS_PROFILE=...; aws sts ...` が deny、`aws --profile` に変えて解消
+- 領域別 skill の先読み: 該当領域のコマンドを叩く前に skill を読み込む。トリガーワードが会話に出た時点ではなく、コマンド実行の直前を判定タイミングにする
+  - `terraform` / `aws` / `tfstate` を触る前: `infra-workflow`
+  - git 操作（commit / push / branch / PR 作成）の前: `github:git-workflow`（プロジェクトの `.claude/rules/git-workflow.md` で明文化されているリポジトリでは必須）
+  - Linear の issue 作成・見積もり・サイクル操作の前: `linear-workflow`
+  - 2026-07-27 processing-infrastructure で `terraform validate` を 6 root・`aws ecs` / `s3` / `iam` を十数回叩きながら `infra-workflow` を一度も読み込まなかった。git 側は project rule で明文化されていたため起動できており、明文化の有無が差になっている
 - 成功条件定義: タスク開始前に「何をもって完了とするか」を明文化し、検証手段を確保
 - 確認優先: 実装方針に複数の選択肢がある場合、または要件が曖昧な場合はAskUserQuestionで確認してから進める。明らかに判断できることは聞かない。確認が複数ある場合は一度にまとめて聞く（往復を増やさない）
 - MVP方式: 改善項目はセキュリティ > パフォーマンス > 保守性 > 可読性の順で一つずつ実装
