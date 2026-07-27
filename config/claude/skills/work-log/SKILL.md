@@ -1,6 +1,6 @@
 ---
 name: work-log
-description: 作業完了をデイリーノート＋Time Blockチェック＋Linear Issueに反映。「作業ログ」「work log」「作業報告」「ワークログ」等で起動。
+description: 作業完了をデイリーノート＋Time Blockチェック＋Linear Issueに反映。mediphone/mediment関連はConfluence稼働ログにも記録。「作業ログ」「work log」「作業報告」「ワークログ」等で起動。
 user-invocable: true
 allowed-tools:
   - Bash(echo:*)
@@ -14,17 +14,20 @@ allowed-tools:
   - mcp__linear-server__get_issue
   - mcp__linear-server__save_issue
   - mcp__linear-server__save_comment
+  - mcp__atlassian-mediphone__getConfluencePage
+  - mcp__atlassian-mediphone__updateConfluencePage
 ---
 
 # /work-log - 作業完了の記録
 
-作業が一区切りついたタイミングで、3か所を同時に更新する。`til` が「学び」、`post-merge` が「PRマージ後」を担うのに対し、このスキルは「マージ前・調査のみ含む日々の作業」をカバーする。
+作業が一区切りついたタイミングで、更新先を同時に反映する。`til` が「学び」、`post-merge` が「PRマージ後」を担うのに対し、このスキルは「マージ前・調査のみ含む日々の作業」をカバーする。
 
 ## 更新先
 
 1. Obsidianデイリーノート末尾（1行の作業ログ）
 2. デイリーノートのTime Blockチェックボックス（完了した枠に `[x]`）
 3. Linear Issue（コメント追加、必要ならステータス更新、本文のTODO・進捗記述の更新）
+4. mediphone/mediment関連作業のみ: Confluence稼働ログ（1行追記＋累計時間更新）
 
 ## 使い方
 
@@ -91,6 +94,27 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): ${SUMMARY}" >> "$DAILY_NOTE"
 6. `save_comment(issueId: ISSUE_ID, body: SUMMARY)` でコメント追加
 7. コメント本文は Phase 1 の要約をそのまま使う。Markdown可
 
+### Phase 5: mediphone/mediment関連作業のConfluence稼働ログ記録
+
+なぜ別立てか: mediphoneは稼働ログ管理のためConfluenceに作業時間を記録しており、Linear/Jiraのようなチケット単位の管理をしていない（EM業はチケット化しない運用）。作業ログの記録タイミングに相乗りするのが最も漏れが少ない。
+
+対象判定（いずれかに該当したら実行、非該当ならこのPhase全体をスキップ）:
+- 会話で編集・参照したファイルパスに「メディフォン」「mediment」「mediphone」を含む
+- 作成/編集したObsidianノートのfrontmatterに `tags: sideline/mediphone` がある
+- ユーザーが会話中に「mediment」「mediphone」関連と明言した
+
+手順:
+1. `${CLAUDE_SKILL_DIR}/SKILL.local.md` から Cloud ID・Page ID を読む
+2. 所要時間の自動算出:
+   - 現在時刻: `date '+%Y-%m-%d %H:%M:%S'`
+   - デイリーノート内、直近の作業ログタイムスタンプ行（`- YYYY/MM/DD HH:MM:SS:`、til/work-log/post-mergeいずれの記録でもよい）を基点に、現在時刻との差分（分）を計算
+   - 15分単位に丸め、60分未満は「約X分」、60分以上は「約Xh」（0.5刻み、例: 約1.5時間）の表記に変換
+   - 差分が240分超、または5分未満など明らかに異常な値の場合は自動算出せず、AskUserQuestionで所要時間を確認する（他タスクとの並行・中断が混入している可能性が高いため）
+3. `getConfluencePage(cloudId, pageId, contentFormat: "markdown")` で現在の本文を取得
+4. テーブル末尾（`累計:` 行の直前）に新規行を追加: `| YYYY-MM-DD(曜日) | 約Xh | <Phase 1の要約> |`
+5. 累計時間: 既存の「累計: 約XX時間」の数値に今回の所要時間を加算するだけ（テーブル全体の再集計はしない。曖昧な時間表記のパースミスで既存値がズレるのを避けるため）
+6. `updateConfluencePage(cloudId, pageId, body: 更新後の全文, contentFormat: "markdown")` で書き戻す
+
 ## 完了報告フォーマット
 
 ```
@@ -99,6 +123,7 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): ${SUMMARY}" >> "$DAILY_NOTE"
 - デイリーノート: 1行追記
 - Time Block: 2ブロックをチェック（13:00-14:30, 14:40-15:40）
 - Linear: PF-1062 にコメント追加、Todo → In Progress、本文TODO 2件を更新
+- Confluence稼働ログ: 約1時間を追記、累計 約30.75時間
 ```
 
 ## 注意事項
@@ -108,8 +133,10 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): ${SUMMARY}" >> "$DAILY_NOTE"
 - Linear Doneへの昇格は必ずユーザー承認を経てから実行（post-merge と同じ原則）
 - Issue本文の書き換えは「会話から完了・進捗が明確に読み取れる箇所」に限定する。見出し構成や受け入れ条件の意味自体を変える推測編集はしない。曖昧なら書き換えずコメントのみで報告する
 - `til` との使い分け: 学び・発見の記録は `til`、作業の進捗記録は `work-log`
+- Confluence稼働ログは対外的な記録として使われるため、所要時間が異常値（Phase 5参照）のまま自動記録しない
 
 ## Gotchas
 
 - 前倒し完了のバックフィル: スケジュール時刻より前に終わったTime Blockは、現在時刻がブロック時刻に達していなくても完了実態があればチェック対象。作業ログや会話に「完了」の証跡があれば候補に含め、AskUserQuestionで確認する。時刻だけで足切りしない
 - 過去セッションの作業ログ行から完了を検知するケースがある。Phase 3では「直近の会話」だけでなく、Read済みのデイリーノート末尾の作業ログ行も照合材料として使う
+- Confluence稼働ログの所要時間算出は「直近の作業ログタイムスタンプ行」を基点にするため、そのタイムスタンプが今回作業と無関係な別セッション・別作業の記録だと差分が実態からズレる。異常値ガードだけに頼らず、算出結果は完了報告で必ず提示し須藤が確認できるようにする

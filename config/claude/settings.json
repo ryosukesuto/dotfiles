@@ -279,7 +279,6 @@
       "~/gh/github.com/ryosukesuto/obsidian-notes"
     ]
   },
-  "model": "sonnet",
   "fallbackModel": [
     "opus",
     "sonnet",
