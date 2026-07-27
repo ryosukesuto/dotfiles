@@ -77,7 +77,7 @@ git-wt feature/xxx    # .worktrees/feature/xxx に作成
 cd .worktrees/feature/xxx
 
 # 3. 作業完了後はworktreeを削除
-git-wt remove feature/xxx
+git-wt -d feature/xxx
 ```
 
 ### キーバインド

@@ -191,7 +191,7 @@ wt_info=$(git worktree list | grep "^$current_dir ")
 
 if [[ -n "$wt_info" ]] && [[ "$pr_state" == "MERGED" ]]; then
     echo "このworktreeを削除しますか？"
-    echo "  git-wt remove $(basename $current_dir)"
+    echo "  git-wt -d $current_dir"
 fi
 ```
 
