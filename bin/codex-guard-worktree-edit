@@ -75,7 +75,7 @@ check_path() {
 [BLOCKED] ${current_branch}ブランチで直接編集はできません
 
   先にworktreeを作成してください:
-    git-wt add feature/xxx
+    git-wt feature/xxx
 
   除外設定: git config --local wt.allowDirectCommit true
 EOF
@@ -91,7 +91,7 @@ EOF
   worktreeで作業してください:
     git stash
     git switch main
-    git-wt add ${current_branch}
+    git-wt ${current_branch}
     cd .worktrees/${current_branch} && git stash pop
 
   除外設定: git config --local wt.allowDirectCommit true

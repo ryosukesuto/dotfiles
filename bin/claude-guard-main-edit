@@ -37,7 +37,7 @@ echo "[BLOCKED] ${current_branch}ブランチで直接編集はできません"
 echo ""
 echo "  先にworktreeを作成してください:"
 echo "    EnterWorktree でworktreeに移動"
-echo "    または: git-wt add feature/xxx"
+echo "    または: git-wt feature/xxx"
 echo ""
 echo "  除外設定: git config --local wt.allowDirectCommit true"
 exit 2

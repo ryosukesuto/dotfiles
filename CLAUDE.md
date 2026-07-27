@@ -73,7 +73,7 @@ ghq get github.com/org/repo
 cd $(ghq root)/github.com/org/repo
 
 # 2. 機能開発時はworktreeを作成（git-wt）
-git-wt add feature/xxx    # .worktrees/feature/xxx に作成
+git-wt feature/xxx    # .worktrees/feature/xxx に作成
 cd .worktrees/feature/xxx
 
 # 3. 作業完了後はworktreeを削除

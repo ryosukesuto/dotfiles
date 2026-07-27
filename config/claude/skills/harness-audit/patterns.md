@@ -424,7 +424,7 @@ if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
     exit 0
   fi
   echo "ERROR: Direct commits to $branch are not allowed."
-  echo "Create a worktree: git-wt add feature/xxx"
+  echo "Create a worktree: git-wt feature/xxx"
   exit 1
 fi
 ```

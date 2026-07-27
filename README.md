@@ -20,7 +20,7 @@ dotfiles-private/   private: 機密値（*.local.md → dotfiles/ 側に symlink
 ```bash
 ghq get github.com/org/repo          # リポジトリ取得
 cd $(ghq root)/github.com/org/repo
-git-wt add feature/xxx               # .worktrees/feature/xxx に作成
+git-wt feature/xxx                   # .worktrees/feature/xxx に作成
 ```
 
 - `Ctrl+]`: ghqリポジトリをfzfで選択

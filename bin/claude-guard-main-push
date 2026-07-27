@@ -48,7 +48,7 @@ fi
 echo "[BLOCKED] ${target_branch}ブランチへの直接 push はできません"
 echo ""
 echo "  worktreeを作成してブランチで作業してください:"
-echo "    git-wt add feature/xxx"
+echo "    git-wt feature/xxx"
 echo ""
 echo "  除外設定: git config --local wt.allowDirectCommit true"
 exit 2
