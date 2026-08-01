@@ -55,6 +55,7 @@
 - ToDoリスト: 3ステップ以上の作業では作業開始時に計画を可視化し、進捗を更新する。単純な調査・1-2ステップで終わる作業では不要。当初計画外の追加調査・検証フェーズに入る時は既存タスクが完了済みでも新規 TaskCreate で task list を切り直す (`task tools haven't been used recently` の system-reminder が出たら対応する)
 - 段階的実装: 探索（コード理解）→ 計画（設計・TODO作成）→ 実装の3段階で進める
 - 読んでから書く: コードを読まずに編集しない。変更対象のファイルは必ず先にReadで内容を確認し、既存の設計意図を理解してから修正する
+- ローカルコードベースは確認前に最新化: 既存コードを調査・レビュー・参照する前に、対象リポジトリで `git fetch` してから `git status` でHEADがリモート追跡ブランチより遅れていないか確認する。直前にこのセッションでclone/pullした場合は省略してよい。古いローカルクローンのまま調査すると、既に解決済みの問題を指摘したり、削除済みのコードを前提に議論したりする事故につながる
 - 新規ファイル作成時のパス確認: Write前に親ディレクトリの存在を `ls -d` で1回確認する。Obsidian Vault や別リポジトリのパスを誤って打鍵すると、サブディレクトリが勝手に作成されて誤配置の事故になる。Write後の trash 回収は sandbox制限で失敗しやすく往復が増える
 - sandbox制限エラーの初手対処: `Operation not permitted` / `permission denied` / keychain アクセス失敗等が出た瞬間に `dangerouslyDisableSandbox: true` で即リトライする。`gws` / `gws-personal` / `gcloud` / `bw` / `trash` 等のkeychain・OS依存コマンドは sandbox 環境で書き込み/復号失敗が頻発するため、最初から dangerously disable を選んでよい。3回リトライしてから気付くと往復が増える
   - sandbox は権限エラー以外の形でも現れる。`.git` が読み取り deny に含まれる環境では `git` が `fatal: not a git repository (or any of the parent directories)` を返す。`pwd` がリポジトリ内なのに git がリポジトリを見つけられない場合は、リポジトリ破損ではなく sandbox を疑って即 disable する。`No such file or directory` / `command not found` が実在するはずの対象に出た場合も同様
