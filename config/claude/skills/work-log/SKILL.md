@@ -110,6 +110,19 @@ echo "- $(date '+%Y/%m/%d %H:%M:%S'): ${SUMMARY}" >> "$DAILY_NOTE"
 - 作成/編集したObsidianノートのfrontmatterに `tags: sideline/mediphone` がある
 - ユーザーが会話中に「mediment」「mediphone」関連と明言した
 
+#### 業務内容の絞り込み（Phase 5 全体に適用）
+
+チーム共有ドキュメント（Confluence 稼働ログ・Notion mediment管理タスクの `## 進捗`）に書くのは「業務としてやった内容」の要約のみ。以下は書かない:
+
+- MCP サーバー有効化・`.mcp.json` の追加・`~/.claude.json` の編集
+- `.claude/settings.local.json` などプロジェクト固有のローカル設定変更
+- 個人 dotfiles / skill / rules の追加・改修
+- ハーネス監査 skill 内部の詳細（`audit-meta` HTML コメント削除・Confluence 記法上のフォーマット調整など）
+
+書いてよいのは業務そのものの成果（例: 「Secret Scan 実施」「Confluence にメモ作成」「PR #NNNN を Draft で作成後、複数回修正」「CI/Copilot code review 設定を確認」）。
+
+詳細と背景は [[mediment-work-log-content]] を参照。個人 Obsidian デイリーノートは対象外（Phase 2 で技術詳細を残してよい）。
+
 #### 5-1. Confluence 稼働ログ記録
 
 1. `${CLAUDE_SKILL_DIR}/SKILL.local.md` から Cloud ID・Page ID を読む
