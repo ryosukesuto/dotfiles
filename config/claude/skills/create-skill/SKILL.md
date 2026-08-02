@@ -26,6 +26,18 @@ allowed-tools:
 - user-invocable か context型か
 - 必要なツール（最小限に絞る）
 - どのSkillタイプに近いか（`${CLAUDE_SKILL_DIR}/reference.md` のタイプ分類を参照）
+- 作成先が`~/gh/github.com/ryosukesuto/dotfiles`配下（public repo）かどうか。publicの場合は次項のサービス固有情報チェックを必ず行う
+
+### 1.5 サービス固有情報のチェック（dotfiles=publicリポに作る場合）
+
+`~/.claude/skills`は`dotfiles`（public repo）へのシンボリックリンクのため、ここに作るSkillは全てpublicに公開される。作成前に以下を確認する。
+
+- Skill名・ディレクトリ名に、副業先・取引先など非公開にすべき固有名詞（会社名・プロダクト名等）を含めない
+- SKILL.md本文に、ドメイン名・内部リソースID（DB ID・プロジェクトキー等）・メールアドレス・Slackチャンネル名等の具体的識別子を直接書かない
+- 上記に該当する情報が必要な場合は、`${CLAUDE_SKILL_DIR}/SKILL.local.md`（`dotfiles-private`管理、`*.local.md`は`install.sh`が自動シンボリックリンク）に分離し、SKILL.md側は「詳細は`SKILL.local.md`参照」とだけ書く。`work-log`・`sideline-triage` skillが実例
+- ただしMCPツール名自体（例: `mcp__atlassian-mediphone__*`）に固有名詞が含まれる場合は、`allowed-tools`での指定上やむを得ない。無理に隠さない
+
+理由: `~/.claude/CLAUDE.md`の「セキュリティ」節で、サービス固有情報のpublicリポ非掲載が明文化されている。2026-08-03、`mediment-triage`という名前・具体的識別子込みでSkillをpublicリポに作成してしまい、ユーザー指摘で`sideline-triage`に改名し識別子を`SKILL.local.md`へ分離した経緯がある。
 
 ### 2. ディレクトリ作成
 
@@ -218,3 +230,4 @@ PR作成前にテストを通すことで、CIの待ち時間を削減しフィ�
 - [ ] Gotchasセクションがある（初版は空でもOK、運用で追記）
 - [ ] 手順に「なぜそうするのか」が含まれている
 - [ ] 外部ファイル（reference.md / scripts/ / templates/）を持つ場合、`${CLAUDE_SKILL_DIR}` で参照している（SKILL.md単体で完結する薄いskillでは不要）
+- [ ] dotfiles(public repo)に作る場合、ディレクトリ名・SKILL.md本文にサービス固有情報（副業先・取引先の会社名/プロダクト名、ドメイン、内部リソースID等）が含まれていない（1.5節参照）

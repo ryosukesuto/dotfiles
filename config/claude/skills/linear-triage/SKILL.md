@@ -1,6 +1,6 @@
 ---
 name: linear-triage
-description: 週次レビュー。PR-Issue紐づけ、プロジェクトUpdate更新、優先度整理、Cycle修正、月初は CI レビュー未適用リポの起票。「トリアージ」「Linear Update」「週次レビュー」「weekly review」「月次レビュー」等で起動。
+description: Linearの棚卸し・トリアージ。PR-Issue紐づけ、プロジェクトUpdate更新、優先度整理、Cycle修正、月初は CI レビュー未適用リポの起票。「トリアージ」「Linear Update」「linear-triage」「Linear棚卸し」等で起動。作業内容そのものの振り返り（Obsidianへの記録）は別途weekly-review/monthly-review skillを使う。
 user-invocable: true
 allowed-tools:
   - Bash(gh:*)
@@ -21,15 +21,18 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-# /linear-triage - Weekly Review
+# /linear-triage - Linear棚卸し
 
 ## 目的
 
 直近1週間の作業を棚卸しし、Linearの状態を最新化する。PR-Issue紐づけ → プロジェクトUpdate → 優先度整理 → Cycle修正の順で実行。
 
+作業内容そのものの振り返り（成果・パターン・学びをObsidianに記録する）は担わない。それはobsidian-notesリポの`weekly-review`/`monthly-review` skillの役割で、このskillはLinearの状態を実態に追従させる運用作業に特化する。
+
 ## フロー概要
 
 ```
+Phase 0: 週次/月次レビューの参照（存在する場合）
 Phase 1: PR-Issue紐づけチェック
 Phase 2: プロジェクト横断タスク取得
 Phase 3: プロジェクト設定の欠落チェック + Updates更新
@@ -44,6 +47,25 @@ Phase 7: 月次タスク（月次レビュー時のみ）
 skill 起動直後、AskUserQuestion で「今回は月次レビューですか？」を必ず確認する。yes なら Phase 7 まで実行、no なら Phase 6 で終了。
 
 判定の目安: 当月初の linear-triage 実行であれば yes、それ以外は no。ユーザー発話に「月次」「monthly」「月初」が含まれていれば自動的に yes 扱い。
+
+## Phase 0: 週次/月次レビューの参照（存在する場合）
+
+obsidian-notesリポの週次レビュー・月次レビューには、Linear API単体では分からない文脈（出向のような稼働配分変化、慢性ブロッカーの決着判断、来週/来月の重点）が既に整理されている。Phase 2以降の判断を車輪の再発明にしないため、起動時に参照する。
+
+### 手順
+
+1. 直近の週次レビューを確認する
+   ```bash
+   ls -t ~/gh/github.com/ryosukesuto/obsidian-notes/*_weekly-review.md 2>/dev/null | head -1
+   ```
+   ファイルが見つかればRead。
+2. 月次レビュー実行時（起動時の月次判定がyes）は、直近に存在する月次レビューも確認する
+   ```bash
+   ls -t ~/gh/github.com/ryosukesuto/obsidian-notes/*-monthly-review.md 2>/dev/null | head -1
+   ```
+   月初のtriageでは当月分はまだ存在しないのが通常で、参照すべきは前月分（「来月の方向修正」に当月の重点が書かれている）。`$(date +%Y-%m)`で当月ファイル名を決め打ちしない。ファイルが見つかればRead、無ければこの参照をスキップし、Linear側の情報だけで進めてよい（月次レビューの作成自体はこのskillの役割ではない）。
+3. 「来週/来月の方向修正」「慢性ブロッカーの決着」「持ち越し」節を、Phase 2以降でIssueの優先度・状態を判断する際の参考情報として使う。特に月次レビューで既に「決着」（システムを直す/優先度を下げて受容/優先度を上げて時間を確保）が付いた慢性ブロッカーは、Phase 4・5で改めて「月次レビュー昇格候補」として提示しない
+4. Vault自体が見つからない、または該当ファイルがない場合はこのPhase全体をスキップし、通常通りLinear APIのみで進める
 
 ## Phase 1: PR-Issue紐づけチェック
 
@@ -260,6 +282,8 @@ PR レビュー自動化（Claude Code Action / Greptile）を導入して、AI 
   - `--json` で `headRefName` は指定不可。タイトル/bodyからPF-XXXXを抽出する
 - Phase 1のPR description更新はマージ済みPRでも `gh pr edit` で可能
 - `list_projects(member: "me")` はViewerだけのプロジェクトも含む可能性がある。active状態のみを対象にする
-- Cycleへの追加は `save_issue(id: "PF-XXXX", cycle: <cycleId>)` で行う。Cycleから外す場合はcycleにnullを指定できないため、ユーザーに手動対応を案内する
+- Cycleへの追加は `save_issue(id: "PF-XXXX", cycle: <cycleId>)` で行う。Cycleから外す場合はcycleにnullを指定できないため、ユーザーに手動対応を案内する。ただし`state: "Backlog"`への変更は例外で、Cycle割当も連動して自動的に外れる（2026-08-02、フォーカス分散リスクで12件をBacklog化した際に`list_issues(cycle: <cycleId>)`で確認、12件とも自動的にCycleから消えていた）。stateType変更を伴わない優先度・見積もりだけの変更ではこの自動解除は起きない
+- WinTicket外への出向・主稼働期間中は、WinTicket側のCycleに基本的に登録しなくてよい（2026-08-03、ユーザーより指示）。Phase 5-2（進捗なしプロジェクトの次Cycle投入）はこの期間中はスキップする。出向終了後、通常運用に戻すタイミングでユーザーに確認する
 - `mcp__linear-server__list_issues` で `assignee=me, limit=50+` だと応答が大きくなりファイル経由で返ることがある。jqで必要フィールド (id, title, status, project, cycleId, priority, estimate) のみ抽出する
 - `AskUserQuestion` は1問あたりオプション最大4個。プロジェクト/Issueが5個以上ある場合は質問を分割する
+- 出向のような別ワークスペース稼働の切り替え直後は、WinTicketワークスペースへの誤起票が起きやすい。タイトル・内容が出向先固有の語彙で、かつ`project`未割当・作成日が出向開始直後のIssueは、出向先側(別Linearワークスペース)に同一内容の正式Issueが存在しないか確認する。2026-08-02のlinear-triage月次実行で3件(PF-28、PF-2858、PF-2859)を検出しCanceledにした

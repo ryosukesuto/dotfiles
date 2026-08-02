@@ -94,11 +94,22 @@ Magic Word は「この PR をマージしたら Issue を Done にしてよい�
 | Magic Word | 効果 | 使う場面 |
 |---|---|---|
 | `Closes` / `Fixes` / `Resolves` | merge で Issue が自動 Done | この PR で Issue の受け入れ条件を全て満たす場合 |
-| `Refs` / `Part of` | リンクのみ。Status 変化なし | 部分対応・複数 PR にまたがる場合の中間 PR |
+| `Refs` / `Part of` | リンクが付く。ただし対象 Issue が既に Done の場合、merge を契機に In Progress へ再遷移することがある | 部分対応・複数 PR にまたがる場合の中間 PR。対象がまだ Done でないときのみ安全 |
 
 判定基準: PR を開く前に Issue の Acceptance Criteria（または description の TODO リスト）を読み返し、この PR で全項目チェックが入るかを確認する。1 つでも残るなら `Refs`、最終 PR で `Closes` に切り替える。
 
 複数 PR にまたがると分かった時点で Issue 粒度を見直す（親 Issue + 子 Issue に分割）ほうが、`Refs` を使い続けるより運用が楽になる。
+
+### 既に Done な Issue への Refs は再オープンを招く
+
+`Refs` は「リンクのみで Status 変化なし」という理解は誤り。対象 Issue が既に Done 済みの状態で、その Issue を `Refs` で参照する別 PR（例: 後続の docs 整備 PR）をマージすると、Linear 側が Done から In Progress へ自動で戻すことがある。この再遷移を検知して再度 Done に戻す仕組みは無いため、次に棚卸しするまで気づかず放置される。
+
+対処: 参照先の Issue が既に Done かどうかを PR 作成前に確認する。
+
+- 参照先がまだ Done でない（In Progress 等）→ `Refs` でよい
+- 参照先が既に Done → magic word 構文（`Refs` 含む）を使わず、`(PFIF-132 を参照)` のように通常の文章として Issue ID を書く。Linear のパーサーに magic word として認識させなければ、状態遷移も発火しない
+
+2026-07-22、CyberAgentCard/processing-infrastructure で確認。PFIF-132 は PR #124（`Closes PFIF-132`）のマージ45秒後に自動 Done 化したが、翌日 PFIF-134 の後続 docs PR #123（`Closes PFIF-134` / `Refs PFIF-132, Refs PFIF-133`）がマージされた2秒後に In Progress へ再遷移。担当者はこの再オープンに気づかず、5日後の Issue 棚卸し（2026-07-27）まで放置された。
 
 ### 判断系 Issue は PR 紐付けを期待しない
 
