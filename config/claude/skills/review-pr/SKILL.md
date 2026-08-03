@@ -111,6 +111,7 @@ REPORT="${WORK}-report.json"
 REPORT_MD="${WORK}-report.md"
 
 # 2. files JSON を triage 用フォーマットに変換し、status を正しくマッピング
+#    gh 2.92.0 以降は `status` ではなく `changeType`（大文字値）を返す。両方に対応させる
 gh pr view $PR_ARGS --json files 2>/dev/null \
   | REPO_NAME="$REPO_NAME" python3 -c "
 import json,sys,os
@@ -121,11 +122,17 @@ status_map = {
     'renamed': 'renamed',
     'copied': 'modified',
     'changed': 'modified',
+    'ADDED': 'added',
+    'MODIFIED': 'modified',
+    'REMOVED': 'deleted',
+    'RENAMED': 'renamed',
+    'COPIED': 'modified',
+    'CHANGED': 'modified',
 }
 files = json.load(sys.stdin)['files']
 out = []
 for f in files:
-    raw = f.get('status') or 'modified'
+    raw = f.get('status') or f.get('changeType') or 'modified'
     out.append({
         'repo': os.environ['REPO_NAME'],
         'path': f['path'],
@@ -191,6 +198,13 @@ gh pr view $PR_ARGS --json comments 2>/dev/null \
   | jq '.comments | [.[] | {author: .author.login, body, createdAt}]' \
   > "${WORK}-existing-comments.json"
 
+# (a2) 行に紐づくインラインコメント（Greptile / Wiz / 人間の実質的な指摘はここに入る）
+# `gh pr view --json comments` は issue レベルのコメントだけを返し、インラインは含まれない。
+# 別 endpoint で必ず取得する。これを取り忘れると既出指摘を重複して出す
+gh api "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" 2>/dev/null \
+  | jq '[.[] | {author: .user.login, path, line: (.line // .original_line), body, created_at}]' \
+  > "${WORK}-existing-inline.json"
+
 # (b) PR description / 変更 ADR / コミットメッセージから Linear Issue ID を抽出
 # WinTicket org の主要 prefix: PF / ASICS / SRV / 等
 gh pr view $PR_ARGS --json body,commits 2>/dev/null \
@@ -200,6 +214,15 @@ gh pr view $PR_ARGS --json body,commits 2>/dev/null \
 ```
 
 抽出した Issue ID の状態は `mcp__linear-server__get_issue` で確認する。Done であれば「依存 Issue 完了済み」、In Progress なら「未完了に依存」とラベル付けして reviewer prompt に共有する。これで、完了済みの依存Issueを未完了として指摘する手戻りを減らせる。
+
+既存レビューとの照合は 2 方向で行う。片方だけでは足りない。
+
+1. 重複の回避: 自分の findings が既出の指摘と同じ箇所・同じ内容になっていないか
+2. 反論の巻き込み確認: 既出の指摘を誤検知として否定するとき、その指摘のうち妥当な部分まで一緒に否定していないか
+
+2 が抜けると、既出指摘の前半（設定値の形式）が誤りで後半（後段との整合性）が妥当なケースで、まとめて却下したように読める文章になる。既出指摘を否定する文を書いたら、その指摘の原文を読み直して「否定しているのはどの主張か、残る主張はあるか」を 1 度分解する。残る主張があれば、否定と併記して両方に決着を付ける。
+
+2026-08-02、platform-infrastructure PR #195 で発生。`max_record_size_in_kib = 10240` に対する既出指摘を「AWS ドキュメントの指定どおりで正しい」とだけ書いたが、指摘の後半にあった後段 Firehose の record size 上限との不整合は妥当だった。ユーザーから既存レビューとの重複を問われて気付き、値の正しさと後段の懸念を分けて書き直した。
 
 中間ファイルはルーティングで定義済みの `$WORK` プレフィックス（`/tmp/review-pr-${PR_NUM}`）を使う。triage の `selected_reviewers` に含まれる reviewer を対象とする（null の場合は `codex-baseline` と `opus-baseline` の 2 本を固定）。
 
@@ -304,16 +327,28 @@ report.py の出力はツール結果に流れるだけで、ユーザーには�
 - `gh pr view --json baseRepository` は一部 gh バージョンで `Unknown JSON field` になる。REPO は `--json url` の PR URL から正規表現で抽出する（ルーティング節のスニペット参照）
 - `gh` 実行時に shell profile 由来の noise（例: `gh:1: command not found: _gh_ensure_token`）が stderr に混ざる環境では `2>/dev/null` を付けて stdout の jq パースが壊れないようにする
 - オーケストレーターパスは `report.py` の出力をそのまま返す。その後に手動でレビューを追記しない
+  - 例外は 2 つだけ。(1) ユーザーが観点・優先度・対象範囲の絞り込みを指示した場合（「PoC 前提で」「セキュリティ観点だけ」等）、(2) `normalize.py` の dedupe が明らかに失敗して同一 finding が複数掲載されている場合。このどちらかに当たるときは `report.md` を土台に再構成してよい。再構成したら「report をそのまま出さず絞った」ことを 1 行でユーザーへ伝える。絞った結果どの findings を落としたかも併記する
+  - 例外に当たらないのに書き直すと、reviewer が挙げた findings を私の判断で黙って削ることになる。ユーザーには落とした事実が見えない
+- `gh pr view --json files` の変換で全ファイルが `modified` になっていたら、gh のフィールド名変更を疑う。`status` と `changeType` のどちらも取れないと silent に `modified` へ倒れ、added / deleted の区別を失った triage 結果でパスが決まる。エラーは出ないので、triage 実行後に `jq '.files[] | .status' "$TRIAGE"` で分布を 1 度確認する
 - シンプルパスを含む全経路で、ユーザー向けレビュー結果とGitHub投稿文には内部用の優先度・reviewer名・confidence・triage・dedupeを表示しない
 - レビュー結果はユーザーへの出力として返すだけで終了する。`gh pr review` / `gh pr comment` 等で GitHub に投稿するかどうかはユーザーが判断する。**ユーザーから明示的に「投稿して」と指示されるまで書き込み操作は行わない**。投稿指示を受けた時点で**必ず**以下4点を順に確認すること（チェックを忘れて投稿してから訂正が入る事象が複数回発生済み）:
   1. 投稿本文は内部判定でマージ前対応が必要な指摘だけに絞ったか
   2. 投稿本文を`proofread`の`pr-review`モードで校正し、お願いの文末へ`🙏`を付けたか
   3. 同 PR の直近レビューに自分の user × 60 秒以内 × 同 commit_id が無いか（race condition 二重投稿防止ルール参照）
   4. 書き込みコマンドに `|| fallback` / リトライを付けていないか（二重投稿防止ルール参照）
-- subagent / Claude bot / Codex / Greptile から上がってきたfindingsをユーザー向け出力に通す前に、以下3点を裏取りする。1点でも未確認なら内部優先度を下げるか、「server挙動次第」等の前提条件を明記して提示する。詳細と過去事故は`feedback_pr_review_factcheck.md`メモリ参照:
+  5. 投稿対象を最小単位に分けたか（下記の投稿単位ルール参照）
+- 書き込みは最小単位で 1 件ずつ行う。複数箇所へのインラインコメントや review body をまとめて 1 回の投稿にしない。1 件投稿するごとに結果 URL をユーザーへ返し、次を投稿してよいか指示を待つ
+  - とくにユーザーが直前に絞り込みを指示している場合（「1 と 2 に絞って」「まず 1 だけ」等）は、その後の「投稿して」を全件投稿の許可と解釈しない。絞り込みの意図が続いているものとして 1 件目だけ投稿する
+  - 一度絞った内容へ、後から自分の判断で節や補足を足し戻さない。ユーザーが落とした情報は落ちたままにする。共有したい内容があればチャットで伝え、投稿本文には入れない
+  - 2026-08-02、platform-infrastructure PR #195 で発生。「1 と 2 に絞って」の後に「インラインコメントして」を受け、review body + 既出指摘への裏取り節 + インラインコメント 2 件をまとめて組み立てて拒否された。ユーザーの意図は 1 件目だけの投稿だった
+- subagent / Claude bot / Codex / Greptile から上がってきたfindingsをユーザー向け出力に通す前に、以下4点を裏取りする。1点でも未確認なら内部優先度を下げるか、「server挙動次第」等の前提条件を明記して提示する。詳細と過去事故は`feedback_pr_review_factcheck.md`メモリ参照:
   1. `コードコメント再読`: finding 該当箇所の前後 ±10 行に「意図的にそうしている」を示すコメントが無いか。テンプレ言語 (HCL / VCL / k8s YAML) では `%{ if ~}` `{{- if }}` 等の directive で実体が分岐するパターンも展開して確認
   2. `多環境対称性`: 同種ファイルが 5環境分など複数ある場合、全環境で同じ問題かを `grep` で 1度確認
   3. `依存リポ実装挙動`: Authorization / 認可 / RPC スキーマ / Spanner DDL など複数リポにまたがる finding は `cross-repo` skill (もしくは ghq root 配下を直接 grep) で依存リポの実装を確認
+  4. `外部サービスの公式ドキュメント`: AWS / GCP / Terraform provider / Datadog など外部サービスの挙動が根拠の finding は、公式ドキュメントの該当箇所を `WebFetch` で取得して原文で確認する。記憶を一次情報として使わない。インフラリポの finding はこの観点が大半を占めるのに、上記 1-3 はいずれも社内コードを見る観点なので抜けやすい
+     - provider の attribute が返す値の形式（ARN に suffix が付くか等）は provider のソースかドキュメントで確認する。`raw.githubusercontent.com/hashicorp/terraform-provider-aws/main/website/docs/r/<resource>.html.markdown` が取得しやすい
+     - 確認できた原文は、レビュー本文に引用と URL として残す（`rules/writing-grounding.md` の出典を明記する条件を参照）。とくに既出指摘を誤検知として否定するときは原文なしで断定しない
+     - 2026-08-02、platform-infrastructure PR #195 で 2 件の finding がどちらも外部ドキュメントの原文で決着した。S3 Bucket Keys 有効時に encryption context が bucket ARN へ変わる点は S3 User Guide、log stream ARN に `:*` が付かない点は provider docs の group と stream の記述差が根拠だった。1-3 の観点だけでは両方とも裏取りできていない
 - subagent 内から review-pr が呼ばれた場合、triage の `size` / `risk_tags` に関わらずシンプルパス骨格にフォールバックする（Agent tool の再帰呼び出し禁止のため）。出力は `review-pr-reference.md` のフォーマットに従い、`risk_tags` の内容は「注意事項」節に転記する
 - triage の `selected_reviewers` が null または空の場合、オーケストレーターパスでは `codex-baseline` と `opus-baseline` の 2 本を固定で使う。非 null の場合はその全員分のプロンプトを生成して並列起動する
 - `build-reviewer-prompt.py` の出力プロンプトに diff セクションが空（「(diff 取得不可)」など）のときは、`git diff $BASE_SHA..$HEAD_SHA` を実行してプロンプトに追記してから subagent に渡す。未対応のまま渡すと findings が生成できない
